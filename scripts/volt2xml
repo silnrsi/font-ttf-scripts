@@ -1,0 +1,196 @@
+#! /usr/bin/perl
+use Font::TTF::Font;
+use Getopt::Std;
+use Parse::RecDescent;
+use Data::Dumper;
+
+%dat = ();
+
+$volt_grammar = <<'EOG';
+
+    { my (%dat, $c); }
+    
+    start : statement(s) 'END'
+            { $return = {%dat}; }
+    
+    statement : glyph | script | group | lookup | anchor | info
+              
+    glyph : 'DEF_GLYPH' id 'ID' num glyph_unicode(?) glyph_type(?) 'END_GLYPH'
+            { 
+                $dat{'glyphs'}[$item[4]] = {'uni' => $item[5][0], 'type' => $item[6][0], 'name' => $item[2]};
+                $dat{'glyph_names'}{$item[2]} = $item[4];
+                1;
+            }
+    
+    glyph_unicode : 'UNICODE' num                       { $return = [$item[2]]; }
+                  | 'UNICODEVALUES' '"' uni_list '"'    { $return = [map {s/^U+//oi; hex($_);} split(/\s*,\s*/, $item[3])]; }
+                  
+    glyph_type : 'TYPE' /MARK|BASE/
+            { $return = $item[2]; }
+    
+    script : 'DEF_SCRIPT' name tag langsys(?) 'END_SCRIPT'
+    
+    langsys : 'DEF_LANGSYS' name tag feature(s?) 'END_LANGSYS'
+    
+    feature : 'DEF_FEATURE' name tag lookup_ref(s?) 'END_FEATURE'
+    
+    group : 'DEF_GROUP' id enum(?) 'END_GROUP'
+            { $dat{'groups'}{$item[2]} = $item[3][0]; }
+    
+    enum : 'ENUM' enum_content(s) 'END_ENUM'
+            {   
+                my (@res, $i); 
+                foreach $i (@{$item[2]}) 
+                { push (@res, @{$i}); } 
+                $return = [@res]; 
+            }
+    
+    enum_content : 'GLYPH' <commit> id           {$return = [$dat{'glyph_names'}{$item[3]}]; }
+                 | 'GROUP' <commit> id           {$return = [@{$dat{'groups'}{$item[3]}}]; }
+                 | 'RANGE' id 'TO' id   {$return = [$dat{'glyph_names'}{$item[2]} .. $dat{'glyph_names'}{$item[4]}]; }
+    
+    lookup : 'DEF_LOOKUP' id lk_procbase(?) lk_procmarks(?) lk_all(?) lk_direction(?)
+             lk_context(s) lk_content
+             
+    lk_context : 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
+    
+    lk_context_lt : ('LEFT' | 'RIGHT') context(s)
+    
+    context : 'GROUP' <commit> id
+            | 'GLYPH' <commit> id
+            | 'RANGE' <commit> id 'TO' id
+            | enum
+            
+    lk_content : lk_subst | lk_pos
+    
+    lk_subst : 'AS_SUBSTITUTION' subst(s) 'END_SUBSTITUTION'
+    
+    lk_pos : 'AS_POSITION' post(s) 'END_POSITION'
+    
+    subst : 'SUB' context(s) 'WITH' context(s?) 'END_SUB'
+    
+    post : 'ATTACH' <commit> context(s) 'TO' attach(s) 'END_ATTACH'
+        | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
+        | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
+        
+    attach : context 'AT' 'ANCHOR' id
+    
+    post_first : 'FIRST' context
+    
+    post_second : 'SECOND' context
+    
+    post_adj : num num 'BY' pos
+    
+    post_single : context 'BY' pos
+    
+    anchor : 'DEF_ANCHOR' id 'ON' num 'GLYPH' word 'COMPONENT' num 'AT' pos 'END_ANCHOR'
+            { $dat{'glyphs'}[$item[4]]{'points'}{$item[2]} = $item[-2]; 1; }
+    
+    pos : 'POS' pos_adv(?) pos_dx(?) pos_dy(?) 'END_POS'
+            { 
+                my (%res);
+                $res{'adv'} = $item[2][0] if (defined $item[2]);
+                $res{'x'} = $item[3][0];
+                $res{'y'} = $item[4][0];
+                $return = {%res};
+            }
+    
+    pos_dx : 'DX' num pos_adj(s?)
+            { $return = $item[2]; }
+    
+    pos_dy : 'DY' num pos_adj(s?)
+            { $return = $item[2]; }
+    
+    pos_adv : 'ADV' num pos_adj(s?)
+            { $return = $item[2]; }
+    
+    pos_adj : 'ADJUST_BY' num 'AT' num
+    
+    lk_procbase : 'PROCESS_BASE'
+    
+    lk_procmarks : 'PROCESS_MARKS'
+    
+    lk_all : 'ALL'
+    
+    lk_direction : 'DIRECTION' 'LTR'            # what about RTL here?
+    
+    info : i_grid(?) i_pres(?) i_ppos(?) i_cmap(s?)
+    
+    i_grid : 'GRID_PPEM' num
+    
+    i_pres : 'PRESENTATION_PPEM' num
+    
+    i_ppos : 'PPOSITIONING_PPEM' num
+    
+    i_cmap : 'CMAP_FORMAT' num num num
+    
+    lookup_ref : 'LOOKUP' id
+        { $return = $item[2]; }
+    
+    name : 'NAME' id
+        { $return = $item[2]; }
+    
+    tag : 'TAG' id
+        { $return = $item[2]; }
+                  
+    uni_list : /[0-9a-f,U+\s]+/i
+        { $return = $item[1]; }
+    
+    id : '"' <commit> id_letters '"'        { $return = $item[3]; }
+       | /\S+/                              { $return = $item[1]; }
+        
+    
+    id_letters : /[^"]+/i
+        { $return = $item[1]; }
+    
+    word : /\w+/
+        { $return = $item[1]; }
+    
+    num : /-?\d+/
+        { $return = $item[1]; }
+EOG
+
+$font = Font::TTF::Font->open($ARGV[0]) || die "Can't open font file $ARGV[0]";
+$text = $font->{'TSIV'}->read->{' dat'} || die "No VOLT table in font $ARGV[0]";
+$name = $font->{'name'}->read->find_name(2);
+$upem = $font->{'head'}{'unitsPerEm'};
+$font->{'post'}->read;
+
+$parser = new Parse::RecDescent ($volt_grammar);
+$res = $parser->start($text);
+
+print "<?xml version='1.0'?>\n<font name='$name' upem='$upem'>\n\n";
+for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
+{
+    $glyph = $res->{'glyphs'}[$i];
+    print "<glyph GID='$i'";
+    @unis = sort {$a <=> $b} @{$glyph->{'uni'}};
+    printf(" UID='%04X'", $unis[0]) if ($unis[0]);
+    $psname = $font->{'post'}{'VAL'}[$i];
+    print " PSName='$psname'" if ($psname);
+    print " VoltId='$glyph->{name}'" if ($glyph->{'name'} && $glyph->{'name'} ne $psname);
+    if ($glyph->{'points'} || $glyph->{'type'})
+    {
+        print ">\n";
+        foreach $p (sort keys %{$glyph->{'points'}})
+        {
+            $n = $p;
+            $n =~ s/^MARK_/_/o;
+            print "    <point type='$n'>\n";
+            print "        <location x='$glyph->{'points'}{$p}{'x'}' y='$glyph->{'points'}{$p}{'y'}'/>\n";
+            print "    </point>\n";
+        }
+        print "    <property name='VOLT_type' value='$glyph->{'type'}'/>\n" if ($glyph->{'type'});
+        print "</glyph>\n";
+    }
+    else
+    {
+        print "/>\n";
+    }
+}
+
+print "\n</font>\n";
+
+
+
+

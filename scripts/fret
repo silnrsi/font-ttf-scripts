@@ -1,0 +1,150 @@
+@rem = '--*-Perl-*--
+@echo off
+if "%OS%" == "Windows_NT" goto WinNT
+perl -x -S "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto endofperl
+:WinNT
+perl -x -S %0 %*
+if NOT "%COMSPEC%" == "%SystemRoot%\system32\cmd.exe" goto endofperl
+if %errorlevel% == 9009 echo You do not have Perl in your PATH.
+if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul
+goto endofperl
+@rem ';
+#!perl
+#line 15
+use Font::Fret;
+use Font::TTF::useall;
+
+fret('Attach', @ARGV);
+
+package Attach;
+
+use XML::Parser::Expat;
+
+BEGIN {
+    @ISA = qw(Font::Fret::Default);
+    $VERSION = "1.000";
+      }
+
+sub make_cids
+{
+    my ($class, $font) = @_;
+    my (@map, @res, $m);
+    my ($c) = $font->{'cmap'}->read->find_ms;
+
+    if (defined $ARGV[2])
+    {
+        my ($xml) = XML::Parser::Expat->new();
+        $xml->setHandlers('Start' => sub {
+            my ($xml, $tag, %attrs) = @_;
+
+            if ($tag eq 'glyph')
+            {
+                $gid = $attrs{'GID'} || $c->{'val'}{hex($attrs{'UID'})}
+                    || $font->{'post'}{'STRINGS'}{$attrs{'PSName'}};
+                if ($gid == 0 && ($attrs{'PSName'} || $attrs{'UID'}))
+                { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'}"); }
+                $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
+                $xml_dat[$gid]{'UID'} = $attrs{'UID'};
+            } elsif ($tag eq 'point')
+            {
+                $pname = $attrs{'type'};
+            } elsif ($tag eq 'contour')
+            {
+                $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
+            } elsif ($tag eq 'location')
+            {
+                $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
+            } elsif ($tag eq 'font')
+            {
+                $fontname = $attrs{'name'};
+                $fontupem = $attrs{'upem'};
+            } elsif ($tag eq 'compound')
+            {
+                push (@{$xml_dat[$gid]{'compounds'}}, {%attrs});
+            } elsif ($tag eq 'break')
+            {
+                $xml_dat[$gid]{'break'} = $attrs{'weight'};
+            }
+        });
+
+        $xml->parsefile($ARGV[2]) || die "Can't parse $ARGV[2]";
+    }
+
+    @map = $font->{'cmap'}->read->reverse;
+    $map[$font->{'maxp'}{'numGlyphs'}] = 0;
+    foreach $m (@map) { $m = 65536 if $m == 0; }
+    @res = (sort {$map[$a] <=> $map[$b] || $font->{'post'}{'VAL'}[$a] cmp $font->{'post'}{'VAL'}[$b] || $a <=> $b}
+            (0 .. $font->{'maxp'}{'numGlyphs'} - 1));
+
+    return ("Glyph ID", @res);
+}
+
+sub lowdat
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+
+    return ($font->{'hmtx'}{'advance'}[$gid], "r|$macrev[$gid]");
+}
+
+
+sub row1hdr
+{
+    my ($class, $font) = @_;
+    my ($i);
+
+    for ($i = 0; $i < $font->{'cmap'}{'Num'}; $i++)
+    {
+        if ($font->{'cmap'}{'Tables'}[$i]{'Platform'} == 1)
+        { @macrev = $font->{'cmap'}->reverse($i); last; }
+    }
+
+    return ('PSName', 'GID', 'UID',
+            'r,b|adv', 'r,i|xmax', 'r,i|xmin', 'r,i|ymax', 'r,i|ymin');
+}
+
+sub row1
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+    my ($aw) = $font->{'hmtx'}{'advance'}[$gid];
+    my ($rsb) = $aw - $glyph->{'xMax'};
+
+    return ($font->{'post'}{'VAL'}[$gid], $gid, sprintf("x%04X", $uid),
+            "r,b|$aw", "r,i|$glyph->{'xMax'}",
+            "r,i|$glyph->{'xMin'}", "r,i|$glyph->{'yMax'}",
+            "r,i|$glyph->{'yMin'}");
+}
+
+sub row2hdr
+{
+    my ($class, $font) = @_;
+
+    return ("Attach1", "Attach2", "Attach3", "Attach4");
+}
+
+sub row2
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+    my ($ptext);
+    my ($p, $pc, @res);
+
+    if (!defined $xml_dat[$gid]{'points'})
+    { return (@res); }
+    
+    $glyph->get_points;
+    foreach $p (sort keys %{$xml_dat[$gid]{'points'}})
+    {
+        $pc = $xml_dat[$gid]{'points'}{$p};
+        $pnum = $glyph->{'endPoints'}[$pc->{'cont'}];
+        $res = "$p($pc->{'cont'}:";
+#        $res = "$p($pc->{'cont'},$pnum)($pc->{'loc'}[0],$pc->{'loc'}[1])";
+        $res .= "$glyph->{'x'}[$pnum],$glyph->{'y'}[$pnum])";
+#        $res = "$p($pc->{'cont'},$pnum)";
+        push (@res, $res);
+    }
+    return (@res);
+}
+
+
+__END__
+:endofperl

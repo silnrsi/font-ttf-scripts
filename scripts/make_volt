@@ -1,0 +1,19 @@
+use Font::Scripts::Volt;
+use Getopt::Std;
+
+getopts('t');
+
+$f = Font::Scripts::Volt->read_font($ARGV[1], $ARGV[0]) || die "Can't read font information";
+
+$f->make_classes;
+$res = $f->out_volt;
+
+$res =~ s/\n/\r/og;
+$res .= "\000" x 7;
+if ($opt_t)
+{ print $res; }
+else
+{    
+    $f->{'font'}{'TSIV'} = Font::TTF::Table->new(dat => $res, PARENT => $f->{'font'});
+    $f->{'font'}->out($ARGV[2]);
+}

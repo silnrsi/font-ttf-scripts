@@ -1,0 +1,165 @@
+use Win32::Registry;
+use Win32::MagicAPI qw(GDI32 kernel32 user32);
+use Cwd;
+
+require 'getopts.pl';
+Getopts("r");
+
+$VERSION = "1.100";
+
+if (!defined $ARGV[0])
+{
+    die 'addfont [-r] <fontfile>
+Installs or uninstalls a font in Win95 without copying it. <fontfile> can
+include wildcards. Much less hassle than opening the Windows/Fonts directory.
+
+    -r      remove given font, or one with the same full name
+';
+}
+
+foreach $f (map {glob} @ARGV)           # unpack command line Unix style
+{ &process($f); }
+
+sub process
+{
+    my ($f) = @_;
+
+# first track down the full path name of the font file (we need it later)
+    ($drive, $path, $name, $ext) = ($f =~ m|^(.:[\\/]?)?(.*[\\/])?([^\\/.]+)\.(.*)|oi);
+
+    die("No name given") if ($name eq "" || $ext eq "");
+
+    $dir = cwd;
+    ($d_drive, $d_path) = ($dir =~ m|^(.:)?([\\/].*)$|oi);
+
+    if ($drive =~ m|[\\/]$|oi) { $fontname = "$drive$path$name"; }
+    elsif ($path =~ m|^[\\/]|oi) { $fontname = "$d_drive$path$name"; }
+    else
+    {
+        die ("Can't use relative paths across drives") unless
+    	        ($d_drive eq $drive || $drive eq "");
+        $fontname = "$d_drive$d_path\\$path$name";
+    }
+
+    $fname = "$fontname.$ext";
+
+    $name = getname($fname);                            # dig around in the font for the name
+    $font_key = 'SOFTWARE\Microsoft\Windows' . (Win32::IsWinNT() ? ' NT' : '') . '\CurrentVersion\Fonts';
+# get entry from registry for a font of this name
+    $HKEY_LOCAL_MACHINE->Open($font_key, $regFont);
+    $regFont->GetValues($list);
+    $val = $list->{"$name (TrueType)"}[2];
+
+# uninstall any installed font with this name
+    if ($opt_r || ($val ne "" && $val ne $fname))
+    {
+        if ($val ne $fname)
+        {
+            print "Removing font $name -> $val\n";
+            GDI32::RemoveFontResource_P("$val")
+                || warn "Failed to remove resource $val";
+        } else {
+            print "Removing font $name -> $fname\n";
+            GDI32::RemoveFontResource_P("$fname")
+                || warn "Failed to remove resource $fname";
+        }
+        $regFont->DeleteValue("$name (TrueType)");
+    }
+
+    if (!$opt_r)
+    {
+        #  GDI32::CreateScalableFontResource_NPPP(0, "$winname", $fname, "") 
+        #      || die "Failed to make resource";                    # Win3.1 type work
+        print "Adding $fname";    
+        GDI32::AddFontResource_P($fname) || die "Failed to add resource";
+        # Now insert into registry
+        # HKeyLocalMachine\Software\Microsoft\Windows\CurrentVersion\Fonts
+        $regFont->SetValueEx("$name (TrueType)", 0, REG_SZ, "$fname");
+        print " as $name\n";
+    }
+# tell everyone that life has changed (0x1D = WM_FONTCHNG) (-1 = HWND_TOPWINDOW)
+# note we post and not send otherwise we hang everything!
+    user32::PostMessage_IIIN(-1, 0x1D, 0, 0);     
+}
+
+# scrabble around inside the .ttf file for a name
+sub getname
+{
+    my ($fname) = @_;
+
+    open(INFILE, "$fname") || die "Unable to open $fname for reading";
+    binmode(INFILE);
+
+# first read the header and directory
+    read(INFILE, $head, 12) == 12 || die "reading header";
+    ($ver, $numtab) = unpack("Nn", $head);
+    # print "ver = $ver\nnumtab = $numtab\n";
+    for ($i = 0; $i < $numtab; $i++)
+        {
+        read(INFILE, $tab, 16) == 16 || die "reading table directory";
+        ($name, $offset) = unpack("a4x4N", $tab);
+    #    printf "name = \"$name\", offset = %X\n", $offset;
+        $dir{$name} = $offset;
+        }
+
+# read the name table
+    seek(INFILE, $dir{"name"}, 0);
+    read(INFILE, $name_head, 6);
+    ($name_num) = unpack("x2n", $name_head);
+    for ($i = 0; $i < $name_num; $i++)
+        {
+        read(INFILE, $name_dir, 12) || die "Unable to read name entry";
+        ($id_p, $id_e, $id_l, $name_id, $str_len, $str_off)
+                = unpack("n6", $name_dir);
+# get the Windows full name for US English (the default)
+        ($ol, $of) = ($str_len, $str_off) if ($name_id == 4 && $id_p == 3 && $id_l == 1033);
+        }    
+    $base = tell(INFILE);
+    seek(INFILE, $base + $of, 0);
+    read(INFILE, $string, $ol);
+# convert from Unicode back to ANSI using system codepage
+    $name = " " x ($ol >> 1);
+    $error = " ";
+    $string =~ s/(.)(.)/$2$1/g;
+    $need = kernel32::I_WideCharToMultiByte_INPIPIPP(0, 0, $string, $ol, $name, $ol >> 1, "?", $error);
+    close(INFILE);
+    return $name;
+}
+
+=head1 NAME
+
+addfont.bat - Installs and uninstalls fonts in Win95
+
+=head1 Synopsis
+
+    addfont *.ttf
+    addfont -r *.ttf
+
+=head1 Description
+
+A Windows 95 utility which installs fonts in place. That is it installs a font
+(or uninstalls it) without copying it to your Windows\Fonts directory. This is
+an essential utility for those who are installing and uninstalling fonts all
+day and can't be bothered to wait for the Windows\Fonts directory to build
+itself in your Explorer. Instead you need to be willing for Perl to start up
+and run - but that is in the background.
+
+Notice that you can use wildcards on the command line, which is useful if you
+are working with different font sets.
+
+This batch file acts ss an example of getting into the guts of Windows 95 from
+within a PERL script.
+
+=head1 Requirements
+
+This utility requires Win32::API (L<http://www.divinf.it/dada/perl/api/>
+or L<http://www.perl.com/CPAN/authors/Aldo_Calpini/>) and
+Win32::MagicAPI (L<phil@mcs.vuw.ac.nz>, assuming he's still there) which
+sits on top of it.
+
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>
+
+=cut
+

@@ -1,0 +1,34 @@
+#! /usr/bin/perl
+use Font::Scripts::GDL;
+use IO::File;
+use Getopt::Std;
+
+getopts('i:');
+
+$f = Font::Scripts::GDL->read_font($ARGV[1], $ARGV[0]) || die "Can't read font information";
+$outfh = IO::File->new("> $ARGV[2]") || die "Can't open $ARGV[2] for writing";
+
+foreach $g (@{$f->{'glyphs'}})
+{
+    my ($points) = {};
+    foreach $p (keys %{$g->{'points'}})
+    {
+        my ($pname) = $p;
+        
+        if ($pname =~ s/^(.+)M$/_$1/o)
+        { }
+        elsif ($pname =~ s/^(.+)S$/$1/o)
+        { }
+        $points->{$pname} = $g->{'points'}{$p};
+    }
+    $g->{'points'} = $points;
+}
+
+$f->start_gdl($outfh);
+$f->out_gdl($outfh);
+$f->make_classes();
+$f->out_classes($outfh);
+$f->endtable($outfh);
+$f->end_gdl($outfh, $opt_i);
+
+$outfh->close();
