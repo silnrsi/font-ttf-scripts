@@ -9,7 +9,12 @@ use XML::Parser::Expat;
 use Pod::Usage;
 use Getopt::Std;
 
-$VERSION = 0.17;    # MJPH      28-MAR-2003     Fix property copying
+my @xml_dat;
+
+$VERSION = 0.20;    # MJPH      23-JAN-2004     Fix single glyph internal cross-references
+# $VERSION = 0.19;    # MJPH      14-AUG-2003     Add warnings
+# $VERSION = 0.18;    # MJPH      12-JUN-2003     Improve name support, noaps is now a list
+# $VERSION = 0.17;    # MJPH      28-MAR-2003     Fix property copying
 # $VERSION = 0.16;    # MJPH       1-FEB-2003     Fix surrogates
 # $VERSION = 0.15;    # MJPH       3-OCT-2002     Allow overstrike="right" etc.
 # $VERSION = 0.14;    # MJPH       2-OCT-2002     Fix scaling and component references
@@ -50,6 +55,7 @@ attachment point database (attach.xml) and can generate out.xml.
                 3: Mark target font as symbol font
                 4: Default to not allowing overstrikes (ensures guard space) on lhs
                 5: Default to not allowing overstriking on rhs
+                6: Disable some warnings
     -h          Help
     -x file     Attachment database to read
     -z file     Attachment database to output
@@ -92,6 +98,18 @@ if (defined $opt_x)
                 || $attrs{'GID'};
             if (!defined $gid && ($attrs{'PSName'} || $attrs{'UID'}))
             { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $opt_x"); }
+            unless ($opt_d & 64)
+            {
+                my ($ugid) = $c->{'val'}{hex($attrs{'UID'})};
+                my ($ggid) = $attrs{'GID'};
+                my ($pgid) = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
+                $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, but GID is $ggid in $opt_x")
+                        if ($ugid && $ggid && $ugid != $ggid);
+                $xml->xpcarp("PSName of $attrs{'PSName'} maps to $pgid, but GID is $ggid in $opt_x")
+                        if ($pgid && $ggid && $pgid != $pgid);
+                $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, while PSName of $attrs{'PSName'} maps to $pgid in $opt_x")
+                        if ($pgid && $ugid && !$ggid && $ugid != $pgid);
+            }
             $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
             $xml_dat[$gid]{'UID'} = $attrs{'UID'};
         } elsif ($tag eq 'point')
@@ -198,7 +216,7 @@ $xml->setHandlers('Start' => sub {
     }
     elsif ($tag eq 'base' || $tag eq 'attach')
     {
-        my ($gid, $aglyph, $p);
+        my ($gid, $aglyph, $p, %noaps);
         
         unless (($attrs{'PSName'} && ($gid = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
                 || ($attrs{'UID'} && ($gid = $c->{'val'}{hex($attrs{'UID'})}))
@@ -214,10 +232,12 @@ $xml->setHandlers('Start' => sub {
             };
         push (@{$curbase->{'glyphs'}}, $aglyph);        # build components tree
 
-        unless (defined $attrs{'noaps'})
+        unless ($attrs{'noaps'} == 1)
         {        
+            my %noaps = map {$_ => 1} split(' ', $attrs{'noaps'});
             foreach $p (keys %{$xml_dat[$gid]{'points'}})
             {
+                next if $noaps{$p};
                 my ($p1) = $xml_dat[$gid]{'points'}{$p};
                 $aglyph->{'points'}{$p}{'base'} = $aglyph;
                 $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
@@ -331,6 +351,11 @@ $xml->setHandlers('Start' => sub {
     {
         $currtext = '';
     }
+    elsif ($tag eq 'name')
+    {
+       $currtext .= $if->{'name'}->find_name($attrs{'num'});
+    }
+        
 }, 'End' => sub {
     my ($xml, $tag) = @_;
     my ($curbase) = $xml->{' curbase'};
@@ -407,9 +432,18 @@ $xml->setHandlers('Start' => sub {
             
             $cur_str->{'num'} = 1;
             do_name($of, $cur_str);
+            $cur_str->{'num'} = 16;
+            do_name($of, $cur_str);
             $style = $of->{'name'}->find_name(2);
             if ($style && $style ne 'Regular')
-            { $cur_str->{'text'} .= " $style"; }
+            { 
+                my $tempstr = {};
+                
+                $cur_str->{'text'} .= " $style";
+                $tempstr->{'text'} = $style;
+                $tempstr->{'num'} = 17;
+                do_name($of, $tempstr);
+            }
             $cur_str->{'num'} = 4;
             do_name($of, $cur_str);
         } else
@@ -540,7 +574,7 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
         $glyph->{'yMin'} = $g->{'bbox'}[1];
         $glyph->{'xMax'} = $g->{'bbox'}[2];
         $glyph->{'yMax'} = $g->{'bbox'}[3];
-        if (scalar @{$g->{'glyph_list'}} == 1)
+        if (scalar @{$g->{'glyph_list'}} == 1 && $g->{'glyph_list'}[0]{'glyph'}{'required'} == $i)  # v0.20
         {
             my ($cg) = $g->{'glyph_list'}[0];
             my ($gb) = $cg->{'glyph'};
@@ -598,7 +632,7 @@ for ($i = 0; $i < $of->{'maxp'}{'numGlyphs'}; $i++)
             foreach $gb (@{$g->{'glyph_list'}})
             {
                 my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0];
-                
+
                 push (@{$glyph->{'comps'}}, {
                     'glyph' => $gb->{'glyph'}{'required'},
                     'flag' => 2,
@@ -866,8 +900,8 @@ sub do_name
         if (defined $inf->{'pid'} && defined $inf->{'eid'} && defined $inf->{'lid'})
         { $f->{'name'}{'strings'}[$inf->{'num'}][$inf->{'pid'}][$inf->{'eid'}]{$inf->{'lid'}}
                 = $inf->{'text'}; } 
-        else
-        { warn "Incompletely specified string not added to name table."; }    
+#        else
+#        { warn "Incompletely specified string not added to name table."; }    
     }
 }
 
@@ -992,6 +1026,12 @@ The C<attach> element takes two parameters describing the attachment point on th
 (C<at>) and the attachment point on the diacritic (C<with>). If these are missing, then
 the glyphs are aligned centrally in the x direction and with no adjustment vertically.
 
+The C<noaps> attribute may be used to stop certain, or all, attachment points being
+propagated from a C<base> or C<attach> glyph to the glyph being defined. If C<noaps> has
+the value C<1>, then no attachment points from this glyph will appear in the output
+glyph. If C<noaps> contains a space separated listed of attachment point names, then
+none of those attachment points will propagate (whether or not they exist).
+
 =item advance
 
 It is possible to override the default value of the advance width for any glyph. Thus
@@ -1029,6 +1069,9 @@ There is one special value for the num attribute, which is C<name>. This causes
 the name of the font (string id 1) and also the full font name (string id 4) to be
 assembled from the font name and style (string id 2).
 
+Within a string a C<name> element may be used to lookup an existing value of a
+name string in the font for copying to the output font string being declared
+
 =item font attributes
 
 Various font attributes can be set from a TTFBuilder configuration file:
@@ -1055,12 +1098,16 @@ The DTD for the configuration file is:
 
     <!ELEMENT names (string)+>
 
-    <!ELEMENT string (#PCDATA)>
+    <!ELEMENT string (#PCDATA|name)>
     <!ATTLIST string
         num     CDATA #REQUIRED
         pid     CDATA #IMPLIED
         eid     CDATA #IMPLIED
         lid     CDATA #IMPLIED>
+
+    <!ELEMENT name EMPTY>
+    <!ATTLIST name
+        num     CDATA #REQUIRED>
 
     <!ELEMENT glyphs (glyph)+>
 
@@ -1075,7 +1122,8 @@ The DTD for the configuration file is:
     <!ATTLIST base
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
-        GID     CDATA #IMPLIED>
+        GID     CDATA #IMPLIED
+        noaps   CDATA #IMPLIED>
 
     <!ELEMENT attach (advance | rsb | lsb | shift)*>
     <!ATTLIST attach
@@ -1083,7 +1131,8 @@ The DTD for the configuration file is:
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED
         with    CDATA #IMPLIED
-        at      CDATA #IMPLIED>
+        at      CDATA #IMPLIED
+        noaps   CDATA #IMPLIED>
 
     <!ELEMENT advance EMPTY>
     <!ATTLIST advance
