@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.2";
+$VERSION = "0.3";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
@@ -10,7 +10,7 @@ $fversion =~ s/\./_/og;
 # incantation to enable MY::pm_to_blib later on
 push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
 
-@scripts = grep {-f && !m/\.exe$/o } glob("scripts/*");
+@scripts = grep {-f && !m/\./o } glob("scripts/*");
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");
 
 # we do this to avoid installing Make.pm
@@ -98,11 +98,11 @@ EOT
     $res .= "exe : TTFontUtils_$fversion.exe\n\n";
 
     $res .= "TTFontUtils_$fversion.exe : scripts\\fontutils.par\n";
-    $res .= "\t\\progs\\minno_setup3\\compil32.exe /cc FontUtils.iss\n\n";
+    $res .= "\t\\progs\\inno_setup\\compil32.exe /cc FontUtils.iss\n\n";
     
     $res .= "scripts\\fontutils.par : ";
     $res .= join(' ', @scripts);
-    $res .= "\n\tpp -B -p -o scripts\\fontutils.par " . join(' ', @scripts);
+    $res .= "\n\tpp -B -p -o scripts\\fontutils.par -M Font::TTF::Useall " . join(' ', @scripts);
     $res .= "\n\n";
     
     $res;

@@ -1,24 +1,27 @@
+#!/usr/bin/perl
 use Win32::TieRegistry(Delimiter => '/');
 use Getopt::Std;
 
 use bytes;
 
-getopts('r');
+getopts('d:r');
 
 $path = join(' ', @ARGV);
 
 unless ($path)
 {
     die <<'EOT';
-    addpath [-r] path
+    addpath [-r] [-d file] path
     
 Adds the path to the system path or removes it (-r)
 
+  -d file   debug output to file
   -r        removes path from system path
 EOT
 }
 
 my ($regKey) = "HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Control/Session Manager/Environment//Path";
+open(DEBUG, ">$opt_d") if ($opt_d);
 
 if (Win32::IsWinNT())
 {
@@ -32,14 +35,22 @@ sub addpathnt
 {
     my ($path) = @_;
     my ($currPath) = $Registry->{$regKey};
+    my ($out);
     
+    print DEBUG "adding $path to $currPath\n" . join(' ', unpack('C*', $currPath)) . "\n" if ($opt_d);
+    $out if ($currPath =~ s/\000(.*)$//o);
     if ($currPath !~ m/(^|;)\Q$path\E(;|$)/oi)
     { 
         $currPath .= ";$path";
-        $Registry->{$regKey} = $currPath; 
+        $out = 1;
     }
     elsif (!defined $currPath)
-    { $Registry->{$regKey} = $path; }
+    { 
+        $currPath = $path;
+        $out = 1;
+    }
+    $Registry->{$regKey} = $currPath if ($out);
+    print DEBUG "Path is now $Registry->{$regKey}\n" if ($opt_d);
 }
 
 
@@ -48,6 +59,8 @@ sub removepathnt
     my ($path) = @_;
     my ($currPath) = $Registry->{$regKey};
     
+    print DEBUG "removing $path from $currPath\n" if ($opt_d);
     if ($currPath =~ s/;\Q$path//oi || $currPath =~ s/\Q$path;//oi)
     { $Registry->{$regKey} = $currPath; }
+    print DEBUG "path now $Registry->{$regKey}\n" if ($opt_d);
 }
