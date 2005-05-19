@@ -1,0 +1,71 @@
+#! /usr/binperl
+use strict;
+use Font::TTF::Font;
+use Getopt::Std;
+
+our ($opt_d, $VERSION);
+
+getopts('d:');
+
+$VERSION = '0.1'; # original 
+
+unless ($#ARGV == 2 and $ARGV[0] =~ /^\d+(\.\d+)?$/)
+{
+    die <<"EOT";
+
+ttfsetver [-d description] version infile outfile
+
+Sets font version (in both head and name tables). 
+version parameter must be fixed-point numeric (e.g., 2.3)
+
+-d, if supplied, is descriptive text to be appended to "Version n.nn " for
+the name table entry.
+
+Version $VERSION
+EOT
+}
+
+my ($newVer, $inFont, $outFont) = @ARGV;
+
+# Open font:
+my $f = Font::TTF::Font->open($inFont) || die ("Couldn't open TTF '$inFont'\n");
+
+# Set version in head table:
+my $h = $f->{'head'}->read() || die ("Couldn't open 'head' table.\n");
+$h->{'fontRevision'} = $newVer;
+
+# Set version string (#5) in name table (if it exists)
+if (exists $f->{'name'})
+{
+    my ($name) = $f->{'name'}->read->{'strings'};
+    
+    my $verstring = "Version $newVer";
+    $verstring .= " $opt_d" if $opt_d;
+       
+	do_name ($f, $verstring, 5);
+}
+
+# Write out new font
+$f->out($outFont);
+
+# Adapted from ttfbuilder
+sub do_name
+{
+    my ($f, $newname, $num) = @_;
+    my ($base) = $f->{'name'}{'strings'}[$num];
+    my ($pid, $eid, $lid);
+
+    for ($pid = 0; $pid <= $#{$base}; $pid++)
+    {
+        next unless $base->[$pid];
+        for ($eid = 0; $eid <= $#{$base->[$pid]}; $eid++)
+        {
+            next unless $base->[$pid][$eid];
+            next unless $f->{'name'}->is_utf8($pid, $eid);
+            foreach $lid (keys %{$base->[$pid][$eid]})
+            {
+                $base->[$pid][$eid]{$lid} = $newname;
+            }
+        }
+    }
+}
