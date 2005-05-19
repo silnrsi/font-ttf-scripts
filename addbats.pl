@@ -1,5 +1,5 @@
 #! perl
-foreach $f (qw(Addfont check_attach eurofix fret hackos2 make_gdl make_volt make_volt.bak psfix thai2gdl thai2ot thai2volt ttfbuilder ttfenc ttfname ttfremap volt2xml))
+foreach $f (qw(Addfont check_attach eurofix fret hackos2 make_gdl make_volt psfix thai2gdl thai2ot thai2volt ttfbuilder ttfenc ttfname ttfremap volt2xml))
 {
     if ($ARGV[0] eq '-r')
     {
