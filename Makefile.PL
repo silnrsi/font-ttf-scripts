@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.3";
+$VERSION = "0.4";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
@@ -95,10 +95,20 @@ EOT
     $fh->close();
     
     push (@scripts, "addbats.pl");
+
+	if ($^O eq 'MSWin32')
+	{
+		require Win32::TieRegistry;
+		Win32::TieRegistry->import (Delimiter=>"/") ;
+		$compile = $Registry->{'Classes/InnoSetupScriptFile/shell/Compile/command//'};
+		$compile =~ s/\s*"?%1"?.*$//;
+		$compile = "start \"compile\" /wait $compile";
+	}
+
     $res .= "exe : TTFontUtils_$fversion.exe\n\n";
 
     $res .= "TTFontUtils_$fversion.exe : scripts\\fontutils.par\n";
-    $res .= "\t\\progs\\inno_setup\\compil32.exe /cc FontUtils.iss\n\n";
+    $res .= "\t$compile FontUtils.iss\n\n";
     
     $res .= "scripts\\fontutils.par : ";
     $res .= join(' ', @scripts);

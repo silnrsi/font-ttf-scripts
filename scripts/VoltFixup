@@ -1,0 +1,903 @@
+#! /usr/bin/perl
+use strict;
+
+our $VERSION = "1.7 2005-05-20";	# JFK
+# Added -i option
+
+# VERSION = "1.6 2003-12-13";	# RMH
+#	Added -d option
+
+# VERSION 1.5 2003-11-14	RMH
+#	When new glyphs are noted in input, set their GDEF type to BASE (as this 
+#		is the most common situation).
+#	Added -r option
+#	VOLT 1.1.206 seems to have a bug related to Anchor records that don't have 
+#		glyph names -- it isn't computing the name properly and then generates 
+#		errors. I have added the glyph name to anchor records.
+
+# VERSION 1.4   RMH    26-Jun-02
+#	Now verify that pairs of groups used in GSUB rules effect the same glyph 
+#		substitutions with the new glyph palette (since VOLT assumes 
+#		groups should be reordered by GID).
+#	Reorders all group definitions by new glyph ID so that VOLT shows them in GID order.
+#	Added code to append to log a list of new glyphs.
+#	Changes to cmap (e.g. splitting a double-mapped glyph into two separate 
+#		glyphs) now handled better.
+#	If there are conflicts between the new font and the gdef, e.g., in Unicode 
+#		values or names, we now give preference to the new font.
+#	Newer versions of VOLT include the glyph name in anchor records. I now 
+#		strip that out in case there is a change of names.
+#	Now allows input VOLT source parameter to be a .TTF file
+
+# 1.3   RMH	   ??-Jan-01     VOLT now supports multiple Unicode values for a glyph.
+#                            I've re-implemented the fallback matching based
+#                            on Unicode. 
+#						     In general, where-ever there is a conflict between the
+#							 new font and the gdef data, we now give gdef preference.
+#							 Because inserting the new VOLT source requires a
+#							 coincident change to the cmap, I've added code to
+#							 go ahead and create an updated font.
+#							 Allow PS names that include "."  (this is new in VOLT 1.1)
+# 1.2   RMH    25-May-00     If newly-present glyphs have a Unicode assignment, this
+#                            wasn't being preserved. Had to rewrite much of the code to
+#                            add cmap handling. This also means possible conflicts in
+#                            Unicode and name correspondence have to be checked.
+# 1.1   RMH    17-Feb-00     Didn't output GDEF if that was the only thing in the source
+#                            Wasn't rewriting anchor definitions properly
+# 1.0   RMH    07-Jan-00     Fixup VOLT source, needed when the font GID's change
+
+use Font::TTF::Font;
+
+use Getopt::Std;
+
+our ($opt_r, $opt_d, $opt_i);
+
+getopts('dr:i:');
+
+unless ($#ARGV == 3)
+{
+    die <<"EOT";
+
+VoltFixup [-d] [-r nameMap] [-i ignorePattern] inFont inVoltProj outFont outVoltProj
+
+Used to migrate a VOLT project to a new/modified TrueType font file.
+
+Version $VERSION
+
+Copies inVoltProj to outVoltProj adjusting any VOLT glyph definition
+or anchor definition lines to match the Glyph IDs identified in the
+postscript name table in inFontFile. Also copies inFont to
+outFont adjusting the cmaps, and importing the modified VOLT project.
+
+NOTE: This program ASSUMES that the names for glyphs in VOLT are
+the same as the postscript glyph names in the inFont's 'post' table.
+
+inVoltProj can be supplied as text (e.g., from VOLT's Export Project
+function) or as a TTF, in which case the VOLT project source is read
+directly from the TTF file.
+
+When conflicts occur, e.g., between Unicode information in inVoltProj 
+and that in inFont, preference is give to new font.
+
+When GSUB lookups use VOLT groups, VOLT silently reorders the glyph
+groups by glyph ID. This program verifies that such lookups still
+effect the same substitutions (since the font's glyph palette could
+be rearranged.) It also sorts all groups by glyph ID so VOLT's 
+display of the groups is more meaningful.
+
+Writes warning messages to stdout and to VoltFixup.LOG in current directory.
+
+If -r is supplied, the nameMap file specifies source renaming that
+should occur before anything else. Things that can be renamed include glyphs,
+groups and anchors. The nameMap file should contain, on each line, an
+old identifier followed by its corresponding new identifier (separated by 
+whitespace).
+
+If -d is supplied, missing glyphs are removed from groups.
+
+If -i is supplied, new glyphs with names matching the given pattern are
+ignored (not reported in a warning).
+
+Copyright (c) 2002-2004 SIL International; All Rights Reserved.
+EOT
+}
+
+=pod
+
+The algorithm is as follows:
+
+1) Read in the 'post' (PS name) table from the new font and use it to generate VOLT names 
+for every glyph. The PSnames are the basis of VOLT's glyph names as follows: if 
+the glyph has a PSname other than '.notdef', and if that PSname is strictly legal 
+(alpha followed by alphanumeric only) and unique (used only once in the font) 
+then the PSname becomes the VOLT name, otherwise the VOLT "generic" name "GLYPH_n" 
+(where n is replaced with the glyph ID) is used. (If the PSname is non-standard or 
+wasn't unique, then a warning is issued). 
+
+2) Parse MS cmap to get Unicode to glyph mappings of new font
+
+For each glyph in the new font, a structure (anonymous hash) is constructed that has contains
+an 'ID' field and either or both of 'NAME' and '@UNICODES'. Eventually (after a later
+step) the structures will have a 'GDEF' entry that points to a GDEF structure (see below)
+
+These structures are reached by looking them up in one of three hashes: %GlyphFromID, 
+%GlyphFromName, or %GlyphFromCmapUnicode.
+
+3) Read lines from inVoltProj and, for each one, build a GDEF structure which contains one 
+or more of 'LINE', 'NAME', 'UNICODE', 'UNICODEVALUES', 'ID','TYPE', or 'COMPONENTS'. 
+Eventually the structure may also have 'NEWID'. Using the UNICODE and UNICODEVALUES strings,
+construct '@UNICODES'
+
+Similar to the Glyph structures, GDEF structures can be located by looking them up in
+one of three hashes: %GdefFromID, %GdefFromName, %GdefFromGdefUnicode
+
+Sample GDEF lines follow:
+
+DEF_GLYPH "U062bU062cIsol" ID 1097 UNICODE 64529 TYPE LIGATURE COMPONENTS 2 END_GLYPH
+DEF_GLYPH "middot" ID 167 UNICODEVALUES "U+00B7,U+2219" TYPE BASE END_GLYPH
+
+  
+(Note: Here and in later examples of VOLT source, quotes on names are not present
+in some earlier versions of VOLT)
+
+After we have all the GDEF lines, we match up names and/or Unicode values in order
+to make up data for the new GDEF lines. The result will be adding a 'NEWID' field to
+the GDEF structure and 'GDEF' field to Glyph structures.
+
+Once the mappings are done, we can then process GSUB and Anchor definitions as
+we see them in the source.
+
+A lot of error conditions are tested in the process.
+
+### TODO: The current algorithm first matches glyphs and GDEFS based on names. Then a 
+second pass is made to see if any as-yet-unmatched gyphs and GDEFS can be matched
+based on Unicode value (e.g., the font author has changed "overscore" to "macron").
+If any such matches are made, this represents a change in glyph name. Currently
+this code does NOT fix up OT lookups that reference such glyphs so that they reference
+the new name. (Anchor point records *are* fixed up because they are identified
+by GID, not name). If there are references in lookups, VOLT should fail to compile
+because it won't be able to find the glyph, but it would be nice if this program
+fixed up the lookups itself. As it is, it simply warns of the condition.
+
+### TODO: FIX UP FOLLOWING COMMENTS -- these were based on 1.1
+
+After extracting the field values from the GDEF, including the OldVoltName there are two cases:
+
+a) If the OldVoltName is generic (i.e., of the form "GLYPH_n") then there is no 
+way for us to migrate this GDEF to the new file. Therefore if the rest of the 
+GDEF looks untouched then this GDEF is silently ignored, else a warning about 
+possible loss of data is issued.
+
+b) The OldVoltName is not generic, then look it up in %NewGID. If it is present, 
+issue a warning if it has already been used. Otherwise replace the GID in the 
+line with the new GID and mark it used. Also, add a direct mapping from old GID to 
+new GID to the %NewGID hash. A warning is issued if the OldVoltName 
+isn't present in %NewGID.
+
+4) GDEF lines must be written out in glyph order, which might have changed from 
+the old source to the new. Any generic entries will have to have 
+"untouched" GDEFs synthesized. At this point we can build a list of 
+new glyphs to be appended to the log.
+
+4) We also have to fixup Anchor definitions. A typical Anchor line is:
+
+DEF_ANCHOR "Below" ON 553 COMPONENT 1 LOCKED AT  POS DX 312 DY -540 END_POS END_ANCHOR
+
+The ON field is a glyph number, so these have to be fixed up by mapping glyph number to
+name, and then to new glyph number. Anchors do not have to be in any order, so we can
+just fix them up as we see them (provided we have already seen the GDEFs).
+
+
+Oh yes, one additional difficulty: VOLT source uses \013 to separate lines. But if
+you are using some other editor to generate the input you might have something else
+as line ending. So I've added code to automatically detect the convention for 
+inVoltFile, and I use \013 for the output.
+
+=cut
+
+my ($warningCount, $genericCount);
+
+# Sub to print warning messages to console and log. 1st parm is the message.
+# 2nd param, if supplied, is a line number (from the volt source).
+
+sub MyWarn {
+	my ($msg, $line) = @_;
+	$warningCount++;
+	if (defined $line) {
+		print LOG "line $line: " . $msg;
+		warn "line $line: " . $msg;
+	} else {
+		print LOG $msg;
+		warn $msg;
+	}
+}
+
+
+my ($inFont, $inSrc, $outFont, $outSrc);
+
+my %nameMap;		# results of reading -r nameMap file: key is old name, value is new name.
+
+($inFont, $inSrc, $outFont, $outSrc) = @ARGV;
+
+my ($Src, $SrcLine);	# Input VOLT source (slurped in as one long string), and line number counter
+
+
+# For each GDEF record in the VOLT source, and for each glyph in the new font, a structure
+# is created using an anonymous hash. Gdef and Glyph structures have some elements in common:
+#
+#    'NAME'
+#    'ID'
+#    '@UNICODES'    a referemce to an array of Unicode values
+#				NB: for Glyph structures, these are Unicode values for the new font (i.e., from the cmap)
+#				and for Gdef structures these are Unicode values from the old font (i.e., from the VOLT source)
+#
+# For Glyph strucures we will eventually have
+#
+#    'GDEF'       a reference to an original GDEF or, for new glyphs, a synthesized GDEF structure
+#
+# For GDEFs we also have
+#
+#    'UNICODE' or 'UNICODEVALUES'  string values from the GDEF line (sans quote marks)
+#    'TYPE'			string value from GDEF line
+#    'COMPONENTS'	string value from GDEF line
+#    'LINE'       linenumber from source
+#    'NEWID'      the equivalent GID in the new font
+#
+# Glyph and Gdef structures are located by looking them up in one of these hashes:
+
+my (%GlyphFromID, %GlyphFromName, %GlyphFromCmapUnicode);
+my (%GdefFromID, %GdefFromName, %GdefFromGdefUnicode);	
+
+# For each GROUP record in the VOLT source, a structure is created containing:
+#
+#	'NAME'		Name of the group
+#	'GLYPHS'	(unordered) array of glyph names in the group
+#	'GROUPS'	(unordered) array of subgroup names in the group
+#
+# If a group is used in a GSUB, then we will "flatten" the lists of groups and subgroups into a list
+# of glyphs, and then build these structures:
+#	'OLDGNAME'		array of glyph names, in order of GID of the original font
+#	'OLDORDINAL'	hash holding a reverse-index of OLDGNAME
+#	'NEWGNAME'		array of glyph names, in order of GID in the new font
+#	'NEWORDINAL'	hash holding a reverse-index of NEWGNAME
+# 
+# Group structures are located by looking them up by name in:
+
+my %Groups;
+
+# When processing GSUB lookups for Group ordering problems, we use:
+my $currentLookupName;		# name of the current lookup
+my %GroupPairsChecked;		# hash of pairs of groups that have been checked already
+
+my @NewGlyphs;				# List of new glyphs in font.
+
+my $f;		# TTF font instance
+my $g;		# Reference to glyph structure
+my $d;		# Reference to GDEF structure
+
+my ($gid, $gname, $u);	# Glyph ID, Glyph name, and Unicode
+
+
+my $xx;		# Temp variable
+
+# Open logfile:
+open (LOG, "> VoltFixup.log") or die "Couldn't open 'VoltFixup.log' for writing, stopping at";
+print LOG "STARTING VoltFixup " . ($opt_r ? "-r $opt_r " : '') . "$inFont $inSrc $outFont $outSrc\n\n";
+
+# Open output source file:
+open (OUT, ">" . $outSrc) or die "Couldn't open '$outSrc' for writing, stopping at";
+
+# Open new font and read in the 'post' and 'cmap' tables
+
+$f = Font::TTF::Font->open($inFont) or die("Unable to open file '$inFont' as a TrueType font\n");
+exists $f->{'post'} or die("Cannot find a 'post' table in font $inFont\n");
+$f->{'post'}->read;
+$f->{'cmap'}->find_ms or die("Unable to locate Windows cmap in '$inFont'\n");
+
+
+# loop through all ps names, validating them and building Glyph structure
+
+
+PSNAME: for ($gid = 0; $gid < $f->{'maxp'}->{'numGlyphs'}; $gid++) {
+
+	$gname = $f->{'post'}{'VAL'}[$gid];
+
+#	($gname eq '.notdef')			&& do {
+#		# no PS name
+#		next PSNAME;
+#		};
+	
+	($gname !~ /^[a-zA-Z_.][a-zA-Z0-9_.]*$/)	&& do {
+		MyWarn "non-standard psname '$gname' in font ignored\n";
+		next PSNAME;
+		};
+
+	(exists $GlyphFromName{$gname})		&& do {
+		MyWarn "PS Name '$gname' is used more than once in font  (e.g., glyphs $GlyphFromName{$gname}{'ID'} and $gid) -- second ignored\n";
+		next PSNAME;
+		};
+
+	# Ah, here is a name worth keeping!
+	$GlyphFromID{$gid} = $GlyphFromName{$gname} = { ID => $gid, NAME => $gname};
+	$xx = $gname;
+}
+
+print "numGlyphs = $f->{'maxp'}{'numGlyphs'}   last valid psname = $xx\n";
+
+# loop through the MS cmap and adding in Unicode info to %Glyph
+
+CMAP: while (($u, $gid) = each %{$f->{'cmap'}{' mstable'}{'val'}}) {
+
+	if (exists $GlyphFromCmapUnicode{$u}) {
+		MyWarn sprintf ("Corrupt cmap: Unicode value U+%04X occurs more than once.\n", $u);
+		next CMAP;
+	}
+
+	if (exists $GlyphFromID{$gid}) {
+		# Glyph with this id already present:
+		$g = $GlyphFromID{$gid};
+	} else {
+		# Glyph with this id not yet present (must not have had a usable PS name), so create it:
+		$g = $GlyphFromID{$gid} = { ID => $gid};
+	}
+
+	push @{$g->{'@UNICODES'}}, $u;		# Add to array of Unicode values
+	$GlyphFromCmapUnicode{$u} = $g;		# Be able to find glyph via cmap from Unicode
+
+}
+
+# Read nameMap file if supplied:
+if ($opt_r)
+{
+	my ($old, $new);
+	open (IN, $opt_r) or die "Couldn't open namemap file '$opt_r' for reading.";
+	while (<IN>)
+	{
+		chomp;
+		($old, $new) = split;
+		next unless defined $old and defined $new;
+		$nameMap{$old} = $new;
+	}
+	close IN;
+}
+
+# Funciton to do the lookup:
+sub nameMap
+{
+	my $old = shift;
+	exists $nameMap{$old} ? $nameMap{$old} : $old;
+}
+	
+# Open and slurp VOLT source into $Src:
+
+if ($inSrc =~ /\.ttf$/i) {
+	# VOLT source should be extracted from an existing font:
+	my $f = Font::TTF::Font->open($inSrc) or die("Unable to open file '$inSrc' as a TrueType font\n");
+	exists $f->{'TSIV'} or die "Cannot find VOLT source table in file '$inSrc'.\n";
+	$f->{'TSIV'}->read_dat;
+	$Src = $f->{'TSIV'}{' dat'};
+	$f->release;
+} else {
+	# VOLT source is in a plain text file:
+	open(IN, $inSrc) or die "Couldn't open '$inSrc' for reading, stopping at";
+	$/ = undef;		# slurp mode for read:
+	$Src = <IN>;
+	close IN;
+	$/ = "\n";
+}
+
+sub GetSrcLine {
+	# Returns one line of text from the source, or undef if nothing left.
+	# If the source was extracted from VOLT, the separators will be \r
+	# If the source was read from CRLF delimited file, the separator will be \n
+	# Need to allow either separator, but we don't return the terminator:
+	return undef if $Src eq "";
+	$SrcLine++;		# Keep track of line number in source.
+	my $res;
+	($res, $Src) = split (/\r|\n/, $Src, 2);
+
+	# "rename" anything that is in quotes that needs it:
+	$res =~ s/(?<=")(\S+)(?=")/&nameMap($1)/oge;
+	# Similarly, fix up MARK attachment points:
+	$res =~ s/(?<="MARK_)(\S+)(?=")/&nameMap($1)/oge;
+
+	return $res;
+}
+
+
+my $state;	# 0 = no GDEFS yet; 1 = reading GDEFS; 2 = finished GDEFS
+
+
+# Once we've collected all the GDEFS then we have to process them, figuring out the glyph
+# mapping, and then write them out in sequence. This code
+# is collected into a sub because it is called from 2 different spots:
+
+sub WriteGDEFS () {
+	
+	# First step is to loop through GDEFs and finish the glyph mapping: if there
+	# were glyphs that could not be mapped by glyph name, then try by Unicode.
+
+GDEF_Loop:
+	foreach $d (values %GdefFromID) {
+
+		next if exists $d->{'NEWID'};	# Already mapped
+		
+		if (exists $d->{'@UNICODES'}) {
+	
+			# see if we can do it by Unicode:
+			
+			foreach $u (@{$d->{'@UNICODES'}}) {
+				if (exists $GlyphFromCmapUnicode{$u}) {
+					# Font does have this Unicode value:
+					$g = $GlyphFromCmapUnicode{$u};
+					if (exists $g->{'GDEF'}) {
+						# Rats ... Same Unicode value in new font already mapped:
+					} else {
+						# OK! Create mapping based on Unicode!
+						$g->{'GDEF'} = $d;
+						$d->{'NEWID'} = $g->{'ID'};
+
+						# If both have a name, the names will be different (otherwise they would have matched)
+						# In this case, priority goes to the glyph name and a warning is given.
+						# If only the glyph has a name, assign it to the gdef (it's guaranteed to be unique):
+						if (exists $g->{'NAME'}) {
+							if (exists $d->{'NAME'}) {
+								MyWarn sprintf ("Glyph's new name '%s' and GDEF name '%s' for U+%04X don't match; glyph's new name kept (may affect groups or lookups).\n", $g->{'NAME'}, $d->{'NAME'}, $u); 
+							} 
+							$d->{'NAME'} = $g->{'NAME'};
+							$GdefFromName{$g->{'NAME'}} = $d;
+
+						}
+						
+						# Cannot map it twice, so go to next GDEF
+						next GDEF_Loop;
+					}
+				}
+			}
+			
+		}
+
+		# Get here if we cannot map via name or Unicode. If there is data on the GDEF then warn about loosing it:
+		if (exists $d->{'TYPE'} and $d->{'TYPE'} ne 'UNASSIGNED') {
+			MyWarn sprintf ("Cannot migrate GDEF %s%s -- no matching glyph.\n", $d->{'ID'}, (exists $d->{'NAME'}) ? ", '$d->{'NAME'}'": ''), $d->{'LINE'};
+		}
+	}
+	
+	# At this point, all possible mappings are done. We do some final processing and checking:
+	
+	# Next, loop through font looking for glyphs that either:
+	#   a) have no GDEFs but which need them (e.g., new glyphs)
+	#   b) have GDEFs with additional Unicode values that could be added to the glyph
+
+	foreach $g (values %GlyphFromID) {
+		if (exists $g->{'GDEF'}) {
+			# Already mapped -- check for new Unicode values that could be adopted:
+			$d = $g->{'GDEF'};
+			foreach $u (@{$d->{'@UNICODES'}}) {
+				if (!exists $GlyphFromCmapUnicode{$u}) {
+					# Here is a Unicode named in the GDEF but not in the new font -- add it to the new font
+					push @{$g->{'@UNICODES'}}, $u;
+					$GlyphFromCmapUnicode{$u} = $g;
+				}
+			}
+			
+		} else {
+			# Need to create a gdef
+			$d = $g->{'GDEF'} = {NEWID => $g->{'ID'}};
+			# Handle the name:
+			if (exists $g->{'NAME'}) {
+				$d->{'NAME'} = $g->{'NAME'};
+				# We know the NAME cannot already exist in the gdef list (otherwise it would be mapped by now),
+				$GdefFromName{$g->{'NAME'}} = $d;		# so add in lookup as if it was in the old gdefs
+				# Set type to "BASE" as this will be most common:
+				$d->{'TYPE'} = 'BASE';
+			} else {
+				# Need to make up a generic name -- hope it doesn't exist!
+				$d->{'NAME'} = sprintf ("glyph%d", $g->{'ID'});
+			}
+			# Keep a list of new glyphs to put at end of log:
+			unless ((defined $opt_i) && ($d->{'NAME'} =~ m/$opt_i/)) {
+				push @NewGlyphs, $d->{'NAME'};
+			}
+ 			# Check any Unicode value that exist for conflicts
+ 			if (exists $g->{'@UNICODES'}) {
+				foreach $u (@{$g->{'@UNICODES'}}) {
+					if (exists ($GdefFromGdefUnicode{$u})) {
+						MyWarn sprintf("Unicode value U+%04X for glyph (new GID %s, '%s') conflicts with GDEF (old GID %s%s); new Unicode value preserved.\n", 
+							$u, $g->{'ID'}, $g->{'NAME'}, $GdefFromGdefUnicode{$u}->{'ID'}, (exists $GdefFromGdefUnicode{$u}->{'NAME'}) ? ", '$GdefFromGdefUnicode{$u}->{'NAME'}'": '');
+					} else {
+						$GdefFromGdefUnicode{$u} = $d;
+					}
+				}
+			}
+		}
+	}
+
+
+	# Finally we can write out the gdefs:
+
+	for ($gid = 0; $gid < $f->{'maxp'}{'numGlyphs'}; $gid++) {
+		if (exists $GlyphFromID{$gid}) {
+			$g = $GlyphFromID{$gid};
+			$d = $g->{'GDEF'};
+			MyWarn ("PROBLEM! Glyph's GID $gid doesn't match GDEF's NEWGID $d->{'NEWID'}.\n") if $gid != $d->{'NEWID'};
+			print OUT "DEF_GLYPH \"$d->{'NAME'}\" ID $gid";
+			# Handle the Unicode value(s) if needed
+			if (exists $g->{'@UNICODES'}) {
+				# If array contains exactly one value, output UNICODE in gdef, else must output UNICODEVALUES
+				if (scalar (@{$g->{'@UNICODES'}}) == 1) {
+					printf OUT " UNICODE %d", $g->{'@UNICODES'}[0];
+				} else {
+					printf OUT " UNICODEVALUES \"%s\"", join (",", map {sprintf "U+%04X", $_} @{$g->{'@UNICODES'}});
+				}
+			}
+			foreach $xx (qw( TYPE COMPONENTS )) {
+				print OUT " $xx $d->{$xx}" if exists $d->{$xx};
+			}
+			print OUT " END_GLYPH\r";
+
+		} else {
+			# Synthesize a GDEF for a generic glyph:
+			printf OUT "DEF_GLYPH glyph%d ID %d END_GLYPH\r", $gid, $gid;
+			$genericCount++;
+		}
+	}
+}
+
+sub FlattenGroup {
+	# returns an unordered, but complete, list of glyphs within a group by (recursively)
+	# listing out any subgroups.
+	# TODO: This is based on an assumption that subgroups are allowed within groups and that they
+	# are, in fact, flattened, into a single list. I have no idea how VOLT treats redundant entries
+	# in such a flattened list, so all this really should be checked out!
+	my $group = shift;
+	my @a;
+	push @a, @{$group->{'GLYPHS'}};
+	map {push @a, FlattenGroup ($Groups{$_})} @{$group->{'GROUPS'}};
+	
+	return @a;
+}
+	
+	
+sub BuildGroupLists {
+	# Builds the OldGlyphName, OldOrdinal, NewGlyphName, and NewOrdinal structures for a gropu
+	my $groupName = shift;
+	my $group = $Groups{$groupName};
+	return if exists $group->{'OldGlyphName'};
+	
+	my @list = FlattenGroup ($group);
+	# Build lists of glyphs, sorted by GID for both old font and new:
+	$group->{'OLDGNAME'} = [ sort {(exists $GdefFromName{$a} ? $GdefFromName{$a}{'ID'} : 0) <=> (exists $GdefFromName{$b} ? $GdefFromName{$b}{'ID'} : 0)} @list ];
+	$group->{'NEWGNAME'} = [ sort {(exists $GlyphFromName{$a} ? $GlyphFromName{$a}{'ID'} : 0) <=> (exists $GlyphFromName{$b} ? $GlyphFromName{$b}{'ID'} : 0)} @list ];
+	
+	# Now build reverse indexes
+	map { $group->{'OLDORDINAL'}{$group->{'OLDGNAME'}[$_]} = $_ } (0 .. $#{$group->{'OLDGNAME'}});
+	map { $group->{'NEWORDINAL'}{$group->{'NEWGNAME'}[$_]} = $_ } (0 .. $#{$group->{'NEWGNAME'}});
+}
+
+sub	CheckGroupPair {
+	# The two named groups are part of a GSUB. Remembering that VOLT silently orders every group by GID,
+	# it is possible that a shuffle of glyph palette of the font could cause GSUB lookups to grab the
+	# wrong glyphs. This code verifies that when the named pair of groups is used in a GSUB, they 
+	# effect the same substitution.
+	
+	my ($currentLookupName, $SourceGroupName, $TargetGroupName) = (@_);
+	return if $GroupPairsChecked{"$SourceGroupName|$TargetGroupName"} == 1;	# No need to do the work twice...
+	
+	# For both groups, build sorted glyph lists (for old and new fonts) and their reverse indexes:
+	BuildGroupLists $SourceGroupName;
+	BuildGroupLists $TargetGroupName;
+	
+	my $SourceGroup = $Groups{$SourceGroupName};
+	my $TargetGroup = $Groups{$TargetGroupName};
+
+	my ($SourceGlyph, $OldTargetGlyph, $NewTargetGlyph);
+		
+	# Loop through the SourceGroup by iterating on the ordinal:
+	for (0 .. $#{$SourceGroup->{'OLDGNAME'}}) {
+		# Find name of this source glyph
+		$SourceGlyph = $SourceGroup->{'OLDGNAME'}[$_];
+		# Find name of the glyph that this mapped to in the old font:
+		$OldTargetGlyph = $TargetGroup->{'OLDGNAME'}[$_];
+		# Find name of the glyph that this mapps to in the new font
+		$NewTargetGlyph = $TargetGroup->{'NEWGNAME'}[ $SourceGroup->{'NEWORDINAL'}{$SourceGlyph} ];
+		# Issue error if not the same:
+		if ($OldTargetGlyph ne $NewTargetGlyph) {
+			MyWarn "Glyph order mismatch: lookup '$currentLookupName', groups '$SourceGroupName' & '$TargetGroupName', glyph '$SourceGlyph' -> '$NewTargetGlyph' (was '$OldTargetGlyph').\n", $SrcLine;
+			last;
+		}
+	}
+	# record that we have checked this pair of groups:
+	$GroupPairsChecked{"$SourceGroupName|$TargetGroupName"} = 1;
+}
+
+
+$state = 0;
+SRCLOOP: while (defined ($_ = GetSrcLine)) {
+
+	if (/^DEF_GLYPH/) {
+
+		# PROCESS GDEF LINE:
+		
+		# Unlike the processing of other lines, GDEF information is accumulated until
+		# we have it all. Then, when some other kind of source line is read, the GDEFS
+		# are rewritten in one go.
+
+		if ($state == 2) {
+			MyWarn "Unexpected DEF_GLYPH\n", $SrcLine;
+			next SRCLOOP;
+		}
+
+		$state = 1;	# remember we are doing GDEFS now.
+		
+		# extract important info from GDEF. Note the text lines are essentially in hash form already, e.g.:
+		# DEF_GLYPH "U062bU062cIsol" ID 1097 UNICODE 64529 TYPE LIGATURE COMPONENTS 2 END_GLYPH
+		# or
+		# DEF_GLYPH "middot" ID 167 UNICODEVALUES "U+00B7,U+2219" TYPE BASE END_GLYPH
+		# so it is easy to construct a hash:
+
+		($xx = $_) =~ s/ END_GLYPH.*//;	# Remove end line sequence
+		$xx =~ s/DEF_GLYPH/NAME/;		# Change DEF_GLYPH to NAME so we get correct structure variables
+		$d = {split(' ', $xx)};			# Create GDEF structure
+		$d->{'LINE'} = $SrcLine;
+
+		# members of the hash at this point are:
+		#	NAME	name of glyph
+		#	ID		glyph ID
+		#	UNICODE	decimal unicode value (optional), or
+		#	UNICODEVALUES comma-separated list of Unicode values in U+nnnn string format
+		#	TYPE	one of SIMPLE, MARK, or LIGATURE (optional)
+		#	COMPONENTS	number of components in ligature (optional)
+		#	LINE		line number from source
+
+		if (not (exists $d->{'NAME'} and exists $d->{'ID'})) {
+			MyWarn "Incomprehensible DEF_GLYPH\n", $SrcLine;
+			next SRCLOOP;
+		}
+			
+		# Some beta versions of VOLT didn't quote the glyph names, so let's make the quotes optional:
+		$d->{'NAME'} =~ s/^\"(.*)\"$/$1/;
+
+		$gname = $d->{'NAME'};
+		$gid = $d->{'ID'};
+		
+		if (exists $GdefFromID{$gid}) {
+			MyWarn "Glyph # $gid defined more than once in source -- second definition ignored\n", $SrcLine; 
+			next SRCLOOP;
+		};
+
+ 		# Coalesce UNICODE or UNICODEVALUES, if present, into @UNICODES array
+		if (exists $d->{'UNICODE'}) {
+			# Create array with one element:
+			$d->{'@UNICODES'} = [ $d->{'UNICODE'} ];		
+		} elsif (exists $d->{'UNICODEVALUES'}) {
+			# Have to parse comma-separate list such as "U+00AF,U+02C9". But first get rid of quotes:
+			$d->{'UNICODEVALUES'} =~ s/^\"(.*)\"$/$1/;
+			$d->{'@UNICODES'} = [ map { hex (substr($_,2))} split (",", $d->{'UNICODEVALUES'})]; 
+		}
+
+		if ($gname =~ /^glyph\d+$/) {
+			# GDEF includes a generic name -- we can only do so much at this point:
+			$GdefFromID{$gid} = $d;							# Able to look up by GID
+			if (exists $d->{'@UNICODES'}) {					# Able to lookup by Unicode
+				foreach $u (@{$d->{'@UNICODES'}}) { $GdefFromGdefUnicode{$u} = $d;}
+			}
+			
+			delete $d->{'NAME'};		# discard the generic name
+			next SRCLOOP;
+		}
+
+		if (exists $GdefFromName{$gname}) {
+			MyWarn "Glyph '$gname' defined more than once in source -- second definition ignored\n", $SrcLine;
+			next SRCLOOP;
+		}
+
+		# Finally ... we can save this GDEF information
+		$GdefFromID{$gid} = $d;								# Able to look up by GID
+		$GdefFromName{$gname} = $d;							# Able to look up non-generic names only
+		if (exists $d->{'@UNICODES'}) {						# Able to lookup by Unicode
+			foreach (@{$d->{'@UNICODES'}}) { $GdefFromGdefUnicode{$_} = $d;}
+		}
+			
+
+		# At this point we can do the first priority glyph mapping, i.e., attempt to match of the
+		# glyph names:
+
+		if (exists $GlyphFromName{$gname}) {
+			# YES - We have matching glyph names:
+			$GlyphFromName{$gname}{'GDEF'} = $d;
+			$d->{'NEWID'} = $GlyphFromName{$gname}{'ID'};
+		}
+		
+		next SRCLOOP;
+	} 
+
+	# PROCESS ALL OTHER KINDS OF LINES:
+
+	if ($state == 1) {
+		# Write out the saved GDEFs:
+		WriteGDEFS;
+		$state = 2;	# remember we are done with GDEFS now.
+	}
+
+	# Throw away any null bytes (typically at the end of the table):
+	next SRCLOOP if /^\0+$/;
+
+	if (/^DEF_GROUP "([^"]*)"/) {
+		# Need to rewrite each group in sorted order. A typical group definition is:
+		# DEF_GROUP "groupname"
+		#  ENUM GLYPH "glyph1" GLYPH "glyph2" GROUP "subgroup1" END_ENUM
+		# END_GROUP
+		my $groupName = $1;
+		$Groups{$groupName}{'NAME'} = $groupName;
+		print OUT "$_\r";
+		while (defined ($_ = GetSrcLine) and $_ !~ /END_GROUP/ ) {
+			push @{$Groups{$groupName}{'GLYPHS'}}, $_ =~ m/ GLYPH "([^"]*)"/go;
+			push @{$Groups{$groupName}{'GROUPS'}}, $_ =~ m/ GROUP "([^"]*)"/go;
+		}
+		# OK, now that we know all the glyphs and subgroups in this group, rewrite the definition:
+		print OUT " ENUM";
+		# output group names first, sorted alphabetically:
+		print OUT map {sprintf " GROUP \"%s\"", $_ } sort @{$Groups{$groupName}{'GROUPS'}};
+		# output Glyph names next, sorted by new GID:
+		if ($opt_d)
+		{
+			print OUT map {sprintf " GLYPH \"%s\"", $_ } sort {$GlyphFromName{$a}{'ID'} <=> $GlyphFromName{$b}{'ID'}} (grep {exists $GlyphFromName{$_}} @{$Groups{$groupName}{'GLYPHS'}});
+		}
+		else
+		{
+			print OUT map {sprintf " GLYPH \"%s\"", $_ } sort {(exists $GlyphFromName{$a} ? $GlyphFromName{$a}{'ID'} : 0) <=> (exists $GlyphFromName{$b} ? $GlyphFromName{$b}{'ID'} : 0)}  @{$Groups{$groupName}{'GLYPHS'}};
+		}
+		print OUT " END_ENUM\rEND_GROUP\r";
+		next SRCLOOP;
+	}
+		
+	if (/^DEF_LOOKUP "([^"]*)"/) {
+		# GSUB lookups that use Groups represent a condition that needs to be checked:
+		# Do the named groups on each side of the substitution still have the same
+		# relative order for the glyphs? A typical GSUB looks like this:
+		
+		# DEF_LOOKUP "ShaddaLigatures" SKIP_BASE PROCESS_MARKS ALL DIRECTION RTL
+		# IN_CONTEXT
+		# END_CONTEXT
+		# AS_SUBSTITUTION
+		# SUB GLYPH "absShadda" GROUP "ShaddaMarks"
+		# WITH GROUP "ShaddaLigatures"
+		# END_SUB
+		# SUB GROUP "ShaddaMarks" GLYPH "absShadda"
+		# WITH GROUP "ShaddaLigatures"
+		# END_SUB
+		# END_SUBSTITUTION
+		
+		# To check this, we first remember the lookup name, and then in later passes we'll 
+		# pick up the SUB/WITH lines:
+		$currentLookupName = $1;
+		print OUT "$_\r";
+		next SRCLOOP;
+	}
+	
+	if (/^SUB .*GROUP /) {
+		# Finish off Group checking:
+		my (@SourceGroups, @TargetGroups);
+		push @SourceGroups, $_ =~ m/ GROUP "([^"]*)"/go;
+		print OUT "$_\r";
+		$_ = GetSrcLine;
+		push @TargetGroups, $_ =~ m/ GROUP "([^"]*)"/go;
+		print OUT "$_\r";
+		if ($#SourceGroups == -1) {
+			# No groups to process?
+			MyWarn "Surprise: No groups to process in lookup '$currentLookupName'\n", $SrcLine;
+			next SRCLOOP;
+		}
+		if ($#SourceGroups != $#TargetGroups) {
+			MyWarn "Lookup '$currentLookupName' has unmatched group counts.\n", $SrcLine;
+			next SRCLOOP;
+		}
+		
+		# Check each pair of groups for ordering problems:
+		for (0 .. $#TargetGroups) {
+			MyWarn ("Surprise: lookup '$currentLookupName' names non-existant group '$SourceGroups[$_]'\n") if !exists $Groups{$SourceGroups[$_]};
+			MyWarn ("Surprise: lookup '$currentLookupName' names non-existant group '$TargetGroups[$_]'\n") if !exists $Groups{$TargetGroups[$_]};
+			CheckGroupPair $currentLookupName, $SourceGroups[$_], $TargetGroups[$_] if exists $Groups{$SourceGroups[$_]} and exists $Groups{$TargetGroups[$_]};
+		}
+		
+		next SRCLOOP;
+	}
+	
+	
+	if (/^DEF_ANCHOR (\S+).* ON (\d+) /) {
+		# need to fix up anchordefs. A typical definition is:
+		# DEF_ANCHOR Below ON 553 COMPONENT 1 LOCKED AT  POS DX 312 DY -540 END_POS END_ANCHOR
+		# Note: Newer versions of VOLT include a glyph name:
+		# DEF_ANCHOR Below ON 553 GLYPH gname COMPONENT 1 LOCKED AT  POS DX 312 DY -540 END_POS END_ANCHOR
+		# This name is not (currently) in quotes, but probably should be. This glyph name and the "ON"
+		# glyph ID are mutually redundant with the DEF_GLYPH records, so why both? And what happens if
+		# they disagree? Currently, the ON field is required (if it is absent, even if the GLYPH field
+		# is present, VOLT resets the Anchor data to empty), so rather than risk an inconsistency I'm 
+		# going to strip out the GLYPH field:
+		
+		my $anchorName = $1;
+		$gid = $2; # pull out the old glyph number from anchor definition
+
+		$anchorName =~ s/^\"(.*)\"$/$1/;	# strip quotes from anchorname if present
+		if (exists $GdefFromID{$gid} and exists $GdefFromID{$gid}{'NEWID'}) {
+			$gid = $GdefFromID{$gid}{'NEWID'};
+			s/ ON \d+/" ON $gid"/e;
+			s/ GLYPH \S*/" GLYPH $GlyphFromID{$gid}{'NAME'}"/e;
+			print OUT "$_\r";
+		} else {
+			
+			MyWarn sprintf ("Cannot migrate anchor '$anchorName' GID $gid%s -- no matching glyph.\n",
+			(exists $GdefFromID{$gid} and exists $GdefFromID{$gid}->{'NAME'}) ? ", '$GdefFromID{$gid}->{'NAME'}'": ''), $SrcLine;
+		}
+		
+		next SRCLOOP;
+	} 
+	
+	print OUT "$_\r";
+	
+}			
+
+# In case all we had was GDEFS:
+WriteGDEFS if $state == 1;
+
+close OUT;
+
+# If there were new glyphs, emit a list of them to the log:
+MyWarn ("\nNew glyphs in font: " . join(", ", @NewGlyphs) . ".\n") if $#NewGlyphs >= 0;
+
+# Write out new font:
+
+# Insert the replacement source into the font
+# Create, if it doesn't exist, the VOLT source table we are going to insert
+$f->{'TSIV'} = Font::TTF::Table->new (PARENT => $f, NAME => 'TSIV') unless exists $f->{'TSIV'};
+
+# Read entire file into the table data
+open (IN, $outSrc) or die "Cannot open file '$outSrc' for reading. Stopping at ";
+$/ = undef;		# slurp mode for read:
+binmode IN;
+$f->{'TSIV'}->{' dat'} = <IN>;
+close IN;
+
+# Remove compiled tables if they exist:
+for (qw( TSID TSIP TSIS )) { delete $f->{$_} };
+
+
+# As one last step, we have to revise the cmaps of the font file. This is because
+# VOLT automatically merges any cmap data in the font with that defined in the source.
+# Unfortunately, we cannot simply remove or empty the cmaps, as VOLT would then die.
+# May as well go ahead and rewrite the cmaps correctly...
+
+my ($cmap, $Table, $pID);
+$cmap = $f->{'cmap'}->read || die "Font '$inFont' has no cmap table.\n";
+
+foreach $Table (@{$cmap->{'Tables'}}) {
+	$pID = $Table->{'Platform'};
+	printf "Processing cmap pid $pID\n";
+
+	if ($pID == 0 || $pID == 3) {
+		# Unicode cmap (Mac or Windows): rewrite it completely:
+		delete $Table->{'val'};	# Re-initialize hash
+	    while ( ($u, $g) = each %GlyphFromCmapUnicode) {
+			$Table->{'val'}{$u} = $g->{'ID'};
+        }
+    } elsif ($pID == 1) {
+		# Mac ScriptManager cmap: write in first 128 only:
+		delete $Table->{'val'};	# Re-initialize hash
+		for $u (0 .. 127) {
+			$Table->{'val'}{$u} = $GlyphFromCmapUnicode{$u}->{'ID'} if exists $GlyphFromCmapUnicode{$u};
+		}
+	} else {
+		# Leave other tables alone
+	}
+}
+
+$f->out($outFont);
+
+$xx = "\nFINISHED. ";
+$xx .= ($warningCount > 0 ? $warningCount : "No") . " warning(s) issued. ";
+$xx .= ($genericCount > 0 ? $genericCount : "No") . " unnamed glyph(s) present. \n";
+print LOG $xx;
+close LOG;
+
+printf "%s%s\n", $xx, ($warningCount > 0) ? " See VoltFixup.log for details." : "";
