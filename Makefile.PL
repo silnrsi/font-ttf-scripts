@@ -11,6 +11,8 @@ $fversion =~ s/\./_/og;
 push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
 
 @scripts = grep {-f && !m/\./o } glob("scripts/*");
+@scripts = grep {!m|/add|oi} @scripts unless ($^O eq 'MSWin32');
+
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");
 
 # we do this to avoid installing Make.pm
