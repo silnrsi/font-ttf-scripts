@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use Win32::TieRegistry(Delimiter => '/');
 use Getopt::Std;
+use Win32::MagicAPI qw(user32);
 
 use bytes;
 
@@ -29,7 +30,12 @@ if (Win32::IsWinNT())
     { removepathnt($path); }
     else
     { addpathnt($path); }
+
+# tell everyone that life has changed (0x1A = WM_SETTINGCHANGED) (-1 = HWND_TOPWINDOW)
+# note we post and not send otherwise we hang everything!
+    user32::SendMessage_NNNP(-1, 0x1A, 0, "Environment");     
 }
+
 
 sub addpathnt
 {
