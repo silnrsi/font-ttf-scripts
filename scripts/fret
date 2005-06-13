@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 use Font::Fret;
-use Font::TTF::useall;
+use Font::TTF::Useall;
 
 fret('Attach', @ARGV);
 

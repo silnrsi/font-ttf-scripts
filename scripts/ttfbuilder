@@ -11,7 +11,8 @@ use Getopt::Std;
 
 my @xml_dat;
 
-$VERSION = 0.20;    # MJPH      23-JAN-2004     Fix single glyph internal cross-references
+$VERSION = 0.21;    # MJPH      13-JUN-2005     Fix adjacent glyph sequences
+# $VERSION = 0.20;    # MJPH      23-JAN-2004     Fix single glyph internal cross-references
 # $VERSION = 0.19;    # MJPH      14-AUG-2003     Add warnings
 # $VERSION = 0.18;    # MJPH      12-JUN-2003     Improve name support, noaps is now a list
 # $VERSION = 0.17;    # MJPH      28-MAR-2003     Fix property copying
@@ -385,7 +386,7 @@ $xml->setHandlers('Start' => sub {
         foreach $g (@{$curbase->{'glyphs'}})
         {
             $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph
-            $adv = $g->{'offset'}[0] + $g->{'adv'};
+            $adv = $g->{'adv'};			# + $g->{'offset'}[0]
             $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
             push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
             if (defined $g->{'bbox'})
