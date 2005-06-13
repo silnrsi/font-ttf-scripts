@@ -735,6 +735,8 @@ C<\|> (notice that there is no need to escape C<\> or any other character).
 The formatting is structured as a comma separated list of 3 elements: justification,
 font styling and then colour.
 
+=over 8
+
 =item justification
 
 The values are r: right justified; c: centred and the default of l: left justified

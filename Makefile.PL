@@ -15,10 +15,6 @@ push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
 
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");
 
-# we do this to avoid installing Make.pm
-%pms = map { my ($v) = $_; $v =~ s/^lib/\$(INST_LIB)/o; $_ => $v; }
-    (glob("lib/Font/Scripts/*.pm"));
-
 $perlbin = $Config{'bin'};
 $fhi = IO::File->new("< FontUtils.isb") || die "Can't find FontUtils.isb";
 $fho = IO::File->new("> FontUtils.iss") || die "Can't find FontUtils.iss";
@@ -43,7 +39,6 @@ WriteMakefile (
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",
         ABSTRACT => "TTF font support scripts for Perl",
-        PM => {%pms},
         dist => { 'TO_UNIX' => 'perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"' }
     );
 
