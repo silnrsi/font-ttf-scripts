@@ -7,7 +7,8 @@ use strict;
 use vars qw($VERSION @ISA);
 @ISA = qw(Font::Scripts::AP);
 
-$VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
+$VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
+# $VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
 *read_font = \&Font::Scripts::AP::read_font;
 
 sub out_volt
@@ -176,7 +177,10 @@ sub make_name
     if (defined $glyph->{'props'}{'VOLT_id'})
     { return $glyph->{'props'}{'VOLT_id'}; }
     else
-    { $gname =~ s/[.;\-\"\'&$#\/]//og; }
+    { 
+        $gname =~ s{/.*$}{}o;
+        $gname =~ s/[.;\-\"\'&$#\/]//og;
+    }
     $gname;
 }
 

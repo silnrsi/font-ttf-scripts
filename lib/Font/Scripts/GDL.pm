@@ -2,12 +2,14 @@ package Font::Scripts::GDL;
 
 use Font::TTF::Font;
 use Font::Scripts::AP;
+use Unicode::Normalize;
 
 use strict;
 use vars qw($VERSION @ISA);
 @ISA = qw(Font::Scripts::AP);
 
-$VERSION = "0.02";  # MJPH  26-APR-2004     Add to Font::Scripts::AP hierarchy
+$VERSION = "0.03";  # MJPH   9-AUG-2005     Support glyph alternates naming (A/u0410), normalization
+# $VERSION = "0.02";  # MJPH  26-APR-2004     Add to Font::Scripts::AP hierarchy
 # $VERSION = "0.01";  # MJPH   8-OCT-2002     Original based on existing code
 
 *read_font = \&Font::Scripts::AP::read_font;
@@ -28,19 +30,19 @@ sub out_gdl
     my ($f) = $self->{'font'};
     my (%lists, %glyph_names);
     my ($i, $sep, $p, $k, $glyph);
-    
+
     for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];
         $fh->print("$glyph->{'name'} = ");
         $fh->print("glyphid($i)");
-        
+
         $sep = ' {';
         foreach $p (keys %{$glyph->{'points'}})
         {
             my ($pname) = $p;
             my ($pt) = $glyph->{'points'}{$p};
-            
+
             $pname .= 'S' unless ($pname =~ s/^_(.*)/${1}M/o);
             $fh->print("$sep$pname = ");
             if (defined $pt->{'cont'})
@@ -72,21 +74,22 @@ sub out_classes
     my ($f) = $self->{'font'};
     my ($lists) = $self->{'lists'};
     my ($classes) = $self->{'classes'};
+    my ($ligclasses) = $self->{'ligclasses'};
     my ($vecs) = $self->{'vecs'};
     my ($glyphs) = $self->{'glyphs'};
     my ($l, $name, $count, $sep, $psname, $cl, $i, $c);
-    
+
     $fh->print("\n/* Classes */\n");
-    
+
     foreach $l (sort keys %{$lists})
     {
         my ($name) = $l;
-        
+
         if ($name !~ m/^_/o)
         { $name = "Takes$name"; }
         else
         { $name =~ s/^_//o; }
-        
+
         $fh->print("c${name}Dia = (");
         $count = 0; $sep = '';
         foreach $cl (@{$lists->{$l}})
@@ -101,7 +104,7 @@ sub out_classes
         $fh->print(");\n\n");
 
         next unless defined $vecs->{$l};
-        
+
         $fh->print("cn${name}Dia = (");
         $count = 0; $sep = '';
         for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
@@ -118,7 +121,7 @@ sub out_classes
         }
         $fh->print(");\n\n");
     }
-    
+
 
     foreach $cl (sort keys %{$classes})
     {
@@ -127,6 +130,15 @@ sub out_classes
         { $fh->print($i % 8 ? ", $glyphs->[$classes->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$classes->{$cl}[$i]]{'name'}"); }
         $fh->print(");\n\n");
     }
+
+    foreach $cl (sort keys %{$ligclasses})
+    {
+        $fh->print("cl$cl = ($glyphs->[$ligclasses->{$cl}[0]]{'name'}");
+        for ($i = 1; $i <= $#{$ligclasses->{$cl}}; $i++)
+        { $fh->print($i % 8 ? ", $glyphs->[$ligclasses->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$ligclasses->{$cl}[$i]]{'name'}"); }
+        $fh->print(");\n\n");
+    }
+
     $self;
 }
 
@@ -149,6 +161,7 @@ sub end_gdl
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
+    $gname =~ s{/.*$}{}o;
     $gname =~ s/\.(.)/'_'.lc($1)/oge;
     if ($gname =~ m/^u(?:ni)?(?:[0-9A-Fa-f]{4,6})/o)
     { 
@@ -167,7 +180,7 @@ sub make_name
 sub make_point
 {
     my ($self, $p, $glyph) = @_;
-    
+
     if ($p =~ m/^%([a-z0-9]+)_([a-z0-9]+)$/oi)
     {
         my ($left, $right) = ($1, $2);
@@ -175,12 +188,75 @@ sub make_point
         my ($bot) = $self->{'font'}{'head'}{'descent'};
         my ($adv) = $self->{'font'}{'hmtx'}->read->{'advances'}[$glyph->{'gnum'}];
         my ($split) = $glyph->{'points'}{$p}{'x'};
-        
+
         $glyph->{'comps'}{$left} = [0, $bot, $split, $top];
         $glyph->{'comps'}{$right} = [$split, $bot, $adv, $top];
         return undef;
     }
-    
+
     return $p;
 }
-            
+
+sub normal_rules
+{
+    my ($self, $fh, $pnum) = @_;
+    my ($g, $struni, $seq, $dseq, $dcomb, @decomp, $d);
+    my ($c) = $self->{'cmap'};
+    my ($glyphs) = $self->{'glyphs'};
+
+    $fh->print("\ntable(substitution);\npass($pnum);\n");
+    foreach $g (@{$self->{'glyphs'}})
+    {
+        next unless ($g->{'props'}{'drawn'});
+        next unless ($c->{$g->{'uni'}} == $g->{'gnum'});
+        $struni = pack('U', $g->{'uni'});
+        $seq = NFD($struni);
+        next if ($seq eq $struni);
+        @decomp = unpack('U*', $seq);
+        my ($dok) = 1;
+        foreach $d (@decomp)
+        { $dok = 0 unless $c->{$d}; }
+        next unless $dok;
+
+        $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp) . " > $g->{'name'} " . ("_ " x (scalar @decomp - 1)) . ";\n");
+
+        if (scalar @decomp > 2)
+        {
+            $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp[0, 2, 1]) . " > $g->{'name'} _ _;\n");
+            $dseq = pack('U*', @decomp[0, 1]);
+            $dcomb = NFC($dseq);
+            if ($dcomb ne $dseq)
+            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[2]}]{'name'} . " > $g->{'name'} _;\n"); }
+
+            $dseq = pack('U*', @decomp[0, 2]);
+            $dcomb = NFC($dseq);
+            if ($dcomb ne $dseq)
+            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[1]}]{'name'} . " > $g->{'name'} _;\n"); }
+        }
+    }
+    $fh->print("endpass;\nendtable;\n");
+}
+
+sub lig_rules
+{
+    my ($self, $fh, $pnum, $type) = @_;
+    my ($ligclasses) = $self->{'ligclasses'};
+    my ($c);
+
+    $fh->print("\ntable(susbtitution);\npass($pnum);\n");
+    foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
+    {
+        my ($gnum) = $self->{'ligmap'}{$c};
+        my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
+
+        if ($type eq 'first')
+        {
+            $fh->print("$gname clno_$c > _:2 cl$c;\n");
+        }
+        else
+        {
+            $fh->print("clno_$c $gname > cl$c _:1;\n");
+        }
+    }
+    $fh->print("endpass;\nendtable;\n");
+}

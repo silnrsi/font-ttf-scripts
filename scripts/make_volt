@@ -1,9 +1,10 @@
+#!/usr/bin/perl
 use Font::Scripts::Volt;
 use Getopt::Std;
 
-getopts('t');
+getopts('a:t');
 
-$f = Font::Scripts::Volt->read_font($ARGV[1], $ARGV[0]) || die "Can't read font information";
+$f = Font::Scripts::Volt->read_font($opt_a, $ARGV[0]) || die "Can't read font information";
 
 $f->make_classes;
 $res = $f->out_volt;
@@ -15,5 +16,5 @@ if ($opt_t)
 else
 {    
     $f->{'font'}{'TSIV'} = Font::TTF::Table->new(dat => $res, PARENT => $f->{'font'});
-    $f->{'font'}->out($ARGV[2]);
+    $f->{'font'}->out($ARGV[1]);
 }

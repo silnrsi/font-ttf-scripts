@@ -3,10 +3,24 @@ use Font::Scripts::GDL;
 use IO::File;
 use Getopt::Std;
 
-getopts('i:');
+getopts('a:i:l:n:s:');
 
-$f = Font::Scripts::GDL->read_font($ARGV[1], $ARGV[0]) || die "Can't read font information";
-$outfh = IO::File->new("> $ARGV[2]") || die "Can't open $ARGV[2] for writing";
+unless ($ARGV[1])
+{
+    die <<'EOT';
+    make_gdl [-a file] [-i file] [-l type [-s num]] [-n num] infile outfile
+Creates font specific GDL from a font and optional attachment point database
+
+  -a file       Attachment point database
+  -i file       add #include statement at end of file
+  -l type       type = either first or last creates ligature classes
+  -n num        Add a normalization substitution with the given pass number
+  -s num        Add ligature substitution rules with the given pass number
+EOT
+}
+
+$f = Font::Scripts::GDL->read_font($ARGV[0], $opt_a) || die "Can't read font information";
+$outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
 foreach $g (@{$f->{'glyphs'}})
 {
@@ -14,7 +28,7 @@ foreach $g (@{$f->{'glyphs'}})
     foreach $p (keys %{$g->{'points'}})
     {
         my ($pname) = $p;
-        
+
         if ($pname =~ s/^(.+)M$/_$1/o)
         { }
         elsif ($pname =~ s/^(.+)S$/$1/o)
@@ -25,10 +39,12 @@ foreach $g (@{$f->{'glyphs'}})
 }
 
 $f->start_gdl($outfh);
+$f->make_classes(-ligatures => $opt_l);
 $f->out_gdl($outfh);
-$f->make_classes();
 $f->out_classes($outfh);
 $f->endtable($outfh);
+$f->normal_rules($outfh, $opt_n) if ($opt_n);
+$f->lig_rules($outfh, $opt_s, $opt_l) if ($opt_l);
 $f->end_gdl($outfh, $opt_i);
 
 $outfh->close();

@@ -20,7 +20,7 @@ Reference to the Microsoft L<cmap|Font::TTF::cmap> within the C<font>.
 
 =item font
 
-Referenc to a L<font|Font::TTF::Font> structure. C<read_font> will cause at least 
+Reference to a L<font|Font::TTF::Font> structure. C<read_font> will cause at least 
 the L<post|Font::TTF::Post>, L<cmap|Font::TTF::Cmap>, L<loca|Font::TTF::Loca>, and 
 L<name|Font::TTF::Name> tables to be read in.
 
@@ -134,15 +134,19 @@ corresponding to the glyphs with that extension (class name is the extension but
 =item lists
 
 Created by L</"make_classes">, this is a
-hash keyed by attachmentpoint name (as modified by L</"make_point">) 
+hash keyed by attachment point name (as modified by L</"make_point">) 
 returning an array of GIDs for glyphs that have the given attachment point.
 
 =item vecs
 
 If defined, this variable will be updated by L</"make_classes">. It is a 
-hash, keyed by attachmentpoint name (as modified by L</"make_point">) 
+hash, keyed by attachment point name (as modified by L</"make_point">) 
 returning a bit L<vec> bit array, indexed by GID, 
 each bit set to 1 if the corresponding glyph has the given attachment point.
+
+=item ligclasses
+
+Optionally created by make_classes if ligatures are requested and they exist. The base forms class is no_I<code> while the ligatures are held in I<code>.
 
 =item WARNINGS
 
@@ -164,7 +168,8 @@ use XML::Parser::Expat;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "0.04";	# BH   in progress
+$VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
+#$VERSION = "0.04";	# BH   in progress
 # Merged my AP.pm with MH's version:
 #	Rename _error() to error()
 #	Added -errorfh support
@@ -223,7 +228,7 @@ sub read_font
     my (%omittedAPs, %known_empty_glyphs);
     map {$omittedAPs{$_} = $omittedAPs{"_$_"} = 1} split (',', $opts{'-omittedAPs'});
     map {$known_empty_glyphs{$_} = 1} split (',', $opts{'-knownemptyglyphs'});
-    
+
     $f = Font::TTF::Font->open($fname) || die "Can't open font $fname";
     foreach $t (qw(post cmap loca name))
     { $f->{$t}->read; }
@@ -234,13 +239,13 @@ sub read_font
     $xml = XML::Parser::Expat->new();
     $xml->setHandlers('Start' => sub {
         my ($xml, $tag, %attrs) = @_;
-    
+
         if ($tag eq 'glyph')
         {
             my ($ug, $pg, $ig);
             $cur_glyph = {%attrs};
             undef $cur_pt;
-    
+
             if (defined $attrs{'UID'})
             {
                 my ($uni) = hex($attrs{'UID'});
@@ -273,32 +278,32 @@ sub read_font
 
             if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$cur_glyph->{'gnum'}])
             {
-	            # v0.04: Slight difference in this code and MH's: this code causes
-	            # $cur_glyph->{'glyph'} to be defined for all glyphs; in MH's code
-	            # it was defined only for non-empty glyphs.
-	            $cur_glyph->{'glyph'}->read_dat;
-	            if ($cur_glyph->{'glyph'}{'numberOfContours'} > 0)
-	            { $cur_glyph->{'props'}{'drawn'} = 1; }
-	            $cur_glyph->{'glyph'}->get_points;
+                # v0.04: Slight difference in this code and MH's: this code causes
+                # $cur_glyph->{'glyph'} to be defined for all glyphs; in MH's code
+                # it was defined only for non-empty glyphs.
+                $cur_glyph->{'glyph'}->read_dat;
+                if ($cur_glyph->{'glyph'}{'numberOfContours'} > 0)
+                { $cur_glyph->{'props'}{'drawn'} = 1; }
+                $cur_glyph->{'glyph'}->get_points;
             }
             else
             {
                 $self->error($xml, $cur_glyph, undef, "No glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
             }
 
-	        # MH's code includes the following two lines, but these are redundant with 
-	        # assignment $cur_glyph = {%attrs} at start of this block
-	        #foreach (keys %attrs)
+            # MH's code includes the following two lines, but these are redundant with 
+            # assignment $cur_glyph = {%attrs} at start of this block
+            #foreach (keys %attrs)
             #{ $cur_glyph->{$_} = $attrs{$_}; }
 
             $cur_glyph->{'line'} = $xml->current_line;
             $self->{'glyphs'}[$cur_glyph->{'gnum'}] = $cur_glyph;
-   
+
         } elsif ($tag eq 'compound')
         {
-        	my $component = {%attrs};
-    	    $component->{'uni'} = hex($attrs{'UID'}) if defined $attrs{'UID'};
-        	push @{$cur_glyph->{'components'}}, $component;
+            my $component = {%attrs};
+            $component->{'uni'} = hex($attrs{'UID'}) if defined $attrs{'UID'};
+            push @{$cur_glyph->{'components'}}, $component;
         } elsif ($tag eq 'point')
         {
             if ($omittedAPs{$attrs{'type'}})
@@ -312,16 +317,16 @@ sub read_font
         {
             my ($cont) = $attrs{'num'};
             my ($g) = $cur_glyph->{'glyph'} || return;
-            
+
             $self->error($xml, $cur_glyph, $cur_pt, "Specified contour of $cont different from calculated contour of $cur_pt->{'cont'}")
                     if (defined $cur_pt->{'cont'} && $cur_pt->{'cont'} != $attrs{'num'});
-                 
+
             if (($cont == 0 && $g->{'endPoints'}[0] != 0)
                 || ($cont > 0 && $g->{'endPoints'}[$cont-1] + 1 != $g->{'endPoints'}[$cont]))
             { $self->error($xml, $cur_glyph, $cur_pt, "Contour $cont not a single point path"); }
             else
             { $cur_pt->{'cont'} = $cont; }
-            
+
             $cur_pt->{'x'} = $g->{'x'}[$g->{'endPoints'}[$cont]];
             $cur_pt->{'y'} = $g->{'y'}[$g->{'endPoints'}[$cont]];
         } elsif ($tag eq 'location' && defined $cur_pt)
@@ -330,33 +335,33 @@ sub read_font
             my ($y) = $attrs{'y'};
             my ($g) = $cur_glyph->{'glyph'};
             my ($cont, $i);
-    
+
             $self->error($xml, $cur_glyph, $cur_pt, "Specified location of ($x, $y) different from calculated location ($cur_pt->{'x'}, $cur_pt->{'y'})")
                     if (defined $cur_pt->{'x'} && ($cur_pt->{'x'} != $x || $cur_pt->{'y'} != $y));
-            
+
             if ($g)
             {
-	            for ($i = 0; $i < $g->{'numPoints'}; $i++)
-	            {
-	                if ($g->{'x'}[$i] == $x && $g->{'y'}[$i] == $y)
-	                {
-	                    for ($cont = 0; $cont <= $#{$g->{'endPoints'}}; $cont++)
-	                    {
-	                        last if ($g->{'endPoints'}[$cont] > $i);
-	                    }
-	                }
-	            }
-	            if ($g->{'x'}[$i] != $x || $g->{'y'}[$i] != $y)
-	            { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
-	            if (($cont == 0 && $g->{'endPoints'}[0] != 0)
-	                || $g->{'endPoints'}[$cont-1] + 1 != $g->{'endPoints'}[$cont])
-	            { $self->error($xml, $cur_glyph, $cur_pt, "Calculated contour $cont not a single point path") if ($opts{'-strictap'}); }
-	            else
-	            { $cur_pt->{'cont'} = $cont; }
-	        }
-	        else
-	        { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
-	    
+                for ($i = 0; $i < $g->{'numPoints'}; $i++)
+                {
+                    if ($g->{'x'}[$i] == $x && $g->{'y'}[$i] == $y)
+                    {
+                        for ($cont = 0; $cont <= $#{$g->{'endPoints'}}; $cont++)
+                        {
+                            last if ($g->{'endPoints'}[$cont] > $i);
+                        }
+                    }
+                }
+                if ($g->{'x'}[$i] != $x || $g->{'y'}[$i] != $y)
+                { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
+                if (($cont == 0 && $g->{'endPoints'}[0] != 0)
+                    || $g->{'endPoints'}[$cont-1] + 1 != $g->{'endPoints'}[$cont])
+                { $self->error($xml, $cur_glyph, $cur_pt, "Calculated contour $cont not a single point path") if ($opts{'-strictap'}); }
+                else
+                { $cur_pt->{'cont'} = $cont; }
+            }
+            else
+            { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
+
             $cur_pt->{'x'} = $x unless defined $cur_pt->{'x'};
             $cur_pt->{'y'} = $y unless defined $cur_pt->{'y'};
         } elsif ($tag eq 'property')
@@ -365,17 +370,48 @@ sub read_font
         }
     });
 
-    $xml->parsefile($xml_file) || return warn "Can't open $xml_file";
+    if ($xml_file)
+    {
+        $xml->parsefile($xml_file) || return warn "Can't open $xml_file";
 
-    # Make sure to destroy the parser properly -- Otherwise Perl can generate 
-    # exception violations during cleanup!
-	$xml->release;
-    undef $xml;
-    
+        # Make sure to destroy the parser properly -- Otherwise Perl can generate 
+        # exception violations during cleanup!
+        $xml->release;
+        undef $xml;
+    }
+    else        # read it all from the font
+    {
+        my (@reverse) = $f->{'cmap'}->reverse;
+        my ($numg) = $f->{'maxp'}{'numGlyphs'};
+        my ($i);
+
+        for ($i = 0; $i < $numg; $i++)
+        {
+            my ($cur_glyph) = {'gnum' => $i};
+            $cur_glyph->{'uni'} = $reverse[$i] if (defined $reverse[$i]);
+            $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$i];
+            $cur_glyph->{'PSName'} = $cur_glyph->{'post'} if ($cur_glyph->{'post'} && $cur_glyph->{'post'} ne '.notdef');
+            $self->{'glyphs'}[$i] = $cur_glyph;
+            if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$i])
+            {
+                # v0.04: Slight difference in this code and MH's: this code causes
+                # $cur_glyph->{'glyph'} to be defined for all glyphs; in MH's code
+                # it was defined only for non-empty glyphs.
+                $cur_glyph->{'glyph'}->read_dat;
+                if ($cur_glyph->{'glyph'}{'numberOfContours'} > 0)
+                { $cur_glyph->{'props'}{'drawn'} = 1; }
+                $cur_glyph->{'glyph'}->get_points;
+            }
+            else
+            {
+                $self->error($xml, $cur_glyph, undef, "No glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+            }
+        }
+    }
     $self;
 }
 
-=head2 $ap->make_classes ()
+=head2 $ap->make_classes (%opts)
 
 First, for every glyph record in C<glyphs>, C<make_classes> invokes C<make_name>  
 followed by, for every attachment point record in C<points>, C<make_point> . This 
@@ -386,15 +422,27 @@ an example.
 C<make_classes> then builds the C<classes> and C<lists> instance variables, and
 updates the C<vecs> instance variable (if it is defined).
 
+Options supported are:
+
+=over 4
+
+=item -ligatures
+
+Takes two values: first or last. First creates ligature classes with the class based on the first element of the ligature and the contents of the class on the rest of the ligature. Last creates classes based on the last element of the ligature, thus grouping all glyphs with the same last ligature element together. Ligature classes are stored in C<$self->{'ligclasses'}>.
+
+Ligature elements are separated by _ in the glyph name. Ligatures are only made if there are corresponding non ligature glyphs in the font. A final .text on the glyph name of a ligature is assumed to be associated with the whole ligature and not just the last element.
+
+=back
+
 =cut
 
 sub make_classes
 {
-    my ($self) = @_;
+    my ($self, %opts) = @_;
     my ($f) = $self->{'font'};
     my (%classes);
-    my ($g, $gname, $i, $glyph, %used, $p);
-    
+    my ($g, $gname, $i, $glyph, %used, $p, $name);
+
     for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];
@@ -402,11 +450,11 @@ sub make_classes
 
         if (defined $used{$gname})
         { $gname .= "_1"; }
-        $gname++ while (defined $used{$gname});
+        while (defined $used{$gname})
+        { $gname =~ s/_(\d+)/"_" . ($1 + 1)/oe; }
         $used{$gname}++;
         $glyph->{'name'} = $gname;
 
-        
         foreach $p (keys %{$glyph->{'points'}})
         {
             my ($pname) = $self->make_point($p, $glyph);
@@ -420,19 +468,68 @@ sub make_classes
             vec($self->{'vecs'}{$pname}, $i, 1) = 1 if ($self->{'vecs'});
         }
     }
-    
+
     # need a separate loop since using other glyphs' names
     foreach $glyph (@{$self->{'glyphs'}})
     {
-        if ($glyph->{'post'} =~ m/\.([^_.]+)$/o)
+        foreach $name (split('/', $glyph->{'post'}))
         {
-            my ($base, $ext) = ($` , $1);
-            next unless ($i = $f->{'post'}{'STRINGS'}{$base});
-            push (@{$classes{$ext}}, $glyph->{'gnum'});
-            push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});
+            if ($name =~ m/\.([^_.]+)$/o)
+            {
+                my ($base, $ext) = ($` , $1);
+                next unless ($i = $f->{'post'}{'STRINGS'}{$base});
+                push (@{$classes{$ext}}, $glyph->{'gnum'});
+                push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});
+            }
         }
     }
     $self->{'classes'} = \%classes;
+
+    if ($opts{'-ligatures'})
+    {
+        my (%ligclasses);
+
+        foreach $glyph (@{$self->{'glyphs'}})
+        {
+            foreach $name (split('/', $glyph->{'post'}))
+            {
+                my ($base, $class);
+                my ($ext, @elem) = $self->split_lig($name);
+                next if ($ext || scalar @elem == 1);
+
+                if ($opts{'-ligatures'} eq 'first')
+                { 
+                    ($base, $class) = (join('', @elem[1..$#elem]), $elem[0]);
+                    $base = "uni$base" if ($class =~ s/^uni//o);
+                    $base =~ s/^_//o;
+                }
+                else
+                { 
+                    ($base, $class) = (join('', @elem[0..($#elem-1)]), $elem[-1]);
+                    $class =~ s/^_//o;
+                }
+
+                next unless ($i = $f->{'post'}{'STRINGS'}{$base});
+                unless (defined $self->{'ligmap'}{$class})
+                {
+                    my ($match) = 0;
+                    foreach ($class, "uni$class", "u$class")
+                    {
+                        if ($f->{'post'}{'STRINGS'}{$_})
+                        {
+                            $match = 1;
+                            $self->{'ligmap'}{$class} = $f->{'post'}{'STRINGS'}{$_};
+                            last;
+                        }
+                    }
+                    next unless ($match);
+                }
+                push (@{$ligclasses{$class}}, $glyph->{'gnum'});
+                push (@{$ligclasses{"no_$class"}}, $self->{'glyphs'}[$i]{'gnum'});
+            }
+        }
+        $self->{'ligclasses'} = \%ligclasses;
+    }
 }
 
 =head2 $ap->make_name ($gname, $uni, $glyph)
@@ -447,6 +544,8 @@ could be overridden when subclassing.
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
+    $gname =~ s{/.*$}{}o;           # strip alternates
+    $gname = sprintf("u%04x", $uni) if ($gname eq '.notdef');
     $gname;
 }
 
@@ -467,11 +566,31 @@ sub make_point
 
 # Private routine:
 
+sub split_lig
+{
+    my ($self, $str) = @_;
+    my ($ext, @res);
+
+    if ($str =~ m/_/o)
+    {
+        $ext = $1 if ($str =~ s/(\.(.*?))$//o);
+        @res = split('_', $str);
+        foreach (@res[1..$#res])
+        { $_ = "_$_"; }
+    }
+    elsif ($str =~ s/^uni//o)
+    {
+        @res = $str =~ m/([0-9a-fA-F]{4})/og;
+        $res[0] = "uni$res[0]";
+    }
+    ($ext, @res);
+}
+
 sub error
 {
     my $self = shift;
     my ($xml, $cur_glyph, $cur_pt, $str) = @_;
-    
+
     my $msg;
 
     if (defined $cur_glyph->{'UID'})
@@ -489,12 +608,12 @@ sub error
     { $msg .=  " in point $cur_pt->{'name'}"; }
 
     $msg .=  " at line " . $xml->current_line . ".\n";
-    
-	if (defined $self->{'-errorfh'})
-	{	print {$self->{'-errorfh'}} $msg;	}
-	else
-	{   $self->{'WARNINGS'} .= $msg; }
-	
+
+    if (defined $self->{'-errorfh'})
+    { print {$self->{'-errorfh'}} $msg; }
+    else
+    { $self->{'WARNINGS'} .= $msg; }
+
     $self->{'cWARNINGS'}++;
 }
 
