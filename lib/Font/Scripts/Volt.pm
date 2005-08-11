@@ -13,12 +13,12 @@ $VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
 
 sub out_volt
 {
-    my ($self) = @_;
+    my ($self, %opts) = @_;
     my ($res);
     
     $res = $self->out_volt_glyphs;
     $res .= $self->out_volt_classes;
-    $res .= $self->out_volt_lookups;
+    $res .= $self->out_volt_lookups($opts{'-ligatures'});
     $res .= $self->out_volt_anchors;
     $res .= $self->out_volt_final;
     $res;
@@ -64,6 +64,7 @@ sub out_volt_classes
     my ($f) = $self->{'font'};
     my ($lists) = $self->{'lists'};
     my ($classes) = $self->{'classes'};
+    my ($ligclasses) = $self->{'ligclasses'};
     my ($vecs) = $self->{'vecs'};
     my ($glyphs) = $self->{'glyphs'};
     my ($l, $name, $count, $sep, $psname, $cl, $i, $c);
@@ -97,20 +98,31 @@ sub out_volt_classes
         }
         $res .= " END_ENUM\nEND_GROUP\n\n";
     }
+
+    foreach $cl (sort keys %{$ligclasses})
+    {
+        $res .= "DEF_GROUP \"cl$cl\"\n  ENUM";
+        for ($i = 0; $i <= $#{$ligclasses->{$cl}}; $i++)
+        { 
+            $res .= " GLYPH \"$glyphs->[$ligclasses->{$cl}[$i]]{'name'}\"";
+            $res .= "\n" if ($i % 8 == 7);
+        }
+        $res .= " END_ENUM\nEND_GROUP\n\n";
+    }
     $res;
 }
 
 
 sub out_volt_lookups
 {
-    my ($self) = @_;
+    my ($self, $ligtype) = @_;
     my ($glyphs) = $self->{'glyphs'};
     my ($res, $c, $i);
-    
+
     foreach $c (sort keys %{$self->{'classes'}})
     {
         next if ($c =~ m/^no_/o);
-        
+
         $res .= "DEF_LOOKUP \"$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
         for ($i = 0; $i < scalar @{$self->{'classes'}{$c}}; $i++)
@@ -121,11 +133,33 @@ sub out_volt_lookups
         }
         $res .= "END_SUBSTITUTION\n";
     }
-    
+
+    foreach $c (sort keys %{$self->{'ligclasses'}})
+    {
+        next if ($c =~ m/^no_/o);
+
+        my ($bnum) = $self->{'ligmap'}{$c};
+
+        $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
+        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
+        for ($i = 0; $i < scalar{@$self->{'ligclasses'}{$c}}; $i++)
+        {
+            my ($gname) = $glyphs->[$self->{'ligclasses'}{"no_$c"}[$i]]{'name'};
+
+            if ($ligtype eq 'first')
+            { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GLYPH \"$gname\"\n"; }
+            else
+            { $res .= "SUB GLYPH \"$gname\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
+            $res .= "WITH GLYPH \"$glyphs->[$self->{'ligclasses'}{$c}[$i]]{'name'}\"\n";
+            $res .= "END_SUB\n";
+        }
+        $res .= "END_SUBSTITUTION\n";
+    }
+
     foreach $c (sort keys %{$self->{'lists'}})
     {
         next if ($c =~ m/^_/o);
-        
+
         $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
         $res .= "ATTACH GROUP \"cTakes${c}Dia\"\n";
