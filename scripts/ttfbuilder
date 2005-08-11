@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 my ($if, $of);
 
-$VERSION = 0.22;    # MJPH      22-JUL-2005     Make chain callable
+$VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
+# $VERSION = 0.22;    # MJPH      22-JUL-2005     Make chain callable
 # $VERSION = 0.21;    # MJPH      13-JUN-2005     Fix adjacent glyph sequences
 # $VERSION = 0.20;    # MJPH      23-JAN-2004     Fix single glyph internal cross-references
 # $VERSION = 0.19;    # MJPH      14-AUG-2003     Add warnings
@@ -260,7 +261,7 @@ sub main
             push (@{$curbase->{'glyphs'}}, $aglyph);        # build components tree
     
             unless ($attrs{'noaps'} == 1)
-            {        
+            {
                 my %noaps = map {$_ => 1} split(' ', $attrs{'noaps'});
                 foreach $p (keys %{$xml_dat[$gid]{'points'}})
                 {
@@ -593,7 +594,7 @@ sub main
         { $pname = Font::TTF::PSNames::lookup($uid); }
         $of->{'post'}{'VAL'}[$i] = $pname;
     
-        if (scalar @{$g->{'glyph_list'}})
+        if (defined $g->{'glyph_list'} && scalar @{$g->{'glyph_list'}})
         {
         
             $glyph = Font::TTF::Glyph->new(PARENT => $of, read => 2);
@@ -822,6 +823,8 @@ sub resolve_glyph
         $xMax = $glyph->{'xMax'};
         $yMax = $glyph->{'yMax'};
     }
+    elsif (!defined $g->{'glyph_list'})
+    { $g->{'glyph_list'} = []; }
 
     $lorg = $xMin - $g->{'lsb'} + $g->{'offset'}[0];
 
