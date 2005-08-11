@@ -87,17 +87,14 @@ use Font::TTF::Hmtx;
 use Font::TTF::Loca;
 use Font::TTF::PSNames;
 use XML::Parser::Expat;
-use Font::TTF::Application;
 
 sub main
 {
     my ($if, $opts) = @_;
-    my ($opt_a, $opt_c, $opt_d, $opt_x, $opt_z);
     my (@xml_dat, $oc, $gcount, @glyphs);
     my ($uidmax, $bc, $done_cpyrt, $fissymbol);
     my ($gid, $pname, $i, $currtext, $cur_str);
-
-    opts_vars($opts);
+    my ($opt_a, $opt_c, $opt_d, $opt_x, $opt_z) = @{$opts}{qw(a c d x z)};
 
     my $of = Font::TTF::Font->new();
     foreach my $t ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post')
