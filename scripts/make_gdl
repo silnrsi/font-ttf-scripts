@@ -13,7 +13,11 @@ Creates font specific GDL from a font and optional attachment point database
 
   -a file       Attachment point database
   -i file       add #include statement at end of file
-  -l type       type = either first or last creates ligature classes
+  -l type       type =
+                    first - class name is first code, contents other codes
+                    last  - class name is last code, contents other codes
+                    firstcomp - treat extensions as part of elements, as first
+                    lastcomp - treat extensons as part of elements, as last
   -n num        Add a normalization substitution with the given pass number
   -s num        Add ligature substitution rules with the given pass number
 EOT

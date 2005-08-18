@@ -243,6 +243,7 @@ sub lig_rules
     my ($ligclasses) = $self->{'ligclasses'};
     my ($c);
 
+    return unless (defined $pnum);
     return unless (scalar %{$self->{'ligclasses'}});
     $fh->print("\ntable(substitution);\npass($pnum);\n");
     foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
@@ -251,13 +252,9 @@ sub lig_rules
         my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
 
         if ($type eq 'first')
-        {
-            $fh->print("$gname clno_$c > _:2 cl$c;\n");
-        }
+        { $fh->print("$gname clno_$c > _ cl$c;\n"); }
         else
-        {
-            $fh->print("clno_$c $gname > cl$c _:1;\n");
-        }
+        { $fh->print("clno_$c $gname > cl$c _;\n"); }
     }
     $fh->print("endpass;\nendtable;\n");
 }

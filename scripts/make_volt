@@ -12,7 +12,11 @@ unless ($ARGV[0])
 Creates a copy of the infile font file adding a VOLT table to it.
 
   -a file       Attachment Point database .xml file
-  -l ligtype    first or last, specifies to add ligature classes and rules
+  -l type       type =
+                    first - class name is first code, contents other codes
+                    last  - class name is last code, contents other codes
+                    firstcomp - treat extensions as part of elements, as first
+                    lastcomp - treat extensons as part of elements, as last
   -t            output volt code to stdout and don't generate a font file
 EOT
 }
