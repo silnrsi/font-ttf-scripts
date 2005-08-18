@@ -19,6 +19,8 @@ Creates font specific GDL from a font and optional attachment point database
 EOT
 }
 
+$comp = $1 if ($opt_l =~ s/(comp)$//oi);
+
 $f = Font::Scripts::GDL->read_font($ARGV[0], $opt_a) || die "Can't read font information";
 $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
@@ -39,7 +41,7 @@ foreach $g (@{$f->{'glyphs'}})
 }
 
 $f->start_gdl($outfh);
-$f->make_classes(-ligatures => $opt_l);
+$f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
 $f->out_gdl($outfh);
 $f->out_classes($outfh);
 $f->endtable($outfh);

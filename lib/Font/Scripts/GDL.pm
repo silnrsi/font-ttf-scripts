@@ -243,7 +243,8 @@ sub lig_rules
     my ($ligclasses) = $self->{'ligclasses'};
     my ($c);
 
-    $fh->print("\ntable(susbtitution);\npass($pnum);\n");
+    return unless (scalar %{$self->{'ligclasses'}});
+    $fh->print("\ntable(substitution);\npass($pnum);\n");
     foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
     {
         my ($gnum) = $self->{'ligmap'}{$c};

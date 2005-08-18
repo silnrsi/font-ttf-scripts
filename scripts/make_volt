@@ -8,16 +8,20 @@ unless ($ARGV[0])
 {
     die <<'EOT';
     make_volt [-a file] [-l ligtype] infile outfile
+    make_volt -t [-a file] [-l ligtype] infile
 Creates a copy of the infile font file adding a VOLT table to it.
 
   -a file       Attachment Point database .xml file
   -l ligtype    first or last, specifies to add ligature classes and rules
+  -t            output volt code to stdout and don't generate a font file
 EOT
 }
 
 $f = Font::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font information";
 
-$f->make_classes(-ligatures => $opt_l);
+$comp = $1 if ($opt_l =~ s/(comp)$//o);
+
+$f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
 $res = $f->out_volt(-ligatures => $opt_l);
 
 $res =~ s/\n/\r/og;

@@ -493,9 +493,9 @@ sub make_classes
         {
             foreach $name (split('/', $glyph->{'post'}))
             {
-                my ($base, $class);
-                my ($ext, @elem) = $self->split_lig($name);
-                next if ($ext || scalar @elem == 1);
+                my ($base, $class, $cname);
+                my ($ext, @elem) = $self->split_lig($name, $opts{'-ligtype'});
+                next if ($ext || scalar @elem < 2);
 
                 if ($opts{'-ligatures'} eq 'first')
                 { 
@@ -509,8 +509,10 @@ sub make_classes
                     $class =~ s/^_//o;
                 }
 
+                $cname = $class;
+                $cname =~ s/\./_/og;
                 next unless ($i = $f->{'post'}{'STRINGS'}{$base});
-                unless (defined $self->{'ligmap'}{$class})
+                unless (defined $self->{'ligmap'}{$cname})
                 {
                     my ($match) = 0;
                     foreach ($class, "uni$class", "u$class")
@@ -518,14 +520,14 @@ sub make_classes
                         if ($f->{'post'}{'STRINGS'}{$_})
                         {
                             $match = 1;
-                            $self->{'ligmap'}{$class} = $f->{'post'}{'STRINGS'}{$_};
+                            $self->{'ligmap'}{$cname} = $f->{'post'}{'STRINGS'}{$_};
                             last;
                         }
                     }
                     next unless ($match);
                 }
-                push (@{$ligclasses{$class}}, $glyph->{'gnum'});
-                push (@{$ligclasses{"no_$class"}}, $self->{'glyphs'}[$i]{'gnum'});
+                push (@{$ligclasses{$cname}}, $glyph->{'gnum'});
+                push (@{$ligclasses{"no_$cname"}}, $self->{'glyphs'}[$i]{'gnum'});
             }
         }
         $self->{'ligclasses'} = \%ligclasses;
@@ -568,12 +570,15 @@ sub make_point
 
 sub split_lig
 {
-    my ($self, $str) = @_;
+    my ($self, $str, $type) = @_;
     my ($ext, @res);
 
     if ($str =~ m/_/o)
     {
-        $ext = $1 if ($str =~ s/(\.(.*?))$//o);
+        unless ($type eq 'comp')
+        {
+            $ext = $1 if ($str =~ s/(\.(.*?))$//o);
+        }
         @res = split('_', $str);
         foreach (@res[1..$#res])
         { $_ = "_$_"; }

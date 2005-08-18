@@ -142,7 +142,7 @@ sub out_volt_lookups
 
         $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
-        for ($i = 0; $i < scalar{@$self->{'ligclasses'}{$c}}; $i++)
+        for ($i = 0; $i < scalar @{$self->{'ligclasses'}{$c}}; $i++)
         {
             my ($gname) = $glyphs->[$self->{'ligclasses'}{"no_$c"}[$i]]{'name'};
 
