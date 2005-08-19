@@ -117,7 +117,8 @@ sub out_volt_classes
     foreach $cl (sort keys %{$self->{'groups'}})
     {
         my ($e);
-        next if (defined $lists->{$cl} || defined $classes->{$cl} || defined $ligclasses->{$cl});
+        my ($t) = $cl;
+        next if ($t =~ s/^c//o && ((defined $lists->{$t} || defined $classes->{$t}) || ($t =~ s/^l//o && defined $ligclasses->{$t})));
 
         $res .= "DEF_GROUP \"$cl\"\n ENUM";
         foreach $e (@{$self->{'groups'}{$cl}})
@@ -212,9 +213,10 @@ sub out_volt_lookups
         my ($q, $t, $s);
         my ($id) = $l->{'id'};
         next if ((defined $self->{'lists'}{$id} && $id !~ m/^_/o)
-            || ((defined $self->{'classes'}{$id} || defined $self->{'ligclasses'}{$id})
-                && $id !~ m/^no_/o));
+            || (defined $self->{'classes'}{$id} && $id !~ m/^no_/o));
 
+        my ($t) = $id;
+        next if ($t =~ s/^l//o && defined $self->{'ligclasses'}{$t});
         $res .= "DEF_LOOKUP \"$id\"";
         foreach $q (qw(base marks all dir))
         {
