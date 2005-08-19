@@ -168,7 +168,8 @@ use XML::Parser::Expat;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
+$VERSION = "0.06";  # MH    debug glyph alternates for ligature creation
+# $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
 #$VERSION = "0.04";	# BH   in progress
 # Merged my AP.pm with MH's version:
 #	Rename _error() to error()
@@ -440,8 +441,8 @@ sub make_classes
 {
     my ($self, %opts) = @_;
     my ($f) = $self->{'font'};
-    my (%classes);
-    my ($g, $gname, $i, $glyph, %used, $p, $name);
+    my (%classes, %namemap);
+    my ($g, $gname, $i, $j, $glyph, %used, $p, $name);
 
     for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
     {
@@ -467,6 +468,8 @@ sub make_classes
             push (@{$self->{'lists'}{$pname}}, $i);
             vec($self->{'vecs'}{$pname}, $i, 1) = 1 if ($self->{'vecs'});
         }
+        foreach (split('/', $glyph->{'post'}))
+        { $namemap{$_} = $i; }
     }
 
     # need a separate loop since using other glyphs' names
@@ -477,7 +480,7 @@ sub make_classes
             if ($name =~ m/\.([^_.]+)$/o)
             {
                 my ($base, $ext) = ($` , $1);
-                next unless ($i = $f->{'post'}{'STRINGS'}{$base});
+                next unless ($i = $namemap{$base});
                 push (@{$classes{$ext}}, $glyph->{'gnum'});
                 push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});
             }
@@ -511,16 +514,16 @@ sub make_classes
 
                 $cname = $class;
                 $cname =~ s/\./_/og;
-                next unless ($i = $f->{'post'}{'STRINGS'}{$base});
+                next unless ($i = $namemap{$base});
                 unless (defined $self->{'ligmap'}{$cname})
                 {
                     my ($match) = 0;
                     foreach ($class, "uni$class", "u$class")
                     {
-                        if ($f->{'post'}{'STRINGS'}{$_})
+                        if ($j = $namemap{$_})
                         {
                             $match = 1;
-                            $self->{'ligmap'}{$cname} = $f->{'post'}{'STRINGS'}{$_};
+                            $self->{'ligmap'}{$cname} = $j;
                             last;
                         }
                     }
