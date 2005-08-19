@@ -337,6 +337,7 @@ sub out_volt_final
         }
         foreach $c (@{$self->{'info'}{'cmap'}})
         { $res .= "CMAP_FORMAT $c->[0] $c->[1] $c->[2]\n"; }
+        $res .= "END\n";
     }
     else
     {

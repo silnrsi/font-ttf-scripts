@@ -44,6 +44,7 @@ WriteMakefile (
 			'Algorithm::Diff' => 0,
 			'Font::TTF::Font' => 0.36,
 			'Text::PDF::File' => 0,
+			'Parse::RecDescent' => 1.51
 			}
     );
 
