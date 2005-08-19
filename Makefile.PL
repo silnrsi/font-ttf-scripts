@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.4";
+$VERSION = "0.5";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
@@ -39,7 +39,12 @@ WriteMakefile (
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",
         ABSTRACT => "TTF font support scripts for Perl",
-        dist => { 'TO_UNIX' => 'perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"' }
+        dist => { 'TO_UNIX' => 'perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"' },
+		PREREQ_PM => {
+			'Algorithm::Diff' => 0,
+			'Font::TTF::Font' => 0.36,
+			'Text::PDF::File' => 0,
+			}
     );
 
 if ($^O eq 'MSWin32') {

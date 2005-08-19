@@ -208,8 +208,9 @@ sub normal_rules
     foreach $g (@{$self->{'glyphs'}})
     {
         next unless ($g->{'props'}{'drawn'});
-        next unless ($c->{$g->{'uni'}} == $g->{'gnum'});
-        $struni = pack('U', $g->{'uni'});
+# TODO: should really handle multiple unicode values correctly
+        next unless ($c->{$g->{'uni'}[0]} == $g->{'gnum'});
+        $struni = pack('U', $g->{'uni'}[0]);
         $seq = NFD($struni);
         next if ($seq eq $struni);
         @decomp = unpack('U*', $seq);

@@ -162,13 +162,13 @@ Count of number fo warnings or errors encountered.
 
 =cut
 
-use Font::TTF::Font;
+use Font::TTF::Font 0.36;
 use XML::Parser::Expat;
 
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "0.06";  # MH    debug glyph alternates for ligature creation
+$VERSION = "0.06";  # MH    debug glyph alternates for ligature creation, add Unicode
 # $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
 #$VERSION = "0.04";	# BH   in progress
 # Merged my AP.pm with MH's version:
@@ -253,7 +253,7 @@ sub read_font
                 $ug = $self->{'cmap'}{$uni};
                 $self->error($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") unless (defined $ug);
                 $cur_glyph->{'gnum'} = $ug;
-                $cur_glyph->{'uni'} = $uni;
+                $cur_glyph->{'uni'} = [$uni];
                 # delete $attrs{'UID'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
             if (defined $attrs{'PSName'})
@@ -303,7 +303,7 @@ sub read_font
         } elsif ($tag eq 'compound')
         {
             my $component = {%attrs};
-            $component->{'uni'} = hex($attrs{'UID'}) if defined $attrs{'UID'};
+            $component->{'uni'} = [hex($attrs{'UID'})] if defined $attrs{'UID'};
             push @{$cur_glyph->{'components'}}, $component;
         } elsif ($tag eq 'point')
         {
@@ -382,7 +382,7 @@ sub read_font
     }
     else        # read it all from the font
     {
-        my (@reverse) = $f->{'cmap'}->reverse;
+        my (@reverse) = $f->{'cmap'}->reverse('array' => 1);
         my ($numg) = $f->{'maxp'}{'numGlyphs'};
         my ($i);
 
@@ -455,6 +455,7 @@ sub make_classes
         { $gname =~ s/_(\d+)/"_" . ($1 + 1)/oe; }
         $used{$gname}++;
         $glyph->{'name'} = $gname;
+        $self->{'glyph_names'}{$gname} = $i;
 
         foreach $p (keys %{$glyph->{'points'}})
         {
