@@ -11,6 +11,7 @@ our $CHAIN_CALL;
 my ($if, $of);
 
 $VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
+#                                                 add component generation for joined glyph chains (adv each)
 # $VERSION = 0.22;    # MJPH      22-JUL-2005     Make chain callable
 # $VERSION = 0.21;    # MJPH      13-JUN-2005     Fix adjacent glyph sequences
 # $VERSION = 0.20;    # MJPH      23-JAN-2004     Fix single glyph internal cross-references
@@ -316,7 +317,7 @@ sub main
                     }
                     ($withx, $withy) = @{$pt->{'loc'}};
                     delete $aglyph->{'points'}{$attrs{'with'}}     # delete if attaching to a real glyph
-                            if (defined $curbase->{'glyph'} && $curbase->{'glyph'}{'numPoints'} != scalar @{$curbase->{'glyph'}{'endPoints'}});
+                            if (defined $curbase->{'glyph'} && (!ref $curbase->{'glyph'}{'endpoints'} || $curbase->{'glyph'}{'numPoints'} != scalar @{$curbase->{'glyph'}{'endPoints'}}));
                 } else
                 {
                     $withx = $if->{'hmtx'}{'advance'}[$aglyph->{'gid'}] / 2;
@@ -408,8 +409,9 @@ sub main
         }
         elsif ($tag eq 'glyph')
         {
-            my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg, $pcount);
-    
+            my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg, $pcount, $i);
+
+            $i = 0;
             foreach $g (@{$curbase->{'glyphs'}})
             {
                 $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph
@@ -421,6 +423,11 @@ sub main
                     findbox($xMin, $yMin, $xMax, $yMax, $g->{'bbox'}, $g->{'offset'}); }
                 foreach $p (keys %{$g->{'points'}})
                 { $curbase->{'points'}{$p} = $g->{'points'}{$p}; }
+                if (scalar @{$curbase->{'glyphs'}} > 1)
+                {
+                    $curbase->{'properties'}{"component.$i"} = $adv;
+                    $i++;
+                }
             }
     
             if ((over_asnum($curbase->{'overstrike'}, ($opt_d & 16) >> 4) & 1) && $lorg < 0)
@@ -677,46 +684,48 @@ sub main
         print OX " PSName=\"$pname\"" if ($pname ne '.notdef');
         printf OX " UID=\"%04X\"", $uid if ($uid != 0);
         print OX ">\n";
-        foreach $glyph (@{$g->{'glyphs'}})
+#        foreach $glyph (@{$g->{'glyphs'}})
+#        {
+        my ($p, $cg);
+        if (ref $g->{'glyph_list'} && scalar @{$g->{'glyph_list'}} > 1)
         {
-            my ($p, $cg);
-            
-            if (scalar @{$g->{'glyph_list'}} > 1)
+            foreach $cg (@{$g->{'glyph_list'}})
             {
-                foreach $cg (@{$g->{'glyph_list'}})
-                {
-                    my ($ag) = $glyphs[$if->{'loca'}{'glyphs'}[$cg->{'GID'}]{'required'}];
-                    my (@bbox) = ($ag->{'bbox'}[0] + $cg->{'offset'}[0],
-                                $ag->{'bbox'}[1] + $cg->{'offset'}[1],
-                                $ag->{'bbox'}[2] + $cg->{'offset'}[0],
-                                $ag->{'bbox'}[3] + $cg->{'offset'}[1]);
-                    print OX "    <compound bbox=\"" . join(', ', @bbox) . "\"";
-                    if ($ag->{'UID'})
-                    { print OX " UID=\"$ag->{'UID'}\""; }
-                    elsif ($ag->{'PSName'})
-                    { print OX " PSName=\"$ag->{'PSName'}\""; }
-                    elsif ($ag->{'GID'})
-                    { print OX " GID=\"$ag->{'GID'}\""; }
-                    print OX "/>\n";
-                }
-            }
-            foreach $p (keys %{$g->{'points'}})
-            {
-                my ($p1) = $g->{'points'}{$p};
-                my ($pb) = $p1->{'base'};
-                
-                print OX "    <point type=\"$p\">\n";
-                print OX "        <contour num=\"" .
-                    ($p1->{'cont'} + $pb->{'pathbase'}) .
-                    "\"/>\n" if (defined $p1->{'cont'});
-                print OX "        <location x=\"" . ($p1->{'loc'}[0] + $pb->{'offset'}[0]) .
-                    "\" y=\"" . ($p1->{'loc'}[1] + $pb->{'offset'}[1]) .
-                    "\"/>\n" if ($p1->{'loc'});
-                print OX "    </point>\n";
+                my ($ag) = $glyphs[$if->{'loca'}{'glyphs'}[$cg->{'GID'}]{'required'}];
+                my (@bbox) = ($ag->{'bbox'}[0] + $cg->{'offset'}[0],
+                            $ag->{'bbox'}[1] + $cg->{'offset'}[1],
+                            $ag->{'bbox'}[2] + $cg->{'offset'}[0],
+                            $ag->{'bbox'}[3] + $cg->{'offset'}[1]);
+                print OX "    <compound bbox=\"" . join(', ', @bbox) . "\"";
+                if ($ag->{'UID'})
+                { print OX " UID=\"$ag->{'UID'}\""; }
+                elsif ($ag->{'PSName'})
+                { print OX " PSName=\"$ag->{'PSName'}\""; }
+                elsif ($ag->{'GID'})
+                { print OX " GID=\"$ag->{'GID'}\""; }
+                print OX "/>\n";
             }
         }
-        foreach my $p (keys %{$g->{'glyphs'}[0]{'properties'}})
-        { print OX "    <property name=\"$p\" value=\"$g->{'glyphs'}[0]{'properties'}{$p}\"/>\n"; }
+        
+        foreach $p (keys %{$g->{'points'}})
+        {
+            my ($p1) = $g->{'points'}{$p};
+            my ($pb) = $p1->{'base'};
+            
+            print OX "    <point type=\"$p\">\n";
+            print OX "        <contour num=\"" .
+                ($p1->{'cont'} + $pb->{'pathbase'}) .
+                "\"/>\n" if (defined $p1->{'cont'});
+            print OX "        <location x=\"" . ($p1->{'loc'}[0] + $pb->{'offset'}[0]) .
+                "\" y=\"" . ($p1->{'loc'}[1] + $pb->{'offset'}[1]) .
+                "\"/>\n" if ($p1->{'loc'});
+            print OX "    </point>\n";
+        }
+#       }
+#        foreach my $p (keys %{$g->{'glyphs'}[0]{'properties'}})
+        foreach my $p (keys %{$g->{'properties'}})
+#        { print OX "    <property name=\"$p\" value=\"$g->{'glyphs'}[0]{'properties'}{$p}\"/>\n"; }
+        { print OX "    <property name=\"$p\" value=\"$g->{'properties'}{$p}\"/>\n"; }
         print OX "</glyph>\n";
     }
 

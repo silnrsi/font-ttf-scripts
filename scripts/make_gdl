@@ -3,12 +3,12 @@ use Font::Scripts::GDL;
 use IO::File;
 use Getopt::Std;
 
-getopts('a:i:l:n:s:');
+getopts('a:i:l:n:s:z:');
 
 unless ($ARGV[1])
 {
     die <<'EOT';
-    make_gdl [-a file] [-i file] [-l type [-s num]] [-n num] infile outfile
+    make_gdl [-a file] [-i file] [-l type [-s num]] [-n num] [-z bitfield] infile outfile
 Creates font specific GDL from a font and optional attachment point database
 
   -a file       Attachment point database
@@ -20,6 +20,8 @@ Creates font specific GDL from a font and optional attachment point database
                     lastcomp - treat extensons as part of elements, as last
   -n num        Add a normalization substitution with the given pass number
   -s num        Add ligature substitution rules with the given pass number
+  -z bitfield   Bitfield of various controls:
+                    0 - use component properties to set ligature bounding boxes
 EOT
 }
 
@@ -46,7 +48,7 @@ foreach $g (@{$f->{'glyphs'}})
 
 $f->start_gdl($outfh);
 $f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
-$f->out_gdl($outfh);
+$f->out_gdl($outfh, -split_ligs => ($opt_z & 1));
 $f->out_classes($outfh);
 $f->endtable($outfh);
 $f->normal_rules($outfh, $opt_n) if ($opt_n);

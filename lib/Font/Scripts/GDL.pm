@@ -26,7 +26,7 @@ sub start_gdl
 
 sub out_gdl
 {
-    my ($self, $fh) = @_;
+    my ($self, $fh, %opts) = @_;
     my ($f) = $self->{'font'};
     my (%lists, %glyph_names);
     my ($i, $sep, $p, $k, $glyph);
@@ -50,6 +50,19 @@ sub out_gdl
             else
             { $fh->print("point($pt->{'x'}m, $pt->{'y'}m)"); }
             $sep = '; ';
+        }
+        if ($opts{'-split_ligs'})
+        {
+            my ($oldx) = 0;
+            my ($y) = $f->{'hhea'}->read->{'Ascender'};
+
+            foreach $k (sort grep {m/^component\./o} keys %{$glyph->{'props'}})
+            {
+                my ($n) = $k;
+                $n =~ s/^component\.//o;
+                $glyph->{'comps'}{$n} = [$oldx, 0, $glyph->{'props'}{$k}, $y];
+                $oldx = $glyph->{'props'}{$k};
+            }
         }
         foreach $k (keys %{$glyph->{'comps'}})
         {
@@ -251,11 +264,16 @@ sub lig_rules
     {
         my ($gnum) = $self->{'ligmap'}{$c};
         my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
+        my ($compstr);
+
+        if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'comps'}{'0'})
+        { $compstr = ' {component.0 = @1; component.1 = @2}'; }
 
         if ($type eq 'first')
-        { $fh->print("$gname clno_$c > _ cl$c;\n"); }
+        { $fh->print("$gname clno_$c > _ cl$c:(1 2)$compstr / _ ^ _;\n"); }
         else
-        { $fh->print("clno_$c $gname > cl$c _;\n"); }
+        { $fh->print("clno_$c $gname > cl$c:(1 2)$compstr _/ ^ _ _;\n"); }
+
     }
     $fh->print("endpass;\nendtable;\n");
 }
