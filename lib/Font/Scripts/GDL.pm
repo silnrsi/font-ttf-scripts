@@ -267,7 +267,7 @@ sub lig_rules
         my ($compstr);
 
         if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'comps'}{'0'})
-        { $compstr = ' {component.0 = @1; component.1 = @2}'; }
+        { $compstr = ' {component.0.reference = @1; component.1.reference = @2}'; }
 
         if ($type eq 'first')
         { $fh->print("$gname clno_$c > _ cl$c:(1 2)$compstr / _ ^ _;\n"); }
