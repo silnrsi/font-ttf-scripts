@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 my ($if, $of);
 
-$VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
+$VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
+# $VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
 #                                                 add component generation for joined glyph chains (adv each)
 # $VERSION = 0.22;    # MJPH      22-JUL-2005     Make chain callable
 # $VERSION = 0.21;    # MJPH      13-JUN-2005     Fix adjacent glyph sequences
@@ -95,8 +96,12 @@ sub main
     my ($if, $opts) = @_;
     my (@xml_dat, $oc, $gcount, @glyphs);
     my ($uidmax, $bc, $done_cpyrt, $fissymbol);
-    my ($gid, $pname, $i, $currtext, $cur_str);
+    my ($gid, $pname, $i, $currtext, $cur_str, $i);
     my ($opt_a, $opt_c, $opt_d, $opt_x, $opt_z) = @{$opts}{qw(a c d x z)};
+
+    my (%name_nums) = map {$_ => $i++} (qw(copyright family subfamily fontid fullname version psname
+        trademark vendor designer description vendor_url designer_url license license_url reserved 
+        preferred_family preferred_subfamily compat_full text CID_name));
 
     my $of = Font::TTF::Font->new();
     foreach my $t ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post')
@@ -353,7 +358,7 @@ sub main
         elsif ($tag eq 'font')
         {
             my ($s);
-            
+
             $of->{'hhea'}{'Ascender'} = $attrs{'ascent'} if defined $attrs{'ascent'};
             $of->{'hhea'}{'Descender'} = $attrs{'descent'} if defined $attrs{'descent'};
             $of->{'hhea'}{'LineGap'} = $attrs{'linegap'} if defined $attrs{'linegap'};
@@ -382,13 +387,14 @@ sub main
         }
         elsif ($tag eq 'name')
         {
-        $currtext .= $if->{'name'}->find_name($attrs{'num'});
+            $attrs{'num'} = $name_nums{$attrs{'num'}} if (defined $name_nums{$attrs{'num'}});
+            $currtext .= $if->{'name'}->find_name($attrs{'num'});
         }
-            
+
     }, 'End' => sub {
         my ($xml, $tag) = @_;
         my ($curbase) = $xml->{' curbase'};
-    
+
         if ($tag eq 'base' || $tag eq 'attach')
         {
             $curbase->{'adv'} = $if->{'hmtx'}{'advance'}[$curbase->{'gid'}]
@@ -481,7 +487,19 @@ sub main
                 }
                 $cur_str->{'num'} = 4;
                 do_name($of, $cur_str);
-            } else
+            }
+            elsif ($cur_str->{'num'} !~ m/^\d+$/o)
+            {
+                my ($num) = $name_nums{$cur_str->{'num'}};
+                if (defined $num)
+                {
+                    $cur_str->{'num'} = $num;
+                    do_name($of, $cur_str);
+                }
+                else
+                { $xml->xpcarp("Unknown string name $cur_str->{'num'}, skipping in $opt_c"); }
+            }
+            else
             { do_name($of, $cur_str); }
             if ($cur_str->{'num'} == 0)
             { $done_cpyrt = 1; }
@@ -1106,6 +1124,12 @@ cause changes to the name section of the font. The string element takes a num
 attribute which specifies which string to change. It is also possible to specify
 which platform, encoding and or language id the change should be made to.
 
+Rather than using numbers to identify strings it is possible to use names. The following
+names correspond to strings 0 and following: copyright family subfamily fontid
+fullname version psname trademark vendor designer description vendor_url
+designer_url license license_url reserved preferred_family preferred_subfamily
+compat_full text CID_name
+
 There is one special value for the num attribute, which is C<name>. This causes
 the name of the font (string id 1) and also the full font name (string id 4) to be
 assembled from the font name and style (string id 2).
@@ -1196,7 +1220,7 @@ The DTD for the configuration file is:
     <!ATTLIST property
         name    CDATA #REQUIRED
         value   CDATA #REQUIRED>
-        
+
     <!ELEMENT note (#PCDATA)>
 
 From this small language, quite a lot can be done.
@@ -1245,12 +1269,12 @@ The DTD for an attachment point database is:
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED>
-        
+
     <!ELEMENT property EMPTY>
     <!ATTLIST property
         name    CDATA #REQUIRED
         value   CDATA #REQUIRED>
-        
+
     <!ELEMENT note (#PCDATA)>
 
 A C<font> contains C<glyphs> which have attachment C<points>. Each point has a name
@@ -1272,7 +1296,7 @@ A glyph may have textual notes associated with it.
 
 =head1 Usage
 
-ttfbuilder needs a configuration file, an attachment point database and a source font.
+ttfbuilder needs a configuration file, an optional attachment point database and a source font.
 It also needs to know where to store the resulting font and can take a further
 file to write a new attachment point database to, which represents the attachment
 point database for the generated font.
