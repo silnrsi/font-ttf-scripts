@@ -170,7 +170,7 @@ use vars qw($VERSION);
 
 $VERSION = "0.06";  # MH    debug glyph alternates for ligature creation, add Unicode
 # $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
-#$VERSION = "0.04";	# BH   in progress
+# $VERSION = "0.04";	# BH   in progress
 # Merged my AP.pm with MH's version:
 #	Rename _error() to error()
 #	Added -errorfh support
@@ -480,7 +480,7 @@ sub make_classes
         {
             if ($name =~ m/\.([^_.]+)$/o)
             {
-                my ($base, $ext) = ($` , $1);
+                my ($base, $ext) = ($` , $1);    #` make editor happy
                 next unless ($i = $namemap{$base});
                 push (@{$classes{$ext}}, $glyph->{'gnum'});
                 push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});

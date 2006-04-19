@@ -8,7 +8,8 @@ use strict;
 use vars qw($VERSION @ISA);
 @ISA = qw(Font::Scripts::AP);
 
-$VERSION = "0.03";  # MJPH   9-AUG-2005     Support glyph alternates naming (A/u0410), normalization
+$VERSION = "0.04";  # MJPH   19-APR-2006     Add +left_right ap support for compounds
+# $VERSION = "0.03";  # MJPH   9-AUG-2005     Support glyph alternates naming (A/u0410), normalization
 # $VERSION = "0.02";  # MJPH  26-APR-2004     Add to Font::Scripts::AP hierarchy
 # $VERSION = "0.01";  # MJPH   8-OCT-2002     Original based on existing code
 
@@ -37,12 +38,34 @@ sub out_gdl
         $fh->print("$glyph->{'name'} = ");
         $fh->print("glyphid($i)");
 
+        my ($ytop) = $f->{'hhea'}->read->{'Ascender'};
+        my ($adv) = $f->{'hmtx'}->read->{'advance'}[$i];
         $sep = ' {';
         foreach $p (keys %{$glyph->{'points'}})
         {
             my ($pname) = $p;
             my ($pt) = $glyph->{'points'}{$p};
 
+            if ($pname =~ s/^\+//o)
+            {
+                my ($pl, $pr) = ($pname =~ m/^([^_]+)(?:_([^_]+))/og);
+
+                if ($opts{'-split_ligs'})
+                {
+                    if (defined $glyph->{'comps'}{$pl})
+                    { $glyph->{'comps'}{$pl}[3] = $pt->{'x'}; }
+                    else
+                    { $glyph->{'comps'}{$pl} = [0, 0, $pt->{'x'}, $ytop]; }
+                    if ($pr)
+                    {
+                        if (defined $glyph->{'comps'}{$pr})
+                        { $glyph->{'comps'}{$pr}[0] = $pt->{'x'}; }
+                        else
+                        { $glyph->{'comps'}{$pr} = [$pt->{'x'}, 0, $adv, $ytop]; }
+                    }
+                }
+                next;
+            }
             $pname .= 'S' unless ($pname =~ s/^_(.*)/${1}M/o);
             $fh->print("$sep$pname = ");
             if (defined $pt->{'cont'})
@@ -53,15 +76,28 @@ sub out_gdl
         }
         if ($opts{'-split_ligs'})
         {
-            my ($oldx) = 0;
-            my ($y) = $f->{'hhea'}->read->{'Ascender'};
+            my ($oldx) = 0; my ($min) = 0;
 
             foreach $k (sort grep {m/^component\./o} keys %{$glyph->{'props'}})
             {
                 my ($n) = $k;
                 $n =~ s/^component\.//o;
-                $glyph->{'comps'}{$n} = [$oldx, 0, $glyph->{'props'}{$k}, $y];
-                $oldx = $glyph->{'props'}{$k};
+                $glyph->{'comps'}{$n} = [0, 0, $glyph->{'props'}{$k}, $ytop];
+            }
+            foreach $k (sort {$glyph->{'comps'}{$a}[2] <=> $glyph->{'comps'}{$b}[2]} keys %{$glyph->{'comps'}})
+            {
+                $glyph->{'comps'}{$k} = [$oldx, 0, $glyph->{'comps'}{$k}[2], $glyph->{'comps'}{$k}[3]];
+                $oldx = $glyph->{'comps'}{$k}[2];
+                $min = $k if ($k > $min);
+            }
+            if (scalar %{$glyph->{'comps'}} && $oldx < $adv)
+            {
+                my ($maxx) = $f->{'loca'}->read->{'glyphs'}[$i]{'xMax'};
+                if ($oldx < $maxx)          # only add magic compound if some outline not covered
+                {
+                    $min++;
+                    $glyph->{'comps'}{$min} = [$oldx, 0, $adv, $ytop];
+                }
             }
         }
         foreach $k (keys %{$glyph->{'comps'}})

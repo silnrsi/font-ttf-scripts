@@ -559,6 +559,8 @@ $volt_grammar = <<'EOG';
         { $return = $item[1]; }
 EOG
 
+#" to keep editors happy
+
 sub parse_volt
 {
     my ($self, $vtext) = @_;
