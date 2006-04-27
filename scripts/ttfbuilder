@@ -993,23 +993,24 @@ ttfbuilder - assemble a font from another font
 
 =head1 SYNOPSIS
 
-  ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
+ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
       infile.ttf outfile.ttf
-Builds outfile.ttf from infile.ttf according to config.xml. Also requires an
-attachment point database (attach.xml) and can generate out.xml.
+Builds outfile.ttf from infile.ttf according to config.xml. Also
+requires an attachment point database (attach.xml) and can generate
+out.xml.
 
 =head1 OPTIONS
 
-  -a          initialise output font with all the glyphs of the input font
-              and append new glyphs to that
+  -a          initialise output font with all the glyphs of the input
+              font and append new glyphs to that
   -c file     Configuration file to use
   -d bits     Flag bits
               0: Don't Set dates in the font to now
               1: Don't Auto-create postscript names for component glyphs
               2: Don't Hack the copyright message (if none set)
               3: Mark target font as symbol font
-              4: Default to not allowing overstrikes (ensures guard space)
-                 on lhs
+              4: Default to not allowing overstrikes (ensures guard
+                 space) on lhs
               5: Default to not allowing overstriking on rhs
               6: Disable some warnings
   -h          Help
@@ -1018,7 +1019,7 @@ attachment point database (attach.xml) and can generate out.xml.
     
 =head1 DESCRIPTION
 
-ttfbuilder is a font subsetting program gone wild. It's aim is to allow a user to
+ttfbuilder is a font subsetting program gone wild. Its aim is to allow a user to
 describe a new font in terms of the glyph pallette of a source font. Thus the new
 font may include ligatures of glyphs in the source font, or positional movements
 or whatever.
@@ -1154,6 +1155,16 @@ Various font attributes can be set from a TTFBuilder configuration file:
 
 Binary values are written in hex (as in: 0003)
 
+=item property
+
+A property element is a simple name value pair that is added to the attachment
+point database for the glyph it is specified on
+
+=item note
+
+A note element contains text that is output to the attachment point database
+for the glyph it is specified on
+
 =back
 
 The DTD for the configuration file is:
@@ -1186,7 +1197,8 @@ The DTD for the configuration file is:
         PSNAme      CDATA #IMPLIED
         UID         CDATA #IMPLIED
         GID         CDATA #IMPLIED
-        overstrike  (0 | false | none | 1 | true | all | both | left | right)  #IMPLIED>
+        overstrike  (0 | false | none | 1 | true | all | both | left 
+                       | right)  #IMPLIED>
 
     <!ELEMENT base (advance | rsb | lsb | attach | shift)*>
     <!ATTLIST base
@@ -1298,12 +1310,5 @@ Each glyph may also contain properties. A property is a name value pair. There m
 be one property with any particular name attribute.
 
 A glyph may have textual notes associated with it.
-
-=head1 Usage
-
-ttfbuilder needs a configuration file, an optional attachment point database and a source font.
-It also needs to know where to store the resulting font and can take a further
-file to write a new attachment point database to, which represents the attachment
-point database for the generated font.
 
 =cut
