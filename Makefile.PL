@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.5";
+$VERSION = "0.6";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
@@ -10,7 +10,7 @@ $fversion =~ s/\./_/og;
 # incantation to enable MY::pm_to_blib later on
 push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
 
-@scripts = grep {-f && !m/\./o } glob("scripts/*");
+@scripts = grep {-f && !m/\./o && !m/~$/o } glob("scripts/*");
 @scripts = grep {!m|/add|oi} @scripts unless ($^O eq 'MSWin32');
 
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");

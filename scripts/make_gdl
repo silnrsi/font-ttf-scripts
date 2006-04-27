@@ -2,27 +2,20 @@
 use Font::Scripts::GDL;
 use IO::File;
 use Getopt::Std;
+use Pod::Usage;
 
-getopts('a:i:l:n:s:z:');
+getopts('a:hi:l:n:s:z:');
 
-unless ($ARGV[1])
+unless ($ARGV[1] || $opt_h)
 {
-    die <<'EOT';
-    make_gdl [-a file] [-i file] [-l type [-s num]] [-n num] [-z bitfield] infile outfile
-Creates font specific GDL from a font and optional attachment point database
+    pod2usage(1);
+    exit;
+}
 
-  -a file       Attachment point database
-  -i file       add #include statement at end of file
-  -l type       type =
-                    first - class name is first code, contents other codes
-                    last  - class name is last code, contents other codes
-                    firstcomp - treat extensions as part of elements, as first
-                    lastcomp - treat extensons as part of elements, as last
-  -n num        Add a normalization substitution with the given pass number
-  -s num        Add ligature substitution rules with the given pass number
-  -z bitfield   Bitfield of various controls:
-                    0 - use component properties to set ligature bounding boxes
-EOT
+if ($opt_h)
+{
+    pod2usage(-verbose => 2);
+    exit;
 }
 
 $comp = $1 if ($opt_l =~ s/(comp)$//oi);
@@ -56,3 +49,136 @@ $f->lig_rules($outfh, $opt_s, $opt_l) if ($opt_l);
 $f->end_gdl($outfh, $opt_i);
 
 $outfh->close();
+
+__END__
+
+=head1 TITLE
+
+makegdl - Create GDL from a TrueType Font
+
+=head1 SYNOPSIS
+
+  make_gdl [-a file] [-i file] [-l type [-s num]] [-n num] [-z bitfield]
+           infile outfile
+  make_gdl -h
+Creates font specific GDL from a font and optional attachment point database
+
+=head1 OPTIONS
+
+  -a file       Attachment point database
+  -h            print manpage
+  -i file       add #include statement at end of file
+  -l type       type =
+                    first - class name is first code, contents other codes
+                    last  - class name is last code, contents other codes
+                    firstcomp - treat extensions as part of elements, as first
+                    lastcomp - treat extensons as part of elements, as last
+  -n num        Add a normalization substitution with the given pass number
+  -s num        Add ligature substitution rules with the given pass number
+  -z bitfield   Bitfield of various controls:
+                    0 - use component properties to set ligature bounding boxes
+
+=head1 DESCRIPTION
+
+When writing a GDL description for a font there are generally two parts to
+such a description. The first part is a general behaviour description that is
+appropriate to a number of fonts for a particular writing system. It will
+contain rules for reordering, substitution, positioning, etc and is often
+written in terms of classes rather than individual glyphs. For a very simple
+script such a description may be empty.
+
+The second part of a description is font specific and includes names of glyphs
+positions of attachment points and other properties for each glyph. It will
+also contain class definitions and perhaps even some glyph specific rules.
+
+It is this second part that make_gdl is designed to address. Make_gdl will
+take a TTF and perhaps an attachment point database (defined in ttfbuilder)
+and will create a standardised font specific GDL description which may or
+may not be sufficient to describe the behaviour of the font. It is more
+likely that a general behaviour file will also need to be written.
+
+The generated GDL consists of 4 sections:
+
+=head2 Glyph Definitions
+
+Each glyph has a definition as part of a C<table(glyph)> section. The name of
+the glyph is based on the postscript name of the glyph. If the name is of
+the form of a general Unicode character in the Adobe Glyph List, then the
+name is transformed with an initial C<g_> followed by the unicode USV. If
+there is a sequence of unicode values in the name, the C<uni> parts of the
+name are replaced by <_> resulting in something like: C<g_1000_103c>.
+Otherwise the name is transformed to lower case with each upper case letter
+preceded by C<_> and the name preceded by C<g_> as in C<g__a> for A. If
+a glyph has a variant (C<.>I<var>) the C<.> is turned into C<_>. If a glyph
+is multinamed (separated by C</>) then only the first name is used for the
+glyph name although the glyph will appear in all the classes appropriate to
+all its names.
+
+Glyphs may have attachment points and these come from the attachment points
+database given on the command line. In addition any properties with the name
+starting C<GDL_> are included as glyph attributes for use in rules. Ligature
+components may also propagate from the attachment point database.
+
+Attachment points are assumed to be named according to the Fontlab convention
+whereby a diacritic has an anchor named C<_>I<x> that is anchored to a base
+character on the attachment point I<x>. The names of the se attachment points
+are munged so that C<_>I<x> becomes C<xM> and I<x> becomes I<x>C<S>.
+
+=head2 Class Definitions
+
+For each attachment point base name (I<x>) a class is created. Class C<c>I<x>C<Dia>
+contains a list of all the glyphs with the attachment point C<_>I<x>. Class
+C<cTakes>I<x>C<Dia> contains all the glyphs with attachment point I<x>. Class
+C<cn>I<x>C<Dia> contains all the glyphs without attachment point C<_>I<X>. And
+the class C<cnTakes>I<x>C<Dia> contains all the glyphs without the I<x>
+attachment point.
+
+In addition for each glyph name variant (as labelled in a postscript name for
+a glyh using C<.>I<var>) a class named C<c>I<var> is created with all the glyphs
+with that variant in their name. A class named C<c_no>I<var> is also created
+containing all the corresponding glyphs without the variant, in direct
+correspondance, so that the non-variant form may be mapped to the variant
+form using a single rule, for all the glyphs in the class.
+
+Finally a class is created for ligature components. If a glyph is part of a
+ligature rule it is either the key glyph for the rule or part of the class
+for the rule. Thus for a rule keyed of a glyph named I<x> there will be two
+classese: C<cl_>I<x> which is the ligatures involving I<x> and C<clno_>I<x>
+which contains all the components that correspond to the ligatures found in
+the other class. This makes a ligature rule a simple 1:1 mapping from
+C<clno_>I<x> to C<cl_>I<x>.
+
+=head2 Rules
+
+Make_gdl may also create generalised rules to simplify the creation of GDL
+descriptions. Which rule sets are generated is controlled from the command line.
+
+If the C<-n> command line option is used, make_gdl will create normalisation
+rules. These rules will map any glyph sequence that corresponds to a unicode
+sequence that has a canonical composition that exists in the font into that
+glyph.
+
+If the C<-s> command line option is used, make_gdl will write rules for combining
+glyphs into ligatures according to the glyph naming in the postscript name table.
+Ligature rules are based on a class and a glyph. By default the class contains a
+list of first glyphs in a ligature pair and there is a rule for each second glyph.
+If C<-l last> is used then this is reversed with there being a rule for each first
+glyph and the second glyph is in a class. If variants are involved, should
+the name be a variant of the ligature or the last glyph in the ligature sequence?
+If C<-l firstcomp> or C<-l lastcomp> then then variant is considered part of the
+last glyph otherwise it is considered part of the ligature.
+
+=head2 Inclusion
+
+make_gdl outputs a preprocessor definition C<MAXGLYPH> that is set to the number
+of glyphs in the font.
+
+Since a GDL description is only a single file, the command line allows one to
+specify another GDL file to include at the end of the file. This makes including
+a font independent GDL fragment much easier.
+
+=head1 SEE ALSO
+
+ttfbuilder
+
+=cut

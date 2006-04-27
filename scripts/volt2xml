@@ -149,6 +149,7 @@ $volt_grammar = <<'EOG';
     num : /-?\d+/
         { $return = $item[1]; }
 EOG
+#" for editors
 
 $font = Font::TTF::Font->open($ARGV[0]) || die "Can't open font file $ARGV[0]";
 $text = $font->{'TSIV'}->read->{' dat'} || die "No VOLT table in font $ARGV[0]";
@@ -191,6 +192,23 @@ for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
 
 print "\n</font>\n";
 
+__END__
 
+=head1 TITLE
 
+volt2xml - create attachment point database from VOLT source in a TrueType Font
 
+=head1 SYNOPSIS
+
+  volt2xml infile.ttf > outfile.xml
+
+=head1 DESCRIPTION
+
+volt2xml parses the volt source in a font to extract attachment point information
+which it prints to stdout
+
+=head1 SEE ALSO
+
+ttfbuilder, make_volt, voltExportAnchors
+
+=cut

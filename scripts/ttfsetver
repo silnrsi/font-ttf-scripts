@@ -1,4 +1,4 @@
-#! /usr/binperl
+#! /usr/bin/perl
 use strict;
 use Font::TTF::Font;
 use Getopt::Std;
@@ -69,3 +69,25 @@ sub do_name
         }
     }
 }
+
+__END__
+
+=head1 TITLE
+
+ttfsetver - sets font version in a TrueType font
+
+=head1 SYNOPSIS
+
+  ttfsetver [-d description] version infile outfile
+
+=head1 OPTIONS
+
+  -d text   descriptive text to be appended to "Version n.nn " for
+            the name table entry.
+
+=head1 DESCRIPTION
+
+Sets font version (in both head and name tables). 
+version parameter must be fixed-point numeric (e.g., 2.3)
+
+=cut

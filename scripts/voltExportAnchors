@@ -308,3 +308,33 @@ print LOG $xx;
 close LOG;
 
 printf "%s%s\n", $xx, ($warningCount > 0) ? " See VoltExportAnchor.log for details." : "" unless $opt_q;
+
+__END__
+
+=head1 TITLE
+
+VoltExportAnchors - 
+
+=head1 SYNOPSIS
+
+  VoltExportAnchors [-f] [-p] [-q] ( inVolt.vtp | inVolt.ttf ) outAnchors.xml
+
+=head1 OPTIONS
+
+  -f maps VOLT's mark naming convention to FontLabs
+  -p assumes VOLT's glyph names are same as font's PS names.
+  -q quiet. Don't generate unnecessary noise.
+
+=head1 DESCRIPTION
+
+Exports VOLT anchor definitions to XML in TTFBuilder syntax.
+Input can be either a VOLT project file or a TTF font file.
+
+For components (other than the first) of ligatures, anchor names
+will have a component index appended to them.
+
+=head1 SEE ALSO
+
+ttfbuilder, make_volt, volt2xml
+
+=cut

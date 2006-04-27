@@ -901,3 +901,56 @@ print LOG $xx;
 close LOG;
 
 printf "%s%s\n", $xx, ($warningCount > 0) ? " See VoltFixup.log for details." : "";
+
+__END__
+
+=head1 TITLE
+
+voltFixup - Used to migrate a VOLT project to a new/modified TrueType font file.
+
+=head1 SYNOPSIS
+
+  VoltFixup [-d] [-r nameMap] [-i ignorePattern] inFont inVoltProj outFont outVoltProj
+
+=head1 OPTIONS
+
+  -r nameMap    file specifies source renaming that should occur before anything else.
+  -d            missing glyphs are removed from groups.
+  -i            new glyphs with names matching the given pattern are ignored
+
+=head1 DESCRIPTION
+
+Copies inVoltProj to outVoltProj adjusting any VOLT glyph definition
+or anchor definition lines to match the Glyph IDs identified in the
+postscript name table in inFontFile. Also copies inFont to
+outFont adjusting the cmaps, and importing the modified VOLT project.
+
+NOTE: This program ASSUMES that the names for glyphs in VOLT are
+the same as the postscript glyph names in the inFont's 'post' table.
+
+inVoltProj can be supplied as text (e.g., from VOLT's Export Project
+function) or as a TTF, in which case the VOLT project source is read
+directly from the TTF file.
+
+When conflicts occur, e.g., between Unicode information in inVoltProj 
+and that in inFont, preference is give to new font.
+
+When GSUB lookups use VOLT groups, VOLT silently reorders the glyph
+groups by glyph ID. This program verifies that such lookups still
+effect the same substitutions (since the font's glyph palette could
+be rearranged.) It also sorts all groups by glyph ID so VOLT's 
+display of the groups is more meaningful.
+
+Writes warning messages to stdout and to VoltFixup.LOG in current directory.
+
+If -r is supplied, the nameMap file specifies source renaming that
+should occur before anything else. Things that can be renamed include glyphs,
+groups and anchors. The nameMap file should contain, on each line, an
+old identifier followed by its corresponding new identifier (separated by 
+whitespace).
+
+=head1 SEE ALSO
+
+make_volt
+
+=cut

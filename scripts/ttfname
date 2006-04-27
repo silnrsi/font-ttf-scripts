@@ -170,8 +170,31 @@ sub do_name {
     ($spos + $name_num * 12 + 6, $csum);            # return length, checksum
     }
 
+__END__
+
+=head1 TITLE
+
+ttfname - renames font files
+
+=head1 SYNOPSIS
+
+  TTFNAME [-f "new_full_name"] -n "new_name" [-t num] [-q] <infile> <outfile>
+Renames the TTF with the given name and outputs the newly named font to
+<outfile>.
+
+=head1 OPTIONS
+
+  -f "name"   specifies new full name (optional) as opposed to the
+              default calculated form.
+  -l lang     language number to use (default all langs)
+  -n "name"   specifies new font family name (not optional)
+  -q          disable signon message
+  -s filename overrides -n and gets string from file. Useful for -t
+  -t num      overrides the normal naming areas to change another
+              string -f becomes inactive.
+=cut
+
 @REM=('
 :end
 @echo off
 @REM ') if 0 ;
-

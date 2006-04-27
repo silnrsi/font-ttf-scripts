@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 my ($if, $of);
 
-$VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
+$VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
+# $VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
 # $VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
 #                                                 add component generation for joined glyph chains (adv each)
 # $VERSION = 0.22;    # MJPH      22-JUL-2005     Make chain callable
@@ -43,29 +44,8 @@ unless ($CHAIN_CALL)
 
     unless ((defined $ARGV[1] && defined $opts{c}) || defined $opts{h})
     {
-        die <<"EOT";
-    TTFBUILDER version $VERSION
-    
-    ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
-        infile.ttf outfile.ttf
-Builds outfile.ttf from infile.ttf according to config.xml. Also requires an
-attachment point database (attach.xml) and can generate out.xml.
-
-    -a          initialise output font with all the glyphs of the input font
-                and append new glyphs to that
-    -c file     Configuration file to use
-    -d bits     Flag bits
-                0: Don't Set dates in the font to now
-                1: Don't Auto-create postscript names for component glyphs
-                2: Don't Hack the copyright message (if none set)
-                3: Mark target font as symbol font
-                4: Default to not allowing overstrikes (ensures guard space) on lhs
-                5: Default to not allowing overstriking on rhs
-                6: Disable some warnings
-    -h          Help
-    -x file     Attachment database to read
-    -z file     Attachment database to output
-EOT
+        pod2usage(1);
+        exit;
     }
 
     if ($opts{h})
@@ -1011,6 +991,31 @@ __END__
 
 ttfbuilder - assemble a font from another font
 
+=head1 SYNOPSIS
+
+  ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
+      infile.ttf outfile.ttf
+Builds outfile.ttf from infile.ttf according to config.xml. Also requires an
+attachment point database (attach.xml) and can generate out.xml.
+
+=head1 OPTIONS
+
+  -a          initialise output font with all the glyphs of the input font
+              and append new glyphs to that
+  -c file     Configuration file to use
+  -d bits     Flag bits
+              0: Don't Set dates in the font to now
+              1: Don't Auto-create postscript names for component glyphs
+              2: Don't Hack the copyright message (if none set)
+              3: Mark target font as symbol font
+              4: Default to not allowing overstrikes (ensures guard space)
+                 on lhs
+              5: Default to not allowing overstriking on rhs
+              6: Disable some warnings
+  -h          Help
+  -x file     Attachment database to read
+  -z file     Attachment database to output
+    
 =head1 DESCRIPTION
 
 ttfbuilder is a font subsetting program gone wild. It's aim is to allow a user to

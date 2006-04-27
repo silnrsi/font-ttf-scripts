@@ -1,8 +1,8 @@
 #! /usr/bin/perl
 use Font::TTF::Font;
-require 'getopts.pl';
+use Getopt::Std;
 
-Getopts("c:rsu");
+getopts("c:rsu");
 
 unless (defined $opt_c && defined $ARGV[1] && !(defined $opt_s && defined $opt_u) )
 {
@@ -160,4 +160,42 @@ $v->{'usLastCharIndex'} = $cmax > 0xFFFF ? 0xFFFF : $cmax;
 
 $f->out($ARGV[1]);
 
+__END__
 
+=head1 TITLE
+
+ttfremap - remaps the cmap of a TrueType Font
+
+=head1 SYNOPSIS
+
+    TTFRemap -c file [-r] [-s | -u] <infile> <outfile>
+
+=head1 OPTIONS
+
+  -r      Replace (copy the old cmap before mapping)
+  -s      Convert to symbol encoding
+  -u      Convert to UGL encoding
+
+=head1 DESCRIPTION
+
+Remaps the MS cmap of a font without removing any glyphs. Updates the OS/2
+table according to first and last char of new cmap. The changes file consists
+of lines of any of the following forms:
+
+    uni_first, uni_to
+    uni_first, uni_last, uni_to
+    g, gid_first, uni_to
+    g, gid_first, gid_last, uni_to
+    
+where uni_first (gid_first) is the first of a range of Unicodes (glyph IDs) 
+in the source font, uni_last (gid_last) is the last of that range (if not
+specified, default is same as uni_first (gid_last)), and uni_to 
+is the start of the sequential set of Unicodes that will be altered in the 
+output cmap so they map to the specified range. NOTE: Unicode values
+should be in hex, glyph IDs are decimal.
+
+=head1 SEE ALSO
+
+ttfbuilder
+
+=cut

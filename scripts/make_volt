@@ -3,24 +3,18 @@ use Font::TTF::Font;
 use Font::Scripts::Volt;
 use Getopt::Std;
 
-getopts('a:i:l:t');
+getopts('a:hi:l:t');
 
-unless ($ARGV[0])
+unless ($ARGV[1] || $opt_h)
 {
-    die <<'EOT';
-    make_volt [-a file] [-l ligtype] [-i file] infile outfile
-    make_volt -t [-a file] [-l ligtype] [-i file] infile
-Creates a copy of the infile font file adding a VOLT table to it.
+    pod2usage(1);
+    exit;
+}
 
-  -a file       Attachment Point database .xml file
-  -i fontfile   merge VOLT table from this font or text file
-  -l type       type =
-                    first - class name is first code, contents other codes
-                    last  - class name is last code, contents other codes
-                    firstcomp - treat extensions as part of elements, as first
-                    lastcomp - treat extensons as part of elements, as last
-  -t            output volt code to stdout and don't generate a font file
-EOT
+if ($opt_h)
+{
+    pod2usage(-verbose => 2);
+    exit;
 }
 
 $f = Font::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font information";
@@ -58,3 +52,79 @@ else
     $f->{'font'}{'TSIV'} = Font::TTF::Table->new(dat => $res, PARENT => $f->{'font'});
     $f->{'font'}->out($ARGV[1]);
 }
+
+__END__
+
+=head1 TITLE
+
+make_volt - Create VOLT code from a TrueType Font
+
+=head1 SYNOPSIS
+
+  make_volt [-a file] [-l ligtype] [-i file] infile outfile
+  make_volt -t [-a file] [-l ligtype] [-i file] infile
+
+Creates a copy of the infile font file adding a VOLT table to it.
+
+=head1 OPTIONS
+
+  -a file       Attachment Point database .xml file
+  -h            print manpage
+  -i fontfile   merge VOLT table from this font or text file
+  -l type       type =
+                    first - class name is first code, contents other codes
+                    last  - class name is last code, contents other codes
+                    firstcomp - treat extensions as part of elements, as first
+                    lastcomp - treat extensons as part of elements, as last
+  -t            output volt code to stdout and don't generate a font file
+
+=head1 DESCRIPTION
+
+make_volt aims to make the creation of OpenType fonts much easier. It allows
+for a font designer to make changes and to feed that changed font forward
+to merge previously created VOLT code without losing that work. It also creates
+glyph names, key classes and lookups that can save a lot of work in VOLT.
+
+In addition, make_volt has the capability to merge the volt code it creates
+with existing volt code either in a font or in a text file.
+
+=head2 Glyph naming
+
+Glyphs are named based on the postscript name of the glyph with variants and
+illegal characters stripped from the name. Name clashes are simply numbered.
+
+=head2 Classes
+
+make_volt creates a number of different kind of class. For each attachment
+point base name (I<x>) a class is created. Class C<c>I<x>C<Dia>
+contains a list of all the glyphs with the attachment point C<_>I<x>. Class
+C<cTakes>I<x>C<Dia> contains all the glyphs with attachment point I<x>. Class
+C<cn>I<x>C<Dia> contains all the glyphs without attachment point C<_>I<X>. And
+the class C<cnTakes>I<x>C<Dia> contains all the glyphs without the I<x>
+attachment point.
+
+In addition for each glyph name variant (as labelled in a postscript name for
+a glyh using C<.>I<var>) a class named C<c>I<var> is created with all the glyphs
+with that variant in their name. A class named C<c_no>I<var> is also created
+containing all the corresponding glyphs without the variant, in direct
+correspondance, so that the non-variant form may be mapped to the variant
+form using a single rule, for all the glyphs in the class.
+
+Finally a class is created for ligature components. If a glyph is part of a
+ligature rule it is either the key glyph for the rule or part of the class
+for the rule. Thus for a rule keyed of a glyph named I<x> there will be two
+classese: C<cl_>I<x> which is the ligatures involving I<x> and C<clno_>I<x>
+which contains all the components that correspond to the ligatures found in
+the other class. This makes a ligature rule a simple 1:1 mapping from
+C<clno_>I<x> to C<cl_>I<x>.
+
+=head2 Ligatures
+
+make_volt has the ability to create ligature mapping lookups. These are controlled
+by glyph names and follow the approach taken in C<make_gdl>.
+
+=head1 SEE ALSO
+
+ttfbuilder, make_gdl
+
+=cut

@@ -2,6 +2,7 @@
 use Font::Scripts::Thai;
 use IO::File;
 use Getopt::Std;
+use Pod::Usage
 
 %attach_map = (
     'U' => 'US',
@@ -21,20 +22,17 @@ use Getopt::Std;
     'UM' => 'udia',
     );
 
-getopts('a:ci:x:z');
+getopts('a:chi:x:z');
 
-unless (defined $ARGV[2])
+unless (defined $ARGV[2] || $opt_h)
 {
-    die <<'EOT';
-    thai2gdl [-a angle] [-c] [-i basegdl] [-x xmlfile] fontfile gdlfile outfont
-    Creates GDL for a Thai font.
-
-    -a angle        Italic angle in degrees
-    -c              Don't create U+25CC if not present
-    -i basegdl      which .gdl file to include [thai.gdl]
-    -x file         XML point database file for fontfile
-    -z              Don't create U+200B (zwsp) if not present
-EOT
+    pod2usage(1);
+    exit;
+}
+elsif ($opt_h)
+{
+    pod2usage(verbose => 2);
+    exit;
 }
 
 $opt_i = "thai.gdl" unless ($opt_i);
@@ -126,4 +124,57 @@ sub list_class
     $out;
 }
 
+__END__
 
+=head1 TITLE
+
+thai2gdl - Create GDL for a standard Thai font
+
+=head1 SYNOPSIS
+
+  thai2gdl [-a angle] [-c] [-i basegdl] [-x xmlfile] fontfile gdlfile outfont
+Creates GDL for a Thai font.
+
+=head1 OPTIONS
+
+  -a angle        Italic angle in degrees
+  -c              Don't create U+25CC if not present
+  -i basegdl      which .gdl file to include [thai.gdl]
+  -x file         XML point database file for fontfile
+  -z              Don't create U+200B (zwsp) if not present
+
+=head1 DESCRIPTION
+
+This program does a number of things:
+
+=over 4
+
+=item .
+
+It creates a dotted circle glyph if one is not present and adds it to the font.
+And also a blank ZWSP (U+200B) glyph if not present.
+
+=item .
+
+It reencodes the font to conform to Unicode encoding appropriate to OpenType
+fonts and also to Win95 Thai editions
+
+=item .
+
+It creates attachment points for each glyph
+
+=item .
+
+It adds kerning rules to ensure glyphs don't clash.
+
+=back
+
+Since positioning is dependent on italic angle. If thai2gdl is used on an italic
+font the slope of the font should be given to the program if it is not already
+specified in the POST table in the font.
+
+=head1 SEE ALSO
+
+thai2ot, thai2volt
+
+=cut

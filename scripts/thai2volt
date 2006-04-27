@@ -1,25 +1,19 @@
 #! /usr/bin/perl
 use Font::Scripts::Thai;
 use Getopt::Std;
+use Pod::Usage;
 
-getopts('a:ck:x:z');
+getopts('a:chk:x:z');
 
-unless (defined $ARGV[1])
+unless (defined $ARGV[1] || $opt_h)
 {
-    die <<'EOT';
-    THAI2VOLT [-a angle] [-c] [-k flags] [-x file] infile outfile
-Copies the input font to the output font adding various tables on the way. If
-the font is not already a Unicode font, it will be converted to one.
-
-    -a angle  Sets italic angle
-    -c  Don't add circle glyph (U+25CC) if one not present. Adding a circle 
-        glyph destroys the hmdx, VDMX & LTSH tables.
-    -k  Add empty kerning tables to VOLT table. Bitfield of tables
-        0 - ai moving left over consonants
-        1 - wide upper diacritics moving base right following tall things
-    -x  XML point database file for infile
-    -z  Don't add zwsp (U+200B) if not present
-EOT
+    pod2usage(1);
+    exit;
+}
+elsif ($opt_h)
+{
+    pod2usage(verbose => 2);
+    exit;
 }
 
 $font = Font::Scripts::Thai->new($ARGV[0], $opt_c, $opt_z, $opt_a, $opt_x) || die "Can't open $ARGV[0]";
@@ -237,4 +231,63 @@ $res =~ s/\n/\r/og;
 $res .= "\000" x 7;
 $font->{'font'}{'TSIV'} = Font::TTF::Table->new(dat => $res, PARENT => $font->{'font'});
 $font->{'font'}->out($ARGV[1]);
+
+__END__
+
+=head1 TITLE
+
+thai2volt - Create VOLT code for standard Thai fonts
+
+=head1 SYNOPSIS
+
+  THAI2VOLT [-a angle] [-c] [-k flags] [-x file] infile outfile
+Copies the input font to the output font adding various tables on the way. If
+the font is not already a Unicode font, it will be converted to one.
+
+=head1 OPTIONS
+
+  -a angle  Sets italic angle
+  -c        Don't add circle glyph (U+25CC) if one not present. Adding a circle 
+            glyph destroys the hmdx, VDMX & LTSH tables.
+  -k        Add empty kerning tables to VOLT table. Bitfield of tables
+              0 - ai moving left over consonants
+              1 - wide upper diacritics moving base right following tall things
+  -x        XML point database file for infile
+  -z        Don't add zwsp (U+200B) if not present
+
+=head1 DESCRIPTION
+
+This program does a number of things:
+
+=over 4
+
+=item .
+
+It creates a dotted circle glyph if one is not present and adds it to the font.
+And also a blank ZWSP (U+200B) glyph if not present.
+
+=item .
+
+It reencodes the font to conform to Unicode encoding appropriate to OpenType
+fonts and also to Win95 Thai editions
+
+=item .
+
+It creates attachment points for each glyph
+
+=item .
+
+It adds kerning rules to ensure glyphs don't clash.
+
+=back
+
+Since positioning is dependent on italic angle. If thai2gdl is used on an italic
+font the slope of the font should be given to the program if it is not already
+specified in the POST table in the font.
+
+=head1 SEE ALSO
+
+thai2gdl, thai2ot
+
+=cut
 

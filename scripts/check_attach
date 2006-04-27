@@ -170,3 +170,27 @@ sub error
     print " at line " . $xml->current_line . ".\n";
 }
 
+__END__
+
+=head1 TITLE
+
+check_attach - checks fonts against their attachment database
+
+=head1 SYNOPSIS
+
+    check_attach [-z outfile.xml] infile.xml infile.ttf
+Checks an attachment point database against a font, checking that any
+contours are single point and any locations tie up with their corresponding
+contour, or that there exists a single point contour at a given location.
+This program can also generate missing information and write it to a new
+attachment point database.
+
+=head1 OPTIONS
+
+    -z file     Output file to generate
+
+=head1 SEE ALSO
+
+ttfbuilder
+
+=cut

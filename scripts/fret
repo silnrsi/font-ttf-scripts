@@ -131,3 +131,50 @@ sub row2
     }
     return (@res);
 }
+
+__END__
+
+=head1 TITLE
+
+FRET - Font REporting Tool
+
+=head1 SYNOPSIS
+
+  FRET [-f] [-g] [-s size] [-p package] [-q] font_file [out_file] [ap.xml]
+Generates a report on a font according to a particular package. In some
+contexts the package may be over-ridden. Paper size may also be specified.
+
+=head1 OPTIONS
+
+If no out_file is given then out_file becomes font_file.pdf (removing .ttf
+if present)
+
+  -f            Don't try to save memory on large fonts (>1000 glyphs)
+  -g            Add one glyph per page report following summary report
+  -h            Mode for glyph per page output. Bitfield:
+                1 = bit 0       don't output point positions
+  -m points     Sets glyph size in the box regardless of what is calculated
+                Regardless of the consequences for clashes
+  -p package    Perl package specification to use for report information
+  -q            quiet mode  
+  -s size       paper size: a4, ltr, legal
+
+=head1 DESCRIPTION
+
+FRET creates a PDF report from a TrueType font containing information about
+every glyph in the font. It sorts the glyphs by Unicode identifier and then
+for those glyphs with no Unicode identifier it sorts them by glyph name and
+then by glyph number.
+
+In addition it is possible to get a report including a page per glyph with
+a large outline of each glyph perhaps with the drawn points.
+
+If the optional ap.xml file is specified on the command line then attachment
+point information is included in the report. See ttfbuilder for details of
+the ap.xml file format.
+
+=head1 SEE ALSO
+
+ttfbuilder
+
+=cut

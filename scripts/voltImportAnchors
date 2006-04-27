@@ -420,3 +420,53 @@ print LOG $xx;
 close LOG;
 
 printf "%s%s\n", $xx, ($warningCount > 0) ? " See VoltImportAnchor.log for details." : "";
+
+__END__
+
+=head1 TITLE
+
+voltImportAnchors - Imports anchor definitions from XML (in TTFBuilder syntax) into a VOLT project.
+
+=head1 SYNOPSIS
+
+  voltImportAnchors [-d] [-s] [-l alist.txt] in.ttf Anchors.xml out.ttf [out.vtp]
+
+=head1 OPTIONS
+
+  -d  discard existing VOLT anchor definitions that are not updated.
+  -s  do not warn about existing VOLT anchor definitions that
+      are not updated.
+  -l  specifies a file that identifies which anchors to import.
+
+=head1 DESCRIPTION
+
+Original VOLT project must be a .TTF file (.VTP files no longer supported)
+New anchor data, using TTFBuilder syntax, is read from Anchors.xml. A modified 
+VOLT font project will be saved in out.ttf. If out.vtp is supplied, a copy of
+the modified VOLT source is saved there.
+
+For the C<-l> option, the file consist of a list of anchors to import which
+are listed on separate lines using the syntax:
+
+  xml-anchor-type-name [, [volt-anchor-name] [, [component-num]]]
+
+A semicolon at start of line is a comment. For example:
+
+    ; anchor list example. 
+    ; XML anchor "vabove" will be imported directly
+    ; "vbelow" will be renamed "BotCenter"
+    ; "vbelow_2" will be renamed "BotCenter" but for component 2
+    vabove
+    vbelow,BotCenter
+    vbelow_2,BotCenter,2
+
+If C<-l> is not supplied, then all anchors will be imported and will
+be assumed to be for component 1 (no ligatures). (Note: the conversion
+between FontLab's convention of "_name" and VOLT's convention of "MARK_name"
+is automatic and should not be specified in a -l file).
+
+=head1 SEE ALSO
+
+ttfbuilder, make_volt
+
+=cut

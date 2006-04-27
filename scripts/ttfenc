@@ -3,56 +3,29 @@ use Font::TTF::Font;
 use Getopt::Std;
 use IO::File;
 use Math::Trig;
+use Pod::Usage;
 
 if ($ARGV[0] =~ /^\-@/oi)
 {
-    $cfgname = $';
+    $cfgname = $';      #'
     shift (ARGV);
     open(CFGFILE, "$cfgname") || die "Unable to open config file $cfgname";
     while (<CFGFILE>)
     { chomp; unshift (ARGV, $_); }
 }
-getopts("d:e:m:o:p:t:xz:");
+getopts("d:e:hm:o:p:t:xz:");
 
 $VERSION = 1.0;     # MJPH  26-DEB-1999     Original
 
-unless (defined $ARGV[0])
+unless (defined $ARGV[0] || $opt_h)
 {
-    die <<'EOT';
-    ttfenc [-e enc_file] [-m mapping_file] [-p map_file] [-t tfm_file]
-           [-x] [-d tex_file] [-o font_file] font.ttf
-    ttfenc -@config_file font.ttf
-    
-Creates a Postscript mapping file for the given font according to the 8-bit
-to Unicode mapping given in mapping_file. If the font is a Windows symbol font
-then no mapping_file is required. If no tfm file is requested, then no map_file
-entry is made, either. Requires ttf2afm and afm2tfm to run.
-
-    -d tex_file         Make TeX definitions for glue in this file
-    -e enc_file         Filename of encoding file (including where to store it)
-    -m mapping_file     Unicode mapping description file (e.g. cp1252.txt)
-    -o font_file        Output a font with fixed names
-    -p map_file         The PDFTeX .map file in which to add an entry for this
-                        font [OPTIONAL - absent, no entry added]
-    -t tfm_file         The name and where to store the .tfm file
-    -x                  Enable TeX postscript name correction
-    -z flags            bitfield of flags
-                        0 - produce tex_file for codes 32-255, default 128-255
-                        1 - ignore a-z & 0-9 when making tex_file
-    -@config_file       Specifies a file to read command line parameters from
-
-E.g.
-    ttfenc -e ipa93.enc -m cp1252.txt ipa93sr.ttf
-
-Just creates ipa93.enc from the POST table of ipa93sr.ttf
-
-    ttfenc -e %texmf%\pdftex\base\ipa93.enc -m cp1252.txt -p %texmf%\pdftex\bas
-e\ttfmap.map -t %texmf%\fonts\tfm\ttf\ipa93sr.tfm ipa93sr.ttf
-
-Create .tfm, .afm, .enc and install the files in the appropriate places. (The
-.afm is left with ipa93sr.log in the current directory)
-
-EOT
+    pod2usage(1);
+    exit;
+}
+elsif ($opt_h)
+{
+    pod2usage(verbose => 2);
+    exit;
 }
 
 %texCorrect = (
@@ -408,3 +381,51 @@ sub mincover
     }
     return ($m, $nextd);
 }
+
+__END__
+
+=head1 TITLE
+
+ttfenc - Create TeX font metrics for a font
+
+=head1 SYNOPSIS
+
+    ttfenc [-e enc_file] [-m mapping_file] [-p map_file] [-t tfm_file]
+           [-x] [-d tex_file] [-o font_file] font.ttf
+    ttfenc -@config_file font.ttf
+
+=head1 OPTIONS
+
+    -d tex_file         Make TeX definitions for glue in this file
+    -e enc_file         Filename of encoding file (including where to store it)
+    -m mapping_file     Unicode mapping description file (e.g. cp1252.txt)
+    -o font_file        Output a font with fixed names
+    -p map_file         The PDFTeX .map file in which to add an entry for this
+                        font [OPTIONAL - absent, no entry added]
+    -t tfm_file         The name and where to store the .tfm file
+    -x                  Enable TeX postscript name correction
+    -z flags            bitfield of flags
+                        0 - produce tex_file for codes 32-255, default 128-255
+                        1 - ignore a-z & 0-9 when making tex_file
+    -@config_file       Specifies a file to read command line parameters from
+
+=head1 DESCRIPTION
+
+Creates a Postscript mapping file for the given font according to the 8-bit
+to Unicode mapping given in mapping_file. If the font is a Windows symbol font
+then no mapping_file is required. If no tfm file is requested, then no map_file
+entry is made, either. Requires ttf2afm and afm2tfm to run.
+
+=head1 EXAMPLE USAGE
+
+    ttfenc -e ipa93.enc -m cp1252.txt ipa93sr.ttf
+
+Just creates ipa93.enc from the POST table of ipa93sr.ttf
+
+    ttfenc -e %texmf%\pdftex\base\ipa93.enc -m cp1252.txt -p %texmf%\pdftex\bas
+e\ttfmap.map -t %texmf%\fonts\tfm\ttf\ipa93sr.tfm ipa93sr.ttf
+
+Create .tfm, .afm, .enc and install the files in the appropriate places. (The
+.afm is left with ipa93sr.log in the current directory)
+
+=cut
