@@ -1,19 +1,19 @@
-package Font::Scripts::GDL;
+package Font::TTF::Scripts::GDL;
 
 use Font::TTF::Font;
-use Font::Scripts::AP;
+use Font::TTF::Scripts::AP;
 use Unicode::Normalize;
 
 use strict;
 use vars qw($VERSION @ISA);
-@ISA = qw(Font::Scripts::AP);
+@ISA = qw(Font::TTF::Scripts::AP);
 
 $VERSION = "0.04";  # MJPH   19-APR-2006     Add +left_right ap support for compounds
 # $VERSION = "0.03";  # MJPH   9-AUG-2005     Support glyph alternates naming (A/u0410), normalization
 # $VERSION = "0.02";  # MJPH  26-APR-2004     Add to Font::Scripts::AP hierarchy
 # $VERSION = "0.01";  # MJPH   8-OCT-2002     Original based on existing code
 
-*read_font = \&Font::Scripts::AP::read_font;
+*read_font = \&Font::TTF::Scripts::AP::read_font;
 
 sub start_gdl
 {

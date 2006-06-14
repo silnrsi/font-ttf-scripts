@@ -1,4 +1,4 @@
-package Font::Scripts::Thai;
+package Font::TTF::Scripts::Thai;
 
 use strict;
 use vars qw(%class);

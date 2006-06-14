@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-use Font::Scripts::Thai;
+use Font::TTF::Scripts::Thai;
 use IO::File;
 use Getopt::Std;
 use Pod::Usage
@@ -37,7 +37,7 @@ elsif ($opt_h)
 
 $opt_i = "thai.gdl" unless ($opt_i);
 
-$font = Font::Scripts::Thai->new($ARGV[0], $opt_c, $opt_z, $opt_a, $opt_x) || die "Can't open $ARGV[0]";
+$font = Font::TTF::Scripts::Thai->new($ARGV[0], $opt_c, $opt_z, $opt_a, $opt_x) || die "Can't open $ARGV[0]";
 foreach $t (grep (m/^TS/, keys %{$font}))
 { delete $font->{$t}; }
 

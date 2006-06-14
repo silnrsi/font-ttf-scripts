@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-use Font::Scripts::GDL;
+use Font::TTF::Scripts::GDL;
 use IO::File;
 use Getopt::Std;
 use Pod::Usage;
@@ -20,7 +20,7 @@ if ($opt_h)
 
 $comp = $1 if ($opt_l =~ s/(comp)$//oi);
 
-$f = Font::Scripts::GDL->read_font($ARGV[0], $opt_a) || die "Can't read font information";
+$f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opt_a) || die "Can't read font information";
 $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
 foreach $g (@{$f->{'glyphs'}})

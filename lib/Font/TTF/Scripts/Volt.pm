@@ -1,17 +1,17 @@
-package Font::Scripts::Volt;
+package Font::TTF::Scripts::Volt;
 
 use Parse::RecDescent;
 use Algorithm::Diff qw(sdiff);
 use Font::TTF::Font;
-use Font::Scripts::AP;
+use Font::TTF::Scripts::AP;
 
 use strict;
 use vars qw($VERSION @ISA %dat $volt_grammar $volt_parser);
-@ISA = qw(Font::Scripts::AP);
+@ISA = qw(Font::TTF::Scripts::AP);
 
 $VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
 # $VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
-*read_font = \&Font::Scripts::AP::read_font;
+*read_font = \&Font::TTF::Scripts::AP::read_font;
 
 sub out_volt
 {
@@ -55,7 +55,7 @@ sub out_volt_glyphs
         { $type = $g->{'type'} || 'BASE'; }
         
         $res .= " TYPE $type" if ($type);
-        $res .= " COMPONENTS $g->{'components'}" if ($g->{'components'});
+        $res .= " COMPONENTS " . scalar@{$g->{'components'}} if ($g->{'components'});
         $res .= " END_GLYPH\n";
     }
     $res;

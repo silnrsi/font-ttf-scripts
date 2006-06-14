@@ -12,7 +12,7 @@ our $VERSION="0.4, 2004-12-07";	#RMH
 # 0.1   RMH    14-Aug-02     Import VOLT anchor definitions from XML
 
 use Font::TTF::Font;
-use Font::Scripts::AP;
+use Font::TTF::Scripts::AP;
 use Getopt::Std;
 
 our ($opt_d, $opt_l, $opt_s);
@@ -181,7 +181,7 @@ sub ConvertXMLAnchorName {
 
 # Read in font and anchor point data:
 
-my $ap = Font::Scripts::AP->read_font($inFont,$inXML) || die "Can't read $inXML";
+my $ap = Font::TTF::Scripts::AP->read_font($inFont,$inXML) || die "Can't read $inXML";
 if (exists $ap->{'WARNINGS'})
 {
 	print LOG $ap->{'WARNINGS'};

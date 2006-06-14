@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 use Font::TTF::Font;
-use Font::Scripts::Volt;
+use Font::TTF::Scripts::Volt;
 use Getopt::Std;
+use Pod::Usage;
 
 getopts('a:hi:l:t');
 
@@ -17,7 +18,7 @@ if ($opt_h)
     exit;
 }
 
-$f = Font::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font information";
+$f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font information";
 
 $comp = $1 if ($opt_l =~ s/(comp)$//o);
 

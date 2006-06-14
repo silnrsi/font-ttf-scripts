@@ -2,13 +2,17 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.6";
+$VERSION = "0.7";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
 
 # incantation to enable MY::pm_to_blib later on
-push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib)) if ($^O eq 'MSWin32');
+if ($^O eq 'MSWin32')
+{
+    push(@ExtUtils::MakeMaker::Overridable, qw(pm_to_blib));
+    @extras = (dist => { 'TO_UNIX' => 'perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"' });
+}
 
 @scripts = grep {-f && !m/\./o && !m/~$/o } glob("scripts/*");
 @scripts = grep {!m|/add|oi} @scripts unless ($^O eq 'MSWin32');
@@ -39,13 +43,13 @@ WriteMakefile (
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",
         ABSTRACT => "TTF font support scripts for Perl",
-        dist => { 'TO_UNIX' => 'perl -Mtounix -e "tounix(\"$(DISTVNAME)\")"' },
 		PREREQ_PM => {
 			'Algorithm::Diff' => 0,
 			'Font::TTF::Font' => 0.36,
 			'Text::PDF::File' => 0,
 			'Parse::RecDescent' => 1.51
-			}
+			},
+        @extras
     );
 
 if ($^O eq 'MSWin32') {
@@ -120,3 +124,5 @@ EOT
     
     $res;
 }
+
+1;

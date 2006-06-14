@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-use Font::Scripts::Thai;
+use Font::TTF::Scripts::Thai;
 use Getopt::Std;
 use Font::TTF::GDEF;
 use Font::TTF::GPOS;
@@ -21,7 +21,7 @@ elsif ($opt_h)
     exit;
 }
 
-$font = Font::Scripts::Thai->new($ARGV[0], $opt_c, $opt_z, $opt_a, $opt_x) || die "Can't open $ARGV[0]";
+$font = Font::TTF::Scripts::Thai->new($ARGV[0], $opt_c, $opt_z, $opt_a, $opt_x) || die "Can't open $ARGV[0]";
 $classes = $font->{'class'}{'groups'};
 
 # GDEF

@@ -1,0 +1,27 @@
+=head1 NAME
+
+Font::TTF::Scripts - Smart font script supporting modules and scripts for TTF/OTF
+
+=head1 DESCRIPTION
+
+This module contains a number of useful programs for hacking with TTF files:
+
+check_attach, eurofix, fret, hackos2, make_gdl, make_volt, psfix, thai2gdl,
+thai2ot, thai2volt, ttfbuilder, ttfenc, ttfname, ttfremap, ttfsetver,
+volt2xml, voltExportAnchors, voltFixup, voltImportAnchors
+
+Highlights include:
+
+  fret       - produces PDF report of an uninstalled font including all glyphs
+  hackos2    - manipulates the OS/2 table of a font
+  ttfbuilder - builds a font from another font, attaching glyphs, subsetting, etc.
+  ttfname    - renames a font
+
+=head1 AUTHOR
+
+Martin Hosken <martin_hosken@sil.org>
+
+=head1 COPYRIGHT
+
+This module and all scripts are copyright SIL International and are licensed under
+the same terms as Perl itself.

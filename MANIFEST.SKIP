@@ -16,3 +16,5 @@ addbats\.pl
 ^dev/
 \.iss
 pm_to_blib
+debian/
+-stamp$

@@ -1,4 +1,4 @@
-package Font::Scripts::GDL;
+package Font::TTF::Scripts::GDL;
 
 use Font::TTF::Font;
 use XML::Parser::Expat;
