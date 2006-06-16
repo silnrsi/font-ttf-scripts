@@ -204,7 +204,7 @@ sub out_volt_lookups
         $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
         $res .= "ATTACH GROUP \"cTakes${c}Dia\"\n";
-        $res .= "TO GROUP \"c_${c}Dia\" AT ANCHOR \"$c\"\n";
+        $res .= "TO GROUP \"c${c}Dia\" AT ANCHOR \"$c\"\n";
         $res .= "END_ATTACH\nEND_POSITION\n";
     }
 
@@ -316,7 +316,10 @@ sub out_volt_anchors
         $k = $glyph->{'name'};
         foreach $i (sort keys %{$glyph->{'points'}})
         {
-            $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT 1 " .
+            my ($m) = $i;
+            $m =~ s/^_/MARK_/o;
+
+            $res .= "DEF_ANCHOR \"$m\" ON $glyph->{'gnum'} GLYPH $k COMPONENT 1 " .
                     "AT POS DX $glyph->{'points'}{$i}{'x'} DY $glyph->{'points'}{$i}{'y'} END_POS " .
                     "END_ANCHOR\n";
         }
