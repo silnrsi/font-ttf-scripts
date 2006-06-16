@@ -200,6 +200,7 @@ sub out_volt_lookups
     foreach $c (sort keys %{$self->{'lists'}})
     {
         next if ($c =~ m/^_/o);
+        next unless (defined $self->{'lists'}{"_$c"});
 
         $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
