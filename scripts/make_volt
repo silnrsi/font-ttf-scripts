@@ -6,7 +6,7 @@ use Pod::Usage;
 
 getopts('a:hi:l:t');
 
-unless ($ARGV[1] || $opt_h)
+unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
     pod2usage(1);
     exit;
