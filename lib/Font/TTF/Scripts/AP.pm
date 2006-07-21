@@ -412,6 +412,31 @@ sub read_font
     $self;
 }
 
+=head2 $ap->make_names
+
+Create name records for all the glyphs in the font
+
+=cut
+
+sub make_names
+{
+    my ($self) = @_;
+    my ($f) = $self->{'font'};
+    my ($numg) = $f->{'maxp'}{'numGlyphs'};
+    my ($i, $gname);
+
+    for ($i = 0; $i < $numg; $i++)
+    {
+        my ($glyph) = $self->{'glyphs'}[$i];
+        $gname = $self->make_name($glyph->{'post'}, $glyph->{'uni'}, $glyph);
+
+        while (defined $self->{'glyph_names'}{$gname})
+        { $gname =~ s/(?:_(\d+))$/"_".($1+1)/oe; }
+        $self->{'glyph_names'}{$gname} = $i;
+        $glyph->{'name'} = $gname;
+    }
+}
+
 =head2 $ap->make_classes (%opts)
 
 First, for every glyph record in C<glyphs>, C<make_classes> invokes C<make_name>  

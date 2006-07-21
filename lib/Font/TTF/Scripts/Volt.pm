@@ -568,7 +568,7 @@ EOG
 sub parse_volt
 {
     my ($self, $vtext) = @_;
-    my ($font) = $self->{'font'};
+    my ($font) = $self->{'font'} if (ref $self);
 
     $vtext = $font->{'TSIV'}->read->{' dat'} unless ($vtext);
     $volt_parser = new Parse::RecDescent ($volt_grammar) unless ($volt_parser);
