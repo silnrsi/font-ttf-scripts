@@ -248,7 +248,7 @@ sub make_point
 
 sub normal_rules
 {
-    my ($self, $fh, $pnum) = @_;
+    my ($self, $fh, $pnum, $ndrawn) = @_;
     my ($g, $struni, $seq, $dseq, $dcomb, @decomp, $d);
     my ($c) = $self->{'cmap'};
     my ($glyphs) = $self->{'glyphs'};
@@ -256,7 +256,7 @@ sub normal_rules
     $fh->print("\ntable(substitution);\npass($pnum);\n");
     foreach $g (@{$self->{'glyphs'}})
     {
-        next unless ($g->{'props'}{'drawn'});
+        next unless ($ndrawn || $g->{'props'}{'drawn'});
 # TODO: should really handle multiple unicode values correctly
         next unless ($c->{$g->{'uni'}[0]} == $g->{'gnum'});
         $struni = pack('U', $g->{'uni'}[0]);
@@ -268,20 +268,20 @@ sub normal_rules
         { $dok = 0 unless $c->{$d}; }
         next unless $dok;
 
-        $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp) . " > $g->{'name'} " . ("_ " x (scalar @decomp - 1)) . ";\n");
+        $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp) . " > $g->{'name'}:(" . join(' ', 1 .. scalar @decomp) . ") " . ("_ " x (scalar @decomp - 1)) . ";\n");
 
         if (scalar @decomp > 2)
         {
-            $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp[0, 2, 1]) . " > $g->{'name'} _ _;\n");
+            $fh->print(join(' ', map {$glyphs->[$c->{$_}]{'name'}} @decomp[0, 2, 1]) . " > $g->{'name'}:(1 2 3) _ _;\n");
             $dseq = pack('U*', @decomp[0, 1]);
             $dcomb = NFC($dseq);
             if ($dcomb ne $dseq)
-            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[2]}]{'name'} . " > $g->{'name'} _;\n"); }
+            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[2]}]{'name'} . " > $g->{'name'}:(1 2) _;\n"); }
 
             $dseq = pack('U*', @decomp[0, 2]);
             $dcomb = NFC($dseq);
             if ($dcomb ne $dseq)
-            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[1]}]{'name'} . " > $g->{'name'} _;\n"); }
+            { $fh->print($glyphs->[$c->{unpack('U', $dcomb)}]{'name'} . " " . $glyphs->[$c->{$decomp[1]}]{'name'} . " > $g->{'name'}:(1 2) _;\n"); }
         }
     }
     $fh->print("endpass;\nendtable;\n");
@@ -310,6 +310,31 @@ sub lig_rules
         else
         { $fh->print("clno_$c $gname > cl$c:(1 2)$compstr _/ ^ _ _;\n"); }
 
+    }
+    $fh->print("endpass;\nendtable;\n");
+}
+
+sub pos_rules
+{
+    my ($self, $fh, $pnum) = @_;
+    my ($lists) = $self->{'lists'};
+    my ($p);
+
+    return unless (keys %$lists);
+    $fh->print(<<'EOT');
+
+#ifndef opt2
+#define opt(x)      [x]?
+#define opt2(x)     [opt(x) x]?
+#define opt3(x)     [opt2(x) x]?
+#define opt4(x)     [opt3(x) x]?
+#endif
+EOT
+    $fh->print("\ntable(positioning);\npass($pnum);\n");
+    foreach $p (keys %{$lists})
+    {
+        next if ($p =~ m/^_/o);
+        $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / _ opt4(cnTakes${p}Dia) _ {user1 == 0};\n");
     }
     $fh->print("endpass;\nendtable;\n");
 }

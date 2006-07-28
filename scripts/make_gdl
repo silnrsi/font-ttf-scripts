@@ -4,7 +4,7 @@ use IO::File;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('a:hi:l:n:s:z:');
+getopts('a:hi:l:n:p:s:z:');
 
 unless ($ARGV[1] || $opt_h)
 {
@@ -39,13 +39,16 @@ foreach $g (@{$f->{'glyphs'}})
     $g->{'points'} = $points;
 }
 
+$f->{'vecs'} = {};
+
 $f->start_gdl($outfh);
 $f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
 $f->out_gdl($outfh, -split_ligs => ($opt_z & 1));
 $f->out_classes($outfh);
 $f->endtable($outfh);
-$f->normal_rules($outfh, $opt_n) if ($opt_n);
+$f->normal_rules($outfh, $opt_n, ($opt_z & 2)) if ($opt_n);
 $f->lig_rules($outfh, $opt_s, $opt_l) if ($opt_l);
+$f->pos_rules($outfh, $opt_p) if ($opt_p);
 $f->end_gdl($outfh, $opt_i);
 
 $outfh->close();
@@ -74,9 +77,11 @@ Creates font specific GDL from a font and optional attachment point database
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
   -n num        Add a normalization substitution with the given pass number
+  -p num        Add auto positioning attachment rules with the given pass number
   -s num        Add ligature substitution rules with the given pass number
   -z bitfield   Bitfield of various controls:
                     0 - use component properties to set ligature bounding boxes
+                    1 - normalise even if presentation is only references
 
 =head1 DESCRIPTION
 

@@ -11,7 +11,16 @@ use vars qw($VERSION @ISA %dat $volt_grammar $volt_parser);
 
 $VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
 # $VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
-*read_font = \&Font::TTF::Scripts::AP::read_font;
+# *read_font = \&Font::TTF::Scripts::AP::read_font;
+
+sub read_font
+{
+    my ($self) = Font::TTF::Scripts::AP::read_font(@_);
+
+    $self->{'glyphs'}[0]{'post'} = 'glyph0';        # hack to make volt happy, not sure why
+    $self;
+}
+
 
 sub out_volt
 {
