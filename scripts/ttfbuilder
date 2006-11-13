@@ -993,8 +993,9 @@ ttfbuilder - assemble a font from another font
 
 =head1 SYNOPSIS
 
-ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
+  ttfbuilder [-a] [-h] -c config.xml [-x attach.xml] [-z out.xml] \\
       infile.ttf outfile.ttf
+
 Builds outfile.ttf from infile.ttf according to config.xml. Also
 requires an attachment point database (attach.xml) and can generate
 out.xml.

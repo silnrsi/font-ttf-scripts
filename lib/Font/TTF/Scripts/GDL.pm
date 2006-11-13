@@ -334,7 +334,7 @@ EOT
     foreach $p (keys %{$lists})
     {
         next if ($p =~ m/^_/o);
-        $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / _ opt4(cnTakes${p}Dia) _ {user1 == 0};\n");
+        $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ opt4(cnTakes${p}Dia) _ {user1 == 0};\n");
     }
     $fh->print("endpass;\nendtable;\n");
 }

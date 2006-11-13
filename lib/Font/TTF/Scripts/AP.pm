@@ -508,12 +508,13 @@ sub make_classes
     {
         foreach $name (split('/', $glyph->{'post'}))
         {
-            if ($name =~ m/\.([^_.]+)$/o)
+            while ($name =~ m/\.([^_.]+)$/o)
             {
                 my ($base, $ext) = ($` , $1);    #` make editor happy
-                next unless ($i = $namemap{$base});
+                last unless ($i = $namemap{$base});
                 push (@{$classes{$ext}}, $glyph->{'gnum'});
                 push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});
+                $name = $base;
             }
         }
     }
@@ -527,19 +528,19 @@ sub make_classes
         {
             foreach $name (split('/', $glyph->{'post'}))
             {
-                my ($base, $class, $cname);
-                my ($ext, @elem) = $self->split_lig($name, $opts{'-ligtype'});
+                my ($class, $cname);
+                my ($ext, @elem, $base) = $self->split_lig($name, $opts{'-ligtype'});
                 next if ($ext || scalar @elem < 2);
 
                 if ($opts{'-ligatures'} eq 'first')
                 { 
-                    ($base, $class) = (join('', @elem[1..$#elem]), $elem[0]);
+                    $class = $elem[0];
                     $base = "uni$base" if ($class =~ s/^uni//o);
                     $base =~ s/^_//o;
                 }
                 else
                 { 
-                    ($base, $class) = (join('', @elem[0..($#elem-1)]), $elem[-1]);
+                    $class = $elem[-1];
                     $class =~ s/^_//o;
                 }
 
@@ -605,24 +606,34 @@ sub make_point
 sub split_lig
 {
     my ($self, $str, $type) = @_;
-    my ($ext, @res);
+    my ($ext, @res, $base);
+
+    unless ($type =~ /comp/)
+    { $ext = $1 if ($str =~ s/(\.(.*?))$//o); }
 
     if ($str =~ m/_/o)
     {
-        unless ($type eq 'comp')
-        {
-            $ext = $1 if ($str =~ s/(\.(.*?))$//o);
-        }
         @res = split('_', $str);
         foreach (@res[1..$#res])
         { $_ = "_$_"; }
+        $base = $str;
+        if ($type =~ /last/)
+        { $base =~ s/_(.*?)$//o; }
+        else
+        { $base =~ s/^(.*?)_//o; }
     }
     elsif ($str =~ s/^uni//o)
     {
         @res = $str =~ m/([0-9a-fA-F]{4})/og;
         $res[0] = "uni$res[0]";
+        if ($type =~ /last/)
+        { $base = "uni" . join('', @res[0 .. ($#res-2)]); }
+        else
+        { $base = "uni" . join('', @res[1 .. ($#res-1)]); }
     }
-    ($ext, @res);
+    else
+    { $res[0] = $str; }
+    ($ext, @res, $base);
 }
 
 sub error

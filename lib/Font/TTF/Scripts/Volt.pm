@@ -172,37 +172,49 @@ sub out_volt_lookups
     foreach $c (sort keys %{$self->{'classes'}})
     {
         next if ($c =~ m/^no_/o);
+        next if (grep {$_->{'id'} eq $c} @{$self->{'lookups'}});
 
         $res .= "DEF_LOOKUP \"$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
-        for ($i = 0; $i < scalar @{$self->{'classes'}{$c}}; $i++)
-        {
-            $res .= "SUB GLYPH \"" .($glyphs->[$self->{'classes'}{"no_$c"}[$i]]{'name'}) . "\"\n";
-            $res .= "WITH GLYPH \"$glyphs->[$self->{'classes'}{$c}[$i]]{'name'}\"\n";
-            $res .= "END_SUB\n";
-        }
+
+        $res .= "SUB GROUP \"cno_$c\"\n";
+        $res .= "WITH GROUP \"c$c\"\n";
+        $res .= "END_SUB\n";
+#        for ($i = 0; $i < scalar @{$self->{'classes'}{$c}}; $i++)
+#        {
+#            $res .= "SUB GLYPH \"" .($glyphs->[$self->{'classes'}{"no_$c"}[$i]]{'name'}) . "\"\n";
+#            $res .= "WITH GLYPH \"$glyphs->[$self->{'classes'}{$c}[$i]]{'name'}\"\n";
+#            $res .= "END_SUB\n";
+#        }
         $res .= "END_SUBSTITUTION\n";
     }
 
     foreach $c (sort keys %{$self->{'ligclasses'}})
     {
         next if ($c =~ m/^no_/o);
+        next if (grep {$_->{'id'} eq "l$c"} @{$self->{'lookups'}});
 
         my ($bnum) = $self->{'ligmap'}{$c};
 
         $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
-        for ($i = 0; $i < scalar @{$self->{'ligclasses'}{$c}}; $i++)
-        {
-            my ($gname) = $glyphs->[$self->{'ligclasses'}{"no_$c"}[$i]]{'name'};
-
-            if ($ligtype eq 'first')
-            { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GLYPH \"$gname\"\n"; }
-            else
-            { $res .= "SUB GLYPH \"$gname\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
-            $res .= "WITH GLYPH \"$glyphs->[$self->{'ligclasses'}{$c}[$i]]{'name'}\"\n";
-            $res .= "END_SUB\n";
-        }
+        if ($ligtype eq 'first')
+        { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GROUP \"no_$c\"\n"; }
+        else
+        { $res .= "SUB GROUP \"clno_$c\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
+        $res .= "WITH GROUP \"cl$c\"\n";
+        $res .= "END_SUB\n";
+#        for ($i = 0; $i < scalar @{$self->{'ligclasses'}{$c}}; $i++)
+#        {
+#            my ($gname) = $glyphs->[$self->{'ligclasses'}{"no_$c"}[$i]]{'name'};
+#
+#            if ($ligtype eq 'first')
+#            { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GLYPH \"$gname\"\n"; }
+#            else
+#            { $res .= "SUB GLYPH \"$gname\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
+#            $res .= "WITH GLYPH \"$glyphs->[$self->{'ligclasses'}{$c}[$i]]{'name'}\"\n";
+#            $res .= "END_SUB\n";
+#        }
         $res .= "END_SUBSTITUTION\n";
     }
 
@@ -222,11 +234,11 @@ sub out_volt_lookups
     {
         my ($q, $t, $s);
         my ($id) = $l->{'id'};
-        next if ((defined $self->{'lists'}{$id} && $id !~ m/^_/o)
-            || (defined $self->{'classes'}{$id} && $id !~ m/^no_/o));
+#        next if ((defined $self->{'lists'}{$id} && $id !~ m/^_/o)
+#            || (defined $self->{'classes'}{$id} && $id !~ m/^no_/o));
 
         my ($t) = $id;
-        next if ($t =~ s/^l//o && defined $self->{'ligclasses'}{$t});
+#        next if ($t =~ s/^l//o && defined $self->{'ligclasses'}{$t});
         $res .= "DEF_LOOKUP \"$id\"";
         foreach $q (qw(base marks all dir))
         {
