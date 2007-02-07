@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 my ($if, $of);
 
-$VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
+$VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
+# $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
 # $VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
 # $VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
 #                                                 add component generation for joined glyph chains (adv each)
@@ -292,13 +293,19 @@ sub main
                 {
                     $pt = $xml_dat[$aglyph->{'gid'}]{'points'}{$attrs{'with'}};
                     if (!defined $pt)
-                    { $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c"); }
+                    {
+                        $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c");
+                        $pt->{'loc'} = [0, 0];
+                    }
                     elsif (!defined $pt->{'loc'})
                     {
                         if (defined $pt->{'cont'})
                         { $pt->{'loc'} = lookup_pt($aglyph->{'glyph'}, $pt->{'cont'}); }
                         else
-                        { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c"); }
+                        {
+                            $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c");
+                            $pt->{'loc'} = [0, 0];
+                        }
                     }
                     ($withx, $withy) = @{$pt->{'loc'}};
                     delete $aglyph->{'points'}{$attrs{'with'}}     # delete if attaching to a real glyph

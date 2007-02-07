@@ -219,7 +219,7 @@ warning messages are accumulated in C<WARNINGS>.
 =back
 
 =cut
-#'
+
 sub read_font
 {
     my ($class, $fname, $xml_file, %opts) = @_;
@@ -529,7 +529,7 @@ sub make_classes
             foreach $name (split('/', $glyph->{'post'}))
             {
                 my ($class, $cname);
-                my ($ext, $base, @elem) = $self->split_lig($name, $opts{'-ligtype'});
+                my ($ext, $base, @elem) = $self->split_lig($name, $opts{'-ligatures'}, $opts{'-ligtype'});
                 next if ($ext || scalar @elem < 2);
 
                 if ($opts{'-ligatures'} eq 'first')
@@ -605,10 +605,10 @@ sub make_point
 
 sub split_lig
 {
-    my ($self, $str, $type) = @_;
+    my ($self, $str, $type, $comp) = @_;
     my ($ext, @res, $base);
 
-    unless ($type =~ /comp/)
+    unless ($comp =~ /comp/)
     { $ext = $1 if ($str =~ s/(\.(.*?))$//o); }
 
     if ($str =~ m/_/o)
