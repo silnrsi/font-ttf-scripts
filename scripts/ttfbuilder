@@ -8,7 +8,7 @@ use strict;
 my %opts;
 my $VERSION;
 our $CHAIN_CALL;
-my ($if, $of);
+my ($if, $of);$
 
 $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
 # $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
@@ -1205,6 +1205,7 @@ The DTD for the configuration file is:
         PSNAme      CDATA #IMPLIED
         UID         CDATA #IMPLIED
         GID         CDATA #IMPLIED
+        BID         CDATA #IMPLIED
         overstrike  (0 | false | none | 1 | true | all | both | left 
                        | right)  #IMPLIED>
 

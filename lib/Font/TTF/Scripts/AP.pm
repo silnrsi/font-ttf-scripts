@@ -508,12 +508,14 @@ sub make_classes
     {
         foreach $name (split('/', $glyph->{'post'}))
         {
+            my ($gnum) = $glyph->{'gnum'};
             while ($name =~ m/\.([^_.]+)$/o)
             {
                 my ($base, $ext) = ($` , $1);    #` make editor happy
                 last unless ($i = $namemap{$base});
-                push (@{$classes{$ext}}, $glyph->{'gnum'});
-                push (@{$classes{"no_$ext"}}, $self->{'glyphs'}[$i]{'gnum'});
+                push (@{$classes{$ext}}, $gnum);
+                $gnum = $self->{'glyphs'}[$i]{'gnum'};
+                push (@{$classes{"no_$ext"}}, $gnum);
                 $name = $base;
             }
         }

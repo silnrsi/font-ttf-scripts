@@ -172,7 +172,7 @@ sub out_classes
     }
 
 
-    foreach $cl (sort keys %{$classes})
+    foreach $cl (sort {classcmp($a, $b)} keys %{$classes})
     {
         $fh->print("c$cl = ($glyphs->[$classes->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$classes->{$cl}}; $i++)
@@ -180,7 +180,7 @@ sub out_classes
         $fh->print(");\n\n");
     }
 
-    foreach $cl (sort keys %{$ligclasses})
+    foreach $cl (sort {classcmp($a, $b)} keys %{$ligclasses})
     {
         $fh->print("cl$cl = ($glyphs->[$ligclasses->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$ligclasses->{$cl}}; $i++)
@@ -189,6 +189,15 @@ sub out_classes
     }
 
     $self;
+}
+
+sub classcmp
+{
+    my ($x, $y) = @_;
+    my ($v, $w) = ($x, $y);
+    $v =~ s/^no_//o;
+    $w =~ s/^no_//o;
+    return ($v cmp $w || $x cmp $y);
 }
 
 sub endtable
