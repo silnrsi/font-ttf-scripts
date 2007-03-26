@@ -1,8 +1,9 @@
 #! /usr/bin/perl
 use Font::TTF::Font;
+use Font::TTF::PSNames qw(lookup);
 use Getopt::Std;
 
-getopts("c:rsu");
+getopts("c:prsu");
 
 unless (defined $opt_c && defined $ARGV[1] && !(defined $opt_s && defined $opt_u) )
 {
@@ -12,18 +13,19 @@ Remaps the MS cmap of a font without removing any glyphs. Updates the OS/2
 table according to first and last char of new cmap. The changes file consists
 of lines of any of the following forms:
 
-    uni_first, uni_to
-    uni_first, uni_last, uni_to
-    g, gid_first, uni_to
-    g, gid_first, gid_last, uni_to
+    uni_first, [uni_last,] uni_to
+    g, gid_first, [gid_last,] uni_to
+    d, uni_first[, uni_last]
     
 where uni_first (gid_first) is the first of a range of Unicodes (glyph IDs) 
 in the source font, uni_last (gid_last) is the last of that range (if not
 specified, default is same as uni_first (gid_last)), and uni_to 
 is the start of the sequential set of Unicodes that will be altered in the 
 output cmap so they map to the specified range. NOTE: Unicode values
-should be in hex, glyph IDs are decimal.
+should be in hex, glyph IDs are decimal. An initial d, deletes the range
+from the output map (useful for -r).
 
+    -p      Rename postscript names for shifted glyphs
     -r      Replace (copy the old cmap before mapping)
     -s      Convert to symbol encoding
     -u      Convert to UGL encoding
@@ -35,6 +37,7 @@ open(INFILE, "$opt_c") || die "Unable to open $opt_c for reading";
 $f = Font::TTF::Font->open($ARGV[0]);
 $v = $f->{'OS/2'}->read;                     # we need to update this
 $o = $f->{'cmap'}->read->find_ms->{'val'} || die "This font has no MS cmap table";
+$p = $f->{'post'}->read if ($opt_p);
 
 if ($opt_r) 
 { 
@@ -55,21 +58,39 @@ while (<INFILE>)
     s/\s*[#;].*//o;
     @work = split /,\s*/;
 
-    $UseGID = lc($work[0] eq 'g');
-    shift @work if $UseGID;
- 
-    next if $#work < 1 or $#work > 2;
-    
-    @work[1,2] = @work[0,1] if $#work < 2;	# if uni_last/g_last is missing, make it same as uni_first/g_first
+    if (lc($work[0]) eq 'd')
+    {
+        shift @work;
+        $work[1] = $work[0] unless (defined $work[1]);
+        foreach (hex($work[0]) .. hex($work[1]))
+        { delete $s->{$_} if defined ($s->{$_}); }
+        if ($cmin > hex($work[0]))
+        { $cmin = (sort {$a <=> $b} keys %$s)[0]; }
+        if ($cmax < hex($work[1]))
+        { $cmax = (sort {$a <=> $b} keys %$s)[-1]; }
+    }
+    else
+    {
+        $UseGID = lc($work[0] eq 'g');
+        shift @work if $UseGID;
+     
+        next if $#work < 1 or $#work > 2;
+        
+        @work[1,2] = @work[0,1] if $#work < 2;	# if uni_last/g_last is missing, make it same as uni_first/g_first
 
-    $first = ($UseGID ? $work[0] : hex($work[0]));
-    $last  = ($UseGID ? $work[1] : hex($work[1]));
-    $to = hex($work[2]);
+        $first = ($UseGID ? $work[0] : hex($work[0]));
+        $last  = ($UseGID ? $work[1] : hex($work[1]));
+        $to = hex($work[2]);
 
-    map {$s->{$to + $_} = ($UseGID ? ($first + $_) : $o->{$first + $_})} (0 .. ($last - $first));
+        foreach (0 .. ($last - $first))
+        {
+            $s->{$to + $_} = ($UseGID ? ($first + $_) : $o->{$first + $_});
+            $p->{'VAL'}[$UseGID ? ($first + $_) : $o->{$first + $_}] = lookup($to + $_) if ($opt_p);
+        }
 
-    $cmin = $to if $cmin > $to;
-    $cmax = ($to + $last - $first) if ($cmax < ($to + $last - $first));
+        $cmin = $to if $cmin > $to;
+        $cmax = ($to + $last - $first) if ($cmax < ($to + $last - $first));
+    }
 }
 
 close(INFILE);
