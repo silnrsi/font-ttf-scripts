@@ -8,7 +8,7 @@ use strict;
 my %opts;
 my $VERSION;
 our $CHAIN_CALL;
-my ($if, $of);$
+our ($if, $of);
 
 $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
 # $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages

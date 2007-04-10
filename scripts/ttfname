@@ -2,40 +2,61 @@
 
 use Font::TTF::Font;
 use Getopt::Std;
+use Pod::Usage;
 
-getopts('f:l:n:qs:t:');
-$font = Font::TTF::Font->open($ARGV[0]) || die "Can't open font file $ARGV[0]";
+our $CHAIN_CALL;
+our ($if, $of);
 
-$font = ttfname($font, $opt_f, $opt_l, $opt_n, $opt_q, $opt_s, $opt_t);
+unless ($CHAIN_CALL)
+{
+    getopts('f:hl:n:qs:t:', %opts);
 
-$font->out($ARGV[1]);
+    unless (defined $ARGV[1] || defined $opts{h})
+    {
+        pod2usage(1);
+        exit;
+    }
+
+    if ($opts{h})
+    {
+        pod2usage( -verbose => 2);
+        exit;
+    }
+
+    $if = Font::TTF::Font->open($ARGV[0]) || die "Can't read font $ARGV[0]";
+}
+
+$of = ttfname($if, %opts);
+
+unless ($CHAIN_CALL)
+{ $of->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?"; }
 
 sub ttfname
 {
-    my ($font, $opt_f, $opt_l, $opt_n, $opt_q, $opt_s, $opt_t) = @_;
+    my ($font, %opts) = @_;
     my ($name) = $font->{'name'}->read;
 
-    if (defined $opt_s)
+    if (defined $opts{'s'})
     {
-        my ($fh) = IO::File->new("< $opt_s") || die "Can't open $opt_s";
+        my ($fh) = IO::File->new("< $opts{'s'}") || die "Can't open $opts{'s'}";
         local ($/);
-        $opt_n = join('', <$fh>);
+        $opts{'s'} = join('', <$fh>);
         $fh->close();
     }
 
-    if (defined $opt_t)
+    if (defined $opts{'t'})
     {
-        $name->set_name($opt_t, $opt_n, $opt_l);
+        $name->set_name($opts{'t'}, $opts{'n'}, $opts{'l'});
     }
     else
     {
         my ($subfamily) = $name->find_name(2);
         my ($family, $full, $post, $unique, @time);
 
-        if ($opt_f)
+        if ($opts{'f'})
         {
-            $full = $opt_f;
-            $family = $opt_f;
+            $full = $opts{'f'};
+            $family = $opts{'f'};
             unless (lc($subfamily) eq 'regular' || lc($subfamily) eq 'standard')
             {
                 unless ($family =~ s/\s+$subfamily$//i)
@@ -47,7 +68,7 @@ sub ttfname
         }
         else
         {
-            $family = $opt_n;
+            $family = $opts{'n'};
             if (lc($subfamily) eq 'regular' || lc($subfamily) eq 'standard')
             { $full = $family; }
             else
@@ -65,14 +86,37 @@ sub ttfname
         $name->{'strings'}[6][3][1]{1033} = $post;
 
 # now update all the interesting name fields
-        $name->set_name(1, $family, $opt_l);
-        $name->set_name(2, $subfamily, $opt_l);
-        $name->set_name(3, $unique, $opt_l);
-        $name->set_name(4, $full, $opt_l);
-        $name->set_name(6, $post, $opt_l);
-        $name->set_name(16, $family, $opt_l);
-        $name->set_name(17, $subfamily, $opt_l);
-        $name->set_name(18, $full, $opt_l);
+        $name->set_name(1, $family, $opts{'l'});
+        $name->set_name(2, $subfamily, $opts{'l'});
+        $name->set_name(3, $unique, $opts{'l'});
+        $name->set_name(4, $full, $opts{'l'});
+        $name->set_name(6, $post, $opts{'l'});
+        $name->set_name(16, $family, $opts{'l'});
+        $name->set_name(17, $subfamily, $opts{'l'});
+        $name->set_name(18, $full, $opts{'l'});
     }
     return $font;
 }
+
+__END__
+
+=head1 TITLE
+
+ttfname - renames font files
+
+=head1 SYNOPSIS
+
+  TTFNAME [-f "new_full_name"] -n "new_name" [-t num] [-q] <infile> <outfile>
+Renames the TTF with the given name and outputs the newly named font to
+<outfile>.
+
+=head1 OPTIONS
+
+  -f "name"   specifies new full name (optional) as opposed to the
+              default calculated form.
+  -l lang     language number to use (default all langs)
+  -n "name"   specifies new font family name (not optional)
+  -q          disable signon message
+  -s filename overrides -n and gets string from file. Useful for -t
+  -t num      overrides the normal naming areas to change another
+              string -f becomes inactive.

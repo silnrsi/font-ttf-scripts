@@ -16,7 +16,7 @@ while(<DATA>)
     $names{hex($i)} = $name;
 }
 
-$f = Font::TTF::Font->open($ARGV[0]);
+$f = Font::TTF::Font->open($ARGV[0]) || die "Unable to open font file $ARGV[0]";
 $f->{'post'}->read if defined $f->{'post'};
 $c = $f->{'cmap'}->read->find_ms;
 $num = $f->{'maxp'}{'numGlyphs'};
