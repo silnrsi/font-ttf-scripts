@@ -5,11 +5,11 @@ use Getopt::Std;
 use Pod::Usage;
 
 our $CHAIN_CALL;
-our ($if, $of);
+our ($if, $of, %opts);
 
 unless ($CHAIN_CALL)
 {
-    getopts('f:hl:n:qs:t:', %opts);
+    getopts('f:hl:n:qs:t:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -40,7 +40,7 @@ sub ttfname
     {
         my ($fh) = IO::File->new("< $opts{'s'}") || die "Can't open $opts{'s'}";
         local ($/);
-        $opts{'s'} = join('', <$fh>);
+        $opts{'n'} = join('', <$fh>);
         $fh->close();
     }
 
