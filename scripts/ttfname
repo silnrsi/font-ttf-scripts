@@ -122,6 +122,8 @@ Renames the TTF with the given name and outputs the newly named font to
   -f "name"   specifies new full name (optional) as opposed to the
               default calculated form.
   -l lang     language number to use (default all langs)
+              if specified name entries will be added for all platforms and
+                  encodings covered by the cmap if not already there
   -n "name"   specifies new font family name (not optional)
   -q          disable signon message
   -s filename overrides -n and gets string from file. Useful for -t
