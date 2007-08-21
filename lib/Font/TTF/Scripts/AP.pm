@@ -627,11 +627,11 @@ sub split_lig
     elsif ($str =~ s/^uni//o)
     {
         @res = $str =~ m/([0-9a-fA-F]{4})/og;
-        $res[0] = "uni$res[0]";
         if ($type =~ /last/)
-        { $base = "uni" . join('', @res[0 .. ($#res-2)]); }
+        { $base = "uni" . join('', @res[0 .. ($#res-1)]); }
         else
-        { $base = "uni" . join('', @res[1 .. ($#res-1)]); }
+        { $base = "uni" . join('', @res[1 .. $#res]); }
+        $res[0] = "uni$res[0]";
     }
     else
     { $res[0] = $str; }

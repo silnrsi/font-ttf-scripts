@@ -221,11 +221,17 @@ sub make_name
     my ($self, $gname, $uni, $glyph) = @_;
     $gname =~ s{/.*$}{}o;
     $gname =~ s/\.(.)/'_'.lc($1)/oge;
-    if ($gname =~ m/^u(?:ni)?(?:[0-9A-Fa-f]{4,6})/o)
+    if ($gname =~ m/^u(?:[0-9A-Fa-f]{4,6})/oi)
     { 
         $gname = "g" . lc($gname);
-        $gname =~ s/^gu(?:ni)?/g/o;
+        $gname =~ s/^gu/g/o;
         $gname =~ s/_u/_/og;
+    }
+    elsif ($gname =~ s/^uni(?=[0-9A-Fa-f]{4})//oi)
+    {
+        my (@nums) = $gname =~ m/([0-9A-Fa-f]{4})/og;
+        $gname =~ s/[0-9A-Fa-f]{4}//og;
+        $gname = 'g_' . join('_', @nums) . $gname;
     }
     else
     {
