@@ -1,0 +1,12 @@
+libfont-ttf-scripts-perl (0.8-1) feisty; urgency=low
+
+  * Bug fixes particularly in ttfname
+
+ -- Martin Hosken <martin_hosken@sil.org>  Wed, 29 Aug 2007 09:51:13 +0100
+
+libfont-ttf-scripts-perl (0.7-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Martin Hosken <martin_hosken@sil.org>  Wed, 14 Jun 2006 16:35:47 +0700
+
