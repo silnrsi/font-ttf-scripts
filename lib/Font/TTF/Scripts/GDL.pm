@@ -36,7 +36,10 @@ sub out_gdl
     {
         $glyph = $self->{'glyphs'}[$i];
         $fh->print("$glyph->{'name'} = ");
-        $fh->print("glyphid($i)");
+        if ($opts{'-psnames'} && $glyph->{'PSName'})
+        { $fh->print("postscript(\"$glyph->{'PSName'}\")"); }
+        else
+        { $fh->print("glyphid($i)"); }
 
         my ($ytop) = $f->{'hhea'}->read->{'Ascender'};
         my ($adv) = $f->{'hmtx'}->read->{'advance'}[$i];
