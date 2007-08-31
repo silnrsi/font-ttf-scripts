@@ -185,7 +185,7 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$ligclasses})
     {
-        $fh->print("cl$cl = ($glyphs->[$ligclasses->{$cl}[0]]{'name'}");
+        $fh->print("clig$cl = ($glyphs->[$ligclasses->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$ligclasses->{$cl}}; $i++)
         { $fh->print($i % 8 ? ", $glyphs->[$ligclasses->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$ligclasses->{$cl}[$i]]{'name'}"); }
         $fh->print(");\n\n");
