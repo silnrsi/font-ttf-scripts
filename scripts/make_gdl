@@ -140,8 +140,8 @@ the class C<cnTakes>I<x>C<Dia> contains all the glyphs without the I<x>
 attachment point.
 
 In addition for each glyph name variant (as labelled in a postscript name for
-a glyh using C<.>I<var>) a class named C<c>I<var> is created with all the glyphs
-with that variant in their name. A class named C<c_no>I<var> is also created
+a glyph using C<.>I<var>) a class named C<c>I<var> is created with all the glyphs
+with that variant in their name. A class named C<cno_>I<var> is also created
 containing all the corresponding glyphs without the variant, in direct
 correspondance, so that the non-variant form may be mapped to the variant
 form using a single rule, for all the glyphs in the class.
@@ -149,10 +149,10 @@ form using a single rule, for all the glyphs in the class.
 Finally a class is created for ligature components. If a glyph is part of a
 ligature rule it is either the key glyph for the rule or part of the class
 for the rule. Thus for a rule keyed of a glyph named I<x> there will be two
-classese: C<cl_>I<x> which is the ligatures involving I<x> and C<clno_>I<x>
+classes: C<clig_>I<x> which is the ligatures involving I<x> and C<cligno_>I<x>
 which contains all the components that correspond to the ligatures found in
-the other class. This makes a ligature rule a simple 1:1 mapping from
-C<clno_>I<x> to C<cl_>I<x>.
+the other class. This makes a ligature rule a simple 2:1 mapping from
+C<cligno_>I<x> + key to C<clig_>I<x>.
 
 =head2 Rules
 
