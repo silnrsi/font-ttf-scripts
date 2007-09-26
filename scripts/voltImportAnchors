@@ -2,6 +2,8 @@
 use strict;
 
 our $VERSION="0.4, 2004-12-07";	#RMH
+#   Add -i parameter
+#our $VERSION="0.4, 2004-12-07";	#RMH
 # Omit GLYPH field on Anchors where gdef has no NAME entry
 #our $VERSION="0.3, 2003-11-14";	#RMH
 # Display warnings from Font::Scripts::AP;
@@ -15,14 +17,15 @@ use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
 use Getopt::Std;
 
-our ($opt_d, $opt_l, $opt_s);
-getopts("dl:s");
+our ($opt_d, $opt_i, $opt_l, $opt_s);
+getopts("di:l:s");
 
 unless (@ARGV == 3 || @ARGV == 4)
 {
     die <<"EOT";
 
-VOLTImportAnchors [-d] [-s] [-l alist.txt] in.ttf Anchors.xml out.ttf [out.vtp]
+VOLTImportAnchors [-d] [-s] [-l alist.txt] [-i knownempty.txt] 
+        in.ttf Anchors.xml out.ttf [out.vtp]
 
 Imports anchor definitions from XML (in TTFBuilder syntax) into a VOLT project.
 
@@ -54,6 +57,9 @@ Options:
         (Note: the conversion between FontLab's convention of "_name" and
         VOLT's convention of "MARK_name" is automatic and should not be
         specified in a -l file).
+
+    -i  specifies a file that identifies names of glyphs that are expected
+        to have no outline. glyph names are supplied one per line.
         
 $VERSION
 
@@ -88,6 +94,8 @@ my $out;				# Output VOLT source
 # each element of which contains a two-element array consisting of the VOLT anchor name
 # and the component number:
 my (%XMLAnchorMap);
+
+my %opts;           # Parameters to Font::TTF::Scripts::AP->read_font
 
 # NB: The VOLT source parsing is stolen from VOLTFixup.
 
@@ -140,9 +148,9 @@ print LOG "STARTING VOLTImportAnchors " . ($opt_d ? "-d " : "") . ($opt_s ? "-s 
 if ($opt_l) {
 	open (IN, "<$opt_l") or die "Couldn't open '$opt_l' for reading.";
 	while (<IN>) {
-		chomp;
-		next if m/^;/o;
-		s/ //go;
+		s/[\r\n]*$//o;      # platform-safe chomp
+		s/;.*$//o;          # Strip comments
+		s/ //go;            # Strip whitespace
 		my ($xName, $vName, $vComponent) = split(',');
 		next if $xName eq '';
 		$vName = $xName unless defined $vName;
@@ -150,7 +158,25 @@ if ($opt_l) {
 		$XMLAnchorMap{$xName} = [ $vName, $vComponent ];
 		$XMLAnchorMap{"_$xName"} = [ "MARK_$vName", $vComponent ];
 	}
+	close IN;
 }
+
+# Parse -i file if supplied
+if ($opt_i) {
+    my @glist;
+	open (IN, "<$opt_i") or die "Couldn't open '$opt_i' for reading.";
+	while (<IN>) {
+		s/[\r\n]*$//o;      # platform-safe chomp
+		s/;.*$//o;          # Strip comments
+		s/ //go;            # Strip whitespace
+		next if $_ eq '';
+		push @glist, $_;
+	}
+	close IN;
+	$opts{'-knownemptyglyphs'} = join(',', @glist) if scalar(@glist);
+}
+
+
 
 # Sub to determine VOLT anchorname from an XML anchor "type" name; 
 # Returns a list containing VOLT anchor name and component,
@@ -181,7 +207,7 @@ sub ConvertXMLAnchorName {
 
 # Read in font and anchor point data:
 
-my $ap = Font::TTF::Scripts::AP->read_font($inFont,$inXML) || die "Can't read $inXML";
+my $ap = Font::TTF::Scripts::AP->read_font($inFont, $inXML, %opts) || die "Can't read $inXML";
 if (exists $ap->{'WARNINGS'})
 {
 	print LOG $ap->{'WARNINGS'};
