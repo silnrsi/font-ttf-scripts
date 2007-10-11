@@ -140,24 +140,24 @@ sub out_volt_classes
 sub out_volt_scripts
 {
     my ($self) = @_;
-    my ($res, $lk, $s, $f);
+    my ($res, $lk, $s, $f, $l);
 
     foreach $s (sort keys %{$self->{'scripts'}})
     {
         my ($t) = $self->{'scripts'}{$s};
-        my ($l) = $t->{'lang'};
         $res .= "DEF_SCRIPT NAME \"$s\" TAG \"$t->{'tag'}\"\n";
-        next unless $l;
-
-        $res .= "DEF_LANGSYS NAME \"$l->{'name'}\" TAG \"$l->{'tag'}\"\n";
-        foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l})
+        foreach $l (@{$t->{'lang'}})
         {
-            $res .= "DEF_FEATURE NAME \"$f\" TAG \"$l->{$f}{'tag'}\"\n";
-            foreach $lk (@{$l->{$f}{'lookups'}})
-            { $res .= " LOOKUP \"$lk\""; }
-            $res .= "\nEND_FEATURE\n";
+            $res .= "DEF_LANGSYS NAME \"$l->{'name'}\" TAG \"$l->{'tag'}\"\n";
+            foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l})
+            {
+                $res .= "DEF_FEATURE NAME \"$f\" TAG \"$l->{$f}{'tag'}\"\n";
+                foreach $lk (@{$l->{$f}{'lookups'}})
+                { $res .= " LOOKUP \"$lk\""; }
+                $res .= "\nEND_FEATURE\n";
+            }
+            $res .= "END_LANGSYS\n";
         }
-        $res .= "END_LANGSYS\n";
         $res .= "END_SCRIPT\n";
     }
     $res;
@@ -434,8 +434,8 @@ $volt_grammar = <<'EOG';
     glyph_component : 'COMPONENTS' num
             { $return = $item[-1]; }
 
-    script : 'DEF_SCRIPT' <commit> name tag langsys(?) 'END_SCRIPT'
-            { $dat{'scripts'}{$item[3]} = {'tag' => $item[4], 'lang' => $item[5][0]}; }
+    script : 'DEF_SCRIPT' <commit> name tag langsys(s?) 'END_SCRIPT'
+            { $dat{'scripts'}{$item[3]} = {'tag' => $item[4], 'lang' => $item[5]}; }
 
     langsys : 'DEF_LANGSYS' name tag feature(s?) 'END_LANGSYS'
             { $return = { 'name' => $item[2], 'tag' => $item[3], map {$_->{'name'} => $_} @{$item[4]}}; }
@@ -483,6 +483,8 @@ $volt_grammar = <<'EOG';
 
     post : 'ATTACH' <commit> context(s) 'TO' attach(s) 'END_ATTACH'
             { $return = {'type' => $item[1], 'context' => $item[3], 'to' => $item[5] }; }
+        | 'ATTACH_CURSIVE' <commit> exit_con(s) enter_con(s) 'END_ATTACH'
+            { $return = {'type' => $item[1], 'exits' => $item[3], 'enters' => $item[4] }; }
         | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
             { $return = {'type' => $item[1], 'context1' => $item[3], 'context2' => $item[4], 'adj' => $item[5]}; }
         | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
@@ -490,6 +492,12 @@ $volt_grammar = <<'EOG';
 
     attach : context 'AT' 'ANCHOR' qid
             { $return = [$item[1], $item[-1]]; }
+
+    exit_con : 'EXIT' context
+            { $return = $item[-1]; }
+
+    enter_con : 'ENTER' context
+            { $return = $item[-1]; }
 
     post_first : 'FIRST' context
             { $return = $item[-1]; }

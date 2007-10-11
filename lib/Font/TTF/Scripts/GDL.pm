@@ -55,16 +55,16 @@ sub out_gdl
 
                 if ($opts{'-split_ligs'})
                 {
-                    if (defined $glyph->{'comps'}{$pl})
-                    { $glyph->{'comps'}{$pl}[3] = $pt->{'x'}; }
+                    if (defined $glyph->{'components'}{$pl})
+                    { $glyph->{'components'}{$pl}[3] = $pt->{'x'}; }
                     else
-                    { $glyph->{'comps'}{$pl} = [0, 0, $pt->{'x'}, $ytop]; }
+                    { $glyph->{'components'}{$pl} = [0, 0, $pt->{'x'}, $ytop]; }
                     if ($pr)
                     {
-                        if (defined $glyph->{'comps'}{$pr})
-                        { $glyph->{'comps'}{$pr}[0] = $pt->{'x'}; }
+                        if (defined $glyph->{'components'}{$pr})
+                        { $glyph->{'components'}{$pr}[0] = $pt->{'x'}; }
                         else
-                        { $glyph->{'comps'}{$pr} = [$pt->{'x'}, 0, $adv, $ytop]; }
+                        { $glyph->{'components'}{$pr} = [$pt->{'x'}, 0, $adv, $ytop]; }
                     }
                 }
                 next;
@@ -85,27 +85,27 @@ sub out_gdl
             {
                 my ($n) = $k;
                 $n =~ s/^component\.//o;
-                $glyph->{'comps'}{$n} = [0, 0, $glyph->{'props'}{$k}, $ytop];
+                $glyph->{'components'}{$n} = [0, 0, $glyph->{'props'}{$k}, $ytop];
             }
-            foreach $k (sort {$glyph->{'comps'}{$a}[2] <=> $glyph->{'comps'}{$b}[2]} keys %{$glyph->{'comps'}})
+            foreach $k (sort {$glyph->{'components'}{$a}[2] <=> $glyph->{'components'}{$b}[2]} keys %{$glyph->{'components'}})
             {
-                $glyph->{'comps'}{$k} = [$oldx, 0, $glyph->{'comps'}{$k}[2], $glyph->{'comps'}{$k}[3]];
-                $oldx = $glyph->{'comps'}{$k}[2];
+                $glyph->{'components'}{$k} = [$oldx, 0, $glyph->{'components'}{$k}[2], $glyph->{'components'}{$k}[3]];
+                $oldx = $glyph->{'components'}{$k}[2];
                 $min = $k if ($k > $min);
             }
-            if (scalar %{$glyph->{'comps'}} && $oldx < $adv)
+            if (scalar %{$glyph->{'components'}} && $oldx < $adv)
             {
                 my ($maxx) = $f->{'loca'}->read->{'glyphs'}[$i]{'xMax'};
                 if ($oldx < $maxx)          # only add magic compound if some outline not covered
                 {
                     $min++;
-                    $glyph->{'comps'}{$min} = [$oldx, 0, $adv, $ytop];
+                    $glyph->{'components'}{$min} = [$oldx, 0, $adv, $ytop];
                 }
             }
         }
-        foreach $k (keys %{$glyph->{'comps'}})
+        foreach $k (keys %{$glyph->{'components'}})
         {
-            $fh->print("${sep}component.$k = box(" . join(", ", map {"${_}m"} @{$glyph->{'comps'}{$k}}) . ")");
+            $fh->print("${sep}component.$k = box(" . join(", ", map {"${_}m"} @{$glyph->{'components'}{$k}}) . ")");
             $sep = '; ';
         }
         foreach $k (keys %{$glyph->{'props'}})
@@ -256,8 +256,8 @@ sub make_point
         my ($adv) = $self->{'font'}{'hmtx'}->read->{'advances'}[$glyph->{'gnum'}];
         my ($split) = $glyph->{'points'}{$p}{'x'};
 
-        $glyph->{'comps'}{$left} = [0, $bot, $split, $top];
-        $glyph->{'comps'}{$right} = [$split, $bot, $adv, $top];
+        $glyph->{'components'}{$left} = [0, $bot, $split, $top];
+        $glyph->{'components'}{$right} = [$split, $bot, $adv, $top];
         return undef;
     }
 
@@ -320,7 +320,7 @@ sub lig_rules
         my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
         my ($compstr);
 
-        if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'comps'}{'0'})
+        if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'components'}{'0'})
         { $compstr = ' {component.0.reference = @1; component.1.reference = @2}'; }
 
         if ($type eq 'first')
