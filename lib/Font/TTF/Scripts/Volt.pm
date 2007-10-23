@@ -302,11 +302,10 @@ sub out_volt_lookups
                     $res .= "\n";
                     foreach $c (@{$s->{'context2'}})
                     { $res .= " SECOND  " . context($c, $self); }
-                    $res .= "\n";
                     foreach $c (@{$s->{'adj'}})
                     {
                         my ($d);
-                        $res .= " $c->[0] $c->[1] BY";
+                        $res .= "\n $c->[0] $c->[1] BY";
                         foreach $d (@{$c->[2]})
                         { $res .= " " . out_pos($d); }
                     }
@@ -314,9 +313,9 @@ sub out_volt_lookups
                 }
                 elsif ($s->{'type'} eq 'ADJUST_SINGLE')
                 {
-                    my ($c);
-                    foreach $c (@{$s->{'context'}})
-                    { $res .= " " . context($c->[0], $self) . " BY " . out_pos($c->[1]); }
+                    my ($i);
+                    for ($i = 0; $i < @{$s->{'context'}}; $i++)
+                    { $res .= " " . context($s->{'context'}[$i], $self) . " BY " . out_pos($s->{'adj'}[$i]); }
                     $res .= "\nEND_ADJUST\n";
                 }
             }
@@ -632,7 +631,7 @@ sub align_glyphs
             my ($uni) = $data->{'glyphs'}[$gnum]{'uni'};
             my ($gnew);
     # anything with the same name not already used?
-            if ($g = $self->{'glyph_names'}{$s->[1]} && !defined $revmap[$g])
+            if ($g = $self->{'glyph_names'}{$s->[1]} and !defined $revmap[$g])
             {
                 $map[$gnum] = $g;
                 $revmap[$g] = $gnum;
@@ -717,7 +716,59 @@ sub merge_volt
             { $n->{'points'}{$k} = $p; }
         }
     }
+
+    foreach $g (values %{$data->{'groups'}})
+    { map_enum($map, @{$g}); }
+
+    foreach $g (@{$data->{'lookups'}})
+    {
+        my ($c);
+
+        foreach $c (@{$g->{'contexts'}})
+        {
+            foreach (@{$c})
+            { map_enum($map, $_->[1]); }
+        }
+        if ($g->{'lookup'}[0] eq 'sub')
+        {
+            foreach $c (@{$g->{'lookup'}[1]})
+            {
+                map_enum($map, @{$c->[0]});
+                map_enum($map, @{$c->[1]});
+            }
+        }
+        else
+        {
+            foreach $c (@{$g->{'lookup'}[1]})
+            {
+                foreach (qw(context context1 context2 enters exits))
+                { map_enum($map, @{$c->{$_}}) if (defined $c->{$_}); }
+            }
+        }
+    }
+        
     $self;
+}
+
+sub map_enum
+{
+    my ($map) = shift;
+    my ($c);
+
+    foreach $c (@_)
+    {
+        if (ref $c->[0])
+        { map_enum($map, @{$c}); }
+        if ($c->[0] eq 'GLYPH')
+        { $c->[1] = $map->[$c->[1]]; }
+        elsif ($c->[0] eq 'RANGE')      # yukky we'll do it simply - don't use ranges
+        {
+            $c->[1] = $map->[$c->[1]];
+            $c->[2] = $map->[$c->[2]];
+        }
+        elsif ($c->[0] eq 'ENUM')
+        { map_enum($map, @{$c->[1]}); }
+    }
 }
 
 sub context
