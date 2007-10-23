@@ -396,9 +396,9 @@ sub make_name
 
 sub make_point
 {
-    my ($self, $p, $glyph) = @_;
+    my ($self, $p, $glyph, %opts) = @_;
     
-    $glyph->{'props'}{'type'} = 'MARK' if ($p =~ m/^_/o);
+    $glyph->{'props'}{'type'} ||= 'MARK' if ($p =~ m/^_/o && $opts{'-notmark'} !~ m/$p/);
     return $p;
 }
 
@@ -488,7 +488,7 @@ $volt_grammar = <<'EOG';
         | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
             { $return = {'type' => $item[1], 'context1' => $item[3], 'context2' => $item[4], 'adj' => $item[5]}; }
         | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
-            { $return = {'type' => $item[1], 'context' => $item[3]}; }
+            { $return = {'type' => $item[1], 'context' => [map {$_->[0]} @{$item[3]}], 'adj' => [map {$_->[1]} @{$item[3]}]}; }
 
     attach : context 'AT' 'ANCHOR' qid
             { $return = [$item[1], $item[-1]]; }

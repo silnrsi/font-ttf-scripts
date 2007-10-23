@@ -489,7 +489,7 @@ sub make_classes
 
         foreach $p (keys %{$glyph->{'points'}})
         {
-            my ($pname) = $self->make_point($p, $glyph);
+            my ($pname) = $self->make_point($p, $glyph, %opts);
             next unless ($pname);                           # allow for point deletion, in effect.
             if ($p ne $pname)
             {

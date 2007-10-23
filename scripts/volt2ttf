@@ -31,10 +31,10 @@ unless ($CHAIN_CALL)
         exit;
     }
 
-    $if = Font::TTF::Scripts::Volt->read($ARGV[0], $opt_a) || die "Can't read font $ARGV[0]";
+    $if = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font $ARGV[0]";
 }
 
-Font::TTF::Scripts::VOLT::main($if, \%opts);
+Font::TTF::Scripts::Volt::main($if, %opts);
 
 unless ($CHAIN_CALL)
 { $if->{'font'}->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?" unless ($DEBUG > 1); }
@@ -43,10 +43,10 @@ if ($DEBUG)
 {
     foreach (qw(GSUB GPOS))
     {
-        delete $f->{'font'}{$_}{' PARENT'};
-        print Dumper($f->{'font'}{$_});
+        delete $if->{'font'}{$_}{' PARENT'};
+        print Dumper($if->{'font'}{$_});
     }
-    print Dumper($f->{'voltdat'});
+    print Dumper($if->{'voltdat'});
 }
 
 package Font::TTF::Scripts::Volt;
@@ -61,22 +61,24 @@ sub main
 {
     my ($f, %opts) = @_;
 
-    if ($opt_t)
+    if ($opts{'t'})
     {
-        my ($inf) = IO::File->new("< $opt_t") || die "Can't open file $opt_t";
+        my ($inf) = IO::File->new("< $opts{'t'}") || die "Can't open file $opts{'t'}";
         while (<$inf>)
         { $volt_text .= $_; }
         $inf->close;
     }
-    else
+    elsif (defined $f->{'font'}{'TSIV'})
     { $volt_text = $f->{'font'}{'TSIV'}->read->{' dat'}; }
+    else
+    { die "No VOLT table in the font, nothing to do"; }
     delete $f->{'font'}{'TSIV'};        # remove the volt source
     $f->{'voltdat'} = $f->parse_volt($volt_text);
 
     $f->{'font'}{'GSUB'} = Font::TTF::GSUB->new(PARENT => $font, read => 1) unless (defined $font->{'GSUB'});
     $f->{'font'}{'GSUB'}{'Version'} = 1;
     $f->{'font'}{'GPOS'} = Font::TTF::GPOS->new(PARENT => $font, read => 1) unless (defined $font->{'GPOS'});
-    $f->features_ttf;
+    $f->{'font'}{'GPOS'}{'Version'} = 1;    $f->features_ttf;
     $f->lookups_ttf('GSUB');
     $f->lookups_ttf('GPOS');
     $f->add_gdef();
@@ -106,6 +108,7 @@ sub features_ttf
                 my ($type);
                 foreach $k (@{$l->{$f}{'lookups'}})
                 {
+                    $dat->{'lookuptags'}{$k}{' include'} = 1;
                     if ($dat->{'lookuptags'}{$k}{'lookup'}[0] eq 'sub')
                     { $type = 'GSUB'; }
                     else
@@ -121,6 +124,9 @@ sub append_feat
 {
     my ($self, $font, $script, $lang, $feat, $lindex, $type) = @_;
     my ($fname) = "${feat}_${script}_${lang}";
+
+    if ($lang eq 'dflt')
+    { $font->{$type}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'}; }
 
     unless (defined $font->{$type}{'SCRIPTS'}{$script}{$lang})
     {
@@ -150,7 +156,7 @@ sub lookups_ttf
     $ltype =~ s/^g//o;
 
     foreach $l (sort {$a->{' index'} <=> $b->{' index'}}
-            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'}}
+            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'} && $_->{' include'}}
             @{$dat->{'lookups'}})
     {
         $flags |= 1 if ($l->{'dir'} =~ /RTL/oi);
@@ -168,15 +174,19 @@ sub lookups_ttf
 # always use format 3, it's simpler (same as VOLT does)
             if ($type eq 'GSUB')
             {
-                my ($cover) = Font::TTF::Coverage->new(1);
-                $clr = {'MATCH' => [$cover],
+                $clr = {'MATCH' => [],
                         'ACTION' => [[0, $dat->{"${type}_counters"}]]};
                 @clr = ({%$clr});
                 foreach $lk (@{$l->{'lookup'}[1]})
                 {
-                    my ($glyphs) = $self->scon_glyphs($lk->[0][0]);
-                    foreach (@{$glyphs})
-                    { $cover->add($_); }
+                    for ($i = 0; $i < @{$lk->[0]}; $i++)
+                    {
+                        my ($glyphs) = $self->scon_glyphs($lk->[0][$i]);
+                        if (!defined $clr->{'MATCH'}[$i])
+                        { $clr->{'MATCH'}[$i] = Font::TTF::Coverage->new(1); }
+                        foreach (@{$glyphs})
+                        { $clr->{'MATCH'}[$i]->add($_); }
+                    }
                 }
             }
             else
@@ -253,7 +263,7 @@ sub add_gsub_lookup
 
     if ($maxi == 1 && $maxo == 1)
     {
-        my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
+        my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 2, ' index' => $index};
         $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 1;
         $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
         foreach $s (@{$l->{'lookup'}[1]})
@@ -321,17 +331,17 @@ sub add_gpos_lookup
                 'FORMAT' => 2,
                 'ACTION_TYPE' => 'v',
                 'COVERAGE' => $cover}];
-            foreach $c (@{$s->{'context'}})
+            for ($i = 0; $i < @{$s->{'context'}}; $i++)
             {
-                foreach $g (@{$self->scon_glyphs($c->[0])})
+                foreach $g (@{$self->scon_glyphs($s->{'context'}[$i])})
                 {
                     next unless ($cover->add($g) > $#rules);
-                    push (@rules, [{'ACTION' => [{make_value(%{$c->[1]})}]}]);
+                    push (@rules, [{'ACTION' => [{make_value(%{$s->{'adj'}[$i]})}]}]);
                 }
             }
             $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'} = [@rules];
         }
-        elsif ($s->{'type'} eq 'ADJUST_PAIR')
+        elsif ($TYPE2 && $s->{'type'} eq 'ADJUST_PAIR')
         {
             my ($cover1) = Font::TTF::Coverage->new(0);
             my ($cover2) = Font::TTF::Coverage->new(0);
@@ -349,19 +359,43 @@ sub add_gpos_lookup
             for ($i = 0; $i < @{$s->{'context1'}}; $i++)
             {
                 foreach $g (@{$self->scon_glyphs($s->{'context1'}[$i])})
-                { $cover1->add($g, $i); }
+                { $cover1->add($g, $i+1); }
             }
             foreach $g (sort {$a <=> $b} keys %{$cover1->{'val'}})
             { $cover->add($g); }
             for ($i = 0; $i < @{$s->{'context2'}}; $i++)
             {
                 foreach $g (@{$self->scon_glyphs($s->{'context2'}[$i])})
-                { $cover2->add($g, $i); }
+                { $cover2->add($g, $i+1); }
             }
             foreach $r (@{$s->{'adj'}})
             {
-                $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$r->[0] - 1][$r->[1] - 1]{'ACTION'} = 
+                $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$r->[0]][$r->[1]]{'ACTION'} = 
                     [{make_value(%{$r->[2][0]})}, {make_value(%{$r->[2][1]})}];
+            }
+        }
+        elsif ($s->{'type'} eq 'ADJUST_PAIR')
+        {
+            my (@rules);
+            my ($cover) = Font::TTF::Coverage->new(1);
+            $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = 2;
+            $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'} = [{
+                'FORMAT' => 1,
+                'ACTION_TYPE' => 'p',
+                'MATCH_TYPE' => 'g',
+                'COVERAGE' => $cover}];
+            for ($i = 0; $i < @{$s->{'context1'}}; $i++)
+            {
+                push (@rules, []);
+                foreach $g (@{$self->scon_glyphs($s->{'context1'}[$i])})
+                { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)] = $rules[$i]; }
+            }
+            foreach $r (@{$s->{'adj'}})
+            {
+                my (@seconds) = @{$self->scon_glyphs($s->{'context2'}[$r->[1]-1])};
+                my ($action) = [{make_value(%{$r->[2][0]})}, {make_value(%{$r->[2][1]})}];
+                foreach (sort @seconds)
+                { push (@{$rules[$r->[0]-1]}, {'MATCH' => [$_], 'ACTION' => $action}); }
             }
         }
         elsif ($s->{'type'} eq 'ATTACH_CURSIVE')
@@ -476,9 +510,9 @@ sub scon_glyphs
     my ($dat, $context) = @_;
 
     if ($context->[0] eq 'GLYPH')
-    { return [$context->[1]]; }
+    { return defined $context->[1] ? [$context->[1]] : warn("Undefined glyph"); }
     elsif ($context->[0] eq 'GROUP')
-    { return $dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}}); }
+    { return defined $dat->{'voltdat'}{'groups'}{$context->[1]} ? $dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}}) : warn "Unknown glyph group $context->[1]"; }
     elsif ($context->[0] eq 'RANGE')
     { return [$context->[1] .. $context->[2]]; }
     elsif ($context->[0] eq 'ENUM')
