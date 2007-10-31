@@ -177,17 +177,18 @@ sub lookups_ttf
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
     my ($ltype) = lc($type);
-    my ($flags, $clr, @clr);
+    my ($clr, @clr);
     $ltype =~ s/^g//o;
 
     foreach $l (sort {$a->{' index'} <=> $b->{' index'}}
             grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'} && $_->{' include'}}
             @{$dat->{'lookups'}})
     {
+        my ($flags);
         $flags |= 1 if ($l->{'dir'} =~ /RTL/oi);
         $flags |= 2 if (!$l->{'base'});
-
         $flags |= 8 if ($l->{'marks'} =~ m/SKIP/oi);
+
         if ($l->{'all'} and $l->{'all'} ne 'ALL')
         {
             if (!defined $self->{'alls'}{$l->{'all'}})
