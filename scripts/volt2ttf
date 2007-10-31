@@ -87,8 +87,11 @@ sub main
     $f->{'font'}{'GPOS'} = Font::TTF::GPOS->new(PARENT => $font, read => 1) unless (defined $font->{'GPOS'});
     $f->{'font'}{'GPOS'}{'Version'} = 1;
     $f->features_ttf;
-    $f->lookups_ttf('GSUB');
-    $f->lookups_ttf('GPOS');
+    foreach my $t (qw(GSUB GPOS))
+    {
+        $f->{'font'}{$t}{'FEATURES'}{'FEATURE_TAGS'} = [sort @{$f->{'font'}{$t}{'FEATURES'}{'FEATURE_TAGS'}}];
+        $f->lookups_ttf($t);
+    }
     $f->add_gdef();
 }
 
@@ -183,13 +186,13 @@ sub lookups_ttf
         $flags |= 1 if ($l->{'dir'} =~ /RTL/oi);
         $flags |= 2 if (!$l->{'base'});
 
-        $flags |= 8 if ($l->{'all'} && $l->{'marks'} =~ m/SKIP/oi);
+        $flags |= 8 if ($l->{'marks'} =~ m/SKIP/oi);
         if ($l->{'all'} and $l->{'all'} ne 'ALL')
         {
             if (!defined $self->{'alls'}{$l->{'all'}})
             {
                 $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
-                foreach $g (@{$self->or_context_glyphs($dat->{'groups'}{$l->{'all'}})})
+                foreach $g (@{$self->or_context_glyphs(@{$dat->{'groups'}{$l->{'all'}}})})
                 { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
             }
             $flags |= $self->{'alls'}{$l->{'all'}} << 8;
