@@ -81,7 +81,7 @@ sub out_volt_classes
     my ($vecs) = $self->{'vecs'};
     my ($glyphs) = $self->{'glyphs'};
     my ($l, $name, $count, $sep, $psname, $cl, $i, $c);
-    my ($res);
+    my ($res, %output);
     
     foreach $l (sort keys %{$lists})
     {
@@ -93,6 +93,7 @@ sub out_volt_classes
         { $name =~ s/^_//o; }
         
         $res .= "DEF_GROUP \"c${name}Dia\"\n  ENUM";
+        $output{"c${name}Dia"} = 1;
         
         $count = 0; $sep = '';
         foreach $cl (@{$lists->{$l}})
@@ -104,6 +105,8 @@ sub out_volt_classes
     foreach $cl (sort keys %{$classes})
     {
         $res .= "DEF_GROUP \"c$cl\"\n  ENUM";
+        $output{"c$cl"} = 1;
+
         for ($i = 0; $i <= $#{$classes->{$cl}}; $i++)
         { 
             $res .= " GLYPH \"$glyphs->[$classes->{$cl}[$i]]{'name'}\"";
@@ -115,6 +118,7 @@ sub out_volt_classes
     foreach $cl (sort keys %{$ligclasses})
     {
         $res .= "DEF_GROUP \"cl$cl\"\n  ENUM";
+        $output{"cl$cl"} = 1;
         for ($i = 0; $i <= $#{$ligclasses->{$cl}}; $i++)
         { 
             $res .= " GLYPH \"$glyphs->[$ligclasses->{$cl}[$i]]{'name'}\"";
@@ -127,7 +131,7 @@ sub out_volt_classes
     {
         my ($e);
         my ($t) = $cl;
-        next if ($t =~ s/^c//o && ((defined $lists->{$t} || defined $classes->{$t}) || ($t =~ s/^l//o && defined $ligclasses->{$t})));
+        next if ($output{$cl});
 
         $res .= "DEF_GROUP \"$cl\"\n ENUM";
         foreach $e (@{$self->{'groups'}{$cl}})
@@ -480,10 +484,10 @@ $volt_grammar = <<'EOG';
     subst : 'SUB' context(s?) 'WITH' context(s?) 'END_SUB'
             { $return = [$item[2], $item[4]]; }
 
-    post : 'ATTACH' <commit> context(s) 'TO' attach(s) 'END_ATTACH'
-            { $return = {'type' => $item[1], 'context' => $item[3], 'to' => $item[5] }; }
-        | 'ATTACH_CURSIVE' <commit> exit_con(s) enter_con(s) 'END_ATTACH'
+    post : 'ATTACH_CURSIVE' <commit> exit_con(s) enter_con(s) 'END_ATTACH'
             { $return = {'type' => $item[1], 'exits' => $item[3], 'enters' => $item[4] }; }
+        | 'ATTACH' <commit> context(s) 'TO' attach(s) 'END_ATTACH'
+            { $return = {'type' => $item[1], 'context' => $item[3], 'to' => $item[5] }; }
         | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
             { $return = {'type' => $item[1], 'context1' => $item[3], 'context2' => $item[4], 'adj' => $item[5]}; }
         | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
@@ -510,8 +514,8 @@ $volt_grammar = <<'EOG';
     post_single : context 'BY' pos
             { $return = [$item[1], $item[3]]; }
 
-    anchor : 'DEF_ANCHOR' qid 'ON' num 'GLYPH' gid 'COMPONENT' num anchor_locked(?) 'AT' pos 'END_ANCHOR'
-            { $dat{'glyphs'}[$item[4]]{'points'}{$item[2]} = {'pos' => $item[-2], 'component' => $item[8], 'locked' => $item[9][0]}; 1; }
+    anchor : 'DEF_ANCHOR' <commit> qid 'ON' num 'GLYPH' gid 'COMPONENT' num anchor_locked(?) 'AT' pos 'END_ANCHOR'
+            { $dat{'glyphs'}[$item[5]]{'points'}{$item[3]} = {'pos' => $item[-2], 'component' => $item[9], 'locked' => $item[10][0]}; 1; }
     
     anchor_locked : 'LOCKED'
 
@@ -521,17 +525,17 @@ $volt_grammar = <<'EOG';
                     'x' => $item[3][0],
                     'y' => $item[4][0] }; }
     
-    pos_dx : 'DX' num pos_adj(s?)
-            { $return = [$item[2], $item[3]]; }
+    pos_dx : 'DX' <commit> num pos_adj(s?)
+            { $return = [$item[3], $item[4]]; }
     
-    pos_dy : 'DY' num pos_adj(s?)
-            { $return = [$item[2], $item[3]]; }
+    pos_dy : 'DY' <commit> num pos_adj(s?)
+            { $return = [$item[3], $item[4]]; }
     
-    pos_adv : 'ADV' num pos_adj(s?)
-            { $return = [$item[2], $item[3]]; }
+    pos_adv : 'ADV' <commit> num pos_adj(s?)
+            { $return = [$item[3], $item[4]]; }
 
-    pos_adj : 'ADJUST_BY' num 'AT' num
-            { $return = [$item[2], $item[4]]; }
+    pos_adj : 'ADJUST_BY' <commit> num 'AT' num
+            { $return = [$item[3], $item[5]]; }
 
     lk_procbase : 'PROCESS_BASE'
 

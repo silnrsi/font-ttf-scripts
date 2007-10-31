@@ -17,7 +17,7 @@ $VERSION = 0.01;    # MJPH      11-OCT-2007     First release
 
 unless ($CHAIN_CALL)
 {
-    getopts('a:ht:', \%opts);
+    getopts('a:d:ht:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -73,12 +73,20 @@ sub main
     else
     { die "No VOLT table in the font, nothing to do"; }
     delete $f->{'font'}{'TSIV'};        # remove the volt source
+
+    if ($opts{'d'})
+    {
+        $::RD_HINT = 1;
+        $::RD_TRACE = $opts{'d'} if ($opts{'d'} > 1);
+    }
+
     $f->{'voltdat'} = $f->parse_volt($volt_text);
 
     $f->{'font'}{'GSUB'} = Font::TTF::GSUB->new(PARENT => $font, read => 1) unless (defined $font->{'GSUB'});
     $f->{'font'}{'GSUB'}{'Version'} = 1;
     $f->{'font'}{'GPOS'} = Font::TTF::GPOS->new(PARENT => $font, read => 1) unless (defined $font->{'GPOS'});
-    $f->{'font'}{'GPOS'}{'Version'} = 1;    $f->features_ttf;
+    $f->{'font'}{'GPOS'}{'Version'} = 1;
+    $f->features_ttf;
     $f->lookups_ttf('GSUB');
     $f->lookups_ttf('GPOS');
     $f->add_gdef();
@@ -89,14 +97,24 @@ sub features_ttf
     my ($self) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
+    my (%multis);
 
     $dat->{'lookuptags'} = {map {$_->{'id'} => $_} @{$dat->{'lookups'}}} unless (defined $dat->{'lookuptags'});
     foreach $l (@{$dat->{'lookups'}})
     {
-        if ($l->{'lookup'}[0] eq 'sub')
-        { $l->{' index'} = $dat->{'GSUB_counters'}++; }
+        my ($multi);
+        if ($l->{'id'} =~ m/^([^\\]+)\\/o)
+        { $multi = $1; }
+        if (defined $multi && defined $multis{$multi})
+        { $l->{' index'} = $multis{$multi}; }
         else
-        { $l->{' index'} = $dat->{'GPOS_counters'}++; }
+        {
+            if ($l->{'lookup'}[0] eq 'sub')
+            { $l->{' index'} = $dat->{'GSUB_counters'}++; }
+            else
+            { $l->{' index'} = $dat->{'GPOS_counters'}++; }
+            $multis{$multi} = $l->{' index'} if (defined $multi);
+        }
     }
     foreach $s (sort keys %{$dat->{'scripts'}})
     {
@@ -268,34 +286,41 @@ sub add_gsub_lookup
         $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
         foreach $s (@{$l->{'lookup'}[1]})
         {
-            $sub->{'RULES'}[$sub->{'COVERAGE'}->add($self->scon_glyphs($s->[0][0])->[0])][0]{'ACTION'} = $self->scon_glyphs($s->[1][0]);
+            my (@input) = @{$self->scon_glyphs($s->[0][0])};
+            my (@output) = @{$self->scon_glyphs($s->[1][0])};
+            for ($i = 0; $i < @input; $i++)
+            {
+                $sub->{'RULES'}[$sub->{'COVERAGE'}->add($input[$i])][0]{'ACTION'} = [$output[$i]];
+            }
         }
-        $font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}[0] = $sub;
+        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         return;
     }
-
-    foreach $s (@{$l->{'lookup'}[1]})
+    elsif ($maxi == 1)
     {
-        if ($maxi == 1)
+        my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
+        my ($i);
+        $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 2;
+        $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
+
+        foreach $s (@{$l->{'lookup'}[1]})
         {
-            my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
             my ($input) = $self->scon_glyphs($s->[0][0]);
             my (@output) = $self->context_glyphs(@{$s->[1]});
-            my ($i);
-            $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 2;
-            $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
             for ($i = 0; $i < @{$input}; $i++)
             { $sub->{'RULES'}[$sub->{'COVERAGE'}->add($input->[$i])][0]{'ACTION'} = $output[$i]; }
-            push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         }
-        else        # ligature - many:1
-        {
-            my ($sub) = {'ACTION_TYPE' => 'g', 'MATCH_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
-            my (@input, @new_input);
-            $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 4;
+        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
+    }
+    else        # ligature - many:1
+    {
+        my ($sub) = {'ACTION_TYPE' => 'g', 'MATCH_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
+        my (@input, @new_input);
+        $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 4;
+        $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
 
-# align make_coverage items here
-            $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
+        foreach $s (@{$l->{'lookup'}[1]})
+        {
             my ($first) = $self->scon_glyphs($s->[0][0]);
             my (@all) = $self->context_glyphs(@{$s->[0]});
             my (@output) = $self->context_glyphs(@{$s->[1]});
@@ -307,8 +332,8 @@ sub add_gsub_lookup
                     push (@{$sub->{'RULES'}[$sub->{'COVERAGE'}->add($first->[$i])]}, {'ACTION' => $output[$j], 'MATCH' => [@{$all[$j]}[1..$#{$all[$j]}]]});
                 }
             }
-            push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         }
+        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
     }
 }
 
@@ -327,10 +352,10 @@ sub add_gpos_lookup
             my ($cover) = Font::TTF::Coverage->new(1);
             my (@rules);
             $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = 1;
-            $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'} = [{
+            my ($sub) = {
                 'FORMAT' => 2,
                 'ACTION_TYPE' => 'v',
-                'COVERAGE' => $cover}];
+                'COVERAGE' => $cover};
             for ($i = 0; $i < @{$s->{'context'}}; $i++)
             {
                 foreach $g (@{$self->scon_glyphs($s->{'context'}[$i])})
@@ -339,7 +364,8 @@ sub add_gpos_lookup
                     push (@rules, [{'ACTION' => [{make_value(%{$s->{'adj'}[$i]})}]}]);
                 }
             }
-            $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'} = [@rules];
+            $sub->{'RULES'} = [@rules];
+            push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         }
         elsif ($TYPE2 && $s->{'type'} eq 'ADJUST_PAIR')
         {
@@ -348,13 +374,13 @@ sub add_gpos_lookup
             my ($cover) = Font::TTF::Coverage->new(1);
             my (@rules, @firsts, @seconds);
             $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = 2;
-            $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'} = [{
+            my ($sub) = {
                 'FORMAT' => 2,
                 'ACTION_TYPE' => 'p',
                 'MATCH_TYPE' => 'g',
                 'COVERAGE' => $cover,
                 'CLASS' => $cover1,
-                'MATCH' => [$cover2]}];
+                'MATCH' => [$cover2]};
             my ($c, $g, $count);
             for ($i = 0; $i < @{$s->{'context1'}}; $i++)
             {
@@ -370,9 +396,10 @@ sub add_gpos_lookup
             }
             foreach $r (@{$s->{'adj'}})
             {
-                $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$r->[0]][$r->[1]]{'ACTION'} = 
+                $sub->{'RULES'}[$r->[0]][$r->[1]]{'ACTION'} = 
                     [{make_value(%{$r->[2][0]})}, {make_value(%{$r->[2][1]})}];
             }
+            push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         }
         elsif ($s->{'type'} eq 'ADJUST_PAIR')
         {
@@ -401,46 +428,45 @@ sub add_gpos_lookup
         elsif ($s->{'type'} eq 'ATTACH_CURSIVE')
         {
             my ($cover) = Font::TTF::Coverage->new(1);
-            $font->{'GPOS'}{'LOOKUP'}[$index] = {
-                'TYPE' => 3,
-                'SUB' => [{
+            $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = 3;
+            my ($sub) = {
                     'FORMAT' => 1,
                     'ACTION_TYPE' => 'e',
-                    'COVERAGE' => $cover}]};
+                    'COVERAGE' => $cover};
             foreach $g (@{$self->or_context_glyphs(@{$s->{'enters'}})})
-            { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)][0] = Font::TTF::Anchor->new(%{$dat->{'glyphs'}[$g]{'points'}{'enter'}}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[0] = make_anchor($dat->{'glyphs'}[$g]{'points'}{'entry'}); }
             foreach $g (@{$self->or_context_glyphs(@{$s->{'exits'}})})
-            { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)][1] = Font::TTF::Anchor->new(%{$dat->{'glyphs'}[$g]{'points'}{'exit'}}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'points'}{'exit'}); }
+            push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
         }
         elsif ($s->{'type'} eq 'ATTACH')
         {
             my ($basec) = Font::TTF::Coverage->new(1);
             my ($markc) = Font::TTF::Coverage->new(1);
-            my ($acount, %anchors, @marks, @rules);
+            my ($acount, %anchors, @marks, @rules, $ismark);
             foreach $c (@{$s->{'to'}})
             {
                 $anchors{$c->[1]} = $acount++ unless (defined $anchors{$c->[1]});
                 foreach $g (@{$self->scon_glyphs($c->[0])})
-                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, Font::TTF::Anchor->new(%{$dat->{'glyphs'}[$g]{'points'}{"MARK_$c->[1]}"}})]; }
+                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'points'}{"MARK_$c->[1]"})]; }
             }
             foreach $g (sort {$a <=> $b} @{$self->or_context_glyphs(@{$s->{'context'}})})
             {
                 my ($i) = $basec->add($g);
-                $ismark ||= ($dat->{'glyphs'}[$g]{'type'} eq 'MARK');
+                $ismark = ($dat->{'glyphs'}[$g]{'type'} eq 'MARK') ? 2 : 1 unless ($ismark);
                 foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
                 {
                     if (defined $dat->{'glyphs'}[$g]{'points'}{$k})
-                    { $rules[$i]{'ACTION'}[$anchors{$k}] = Font::TTF::Anchor->new(%{$dat->{'glyphs'}[$g]{'points'}{$k}}); }
+                    { $rules[$i][0]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'points'}{$k}); }
                 }
             }
-            $font->{'GPOS'}{'LOOKUP'}[$index] = {
-                'TYPE' => $ismark ? '6' : '4',
-                'SUB' => [{
+            $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = $ismark == 2 ? '6' : '4';
+            push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, {
                     'FORMAT' => 1,
                     'COVERAGE' => $basec,
                     'MATCH' => [$markc],
                     'MARKS' => [@marks],
-                    'RULES' => [@rules]}]};
+                    'RULES' => [@rules]});
         }
     }
 }
@@ -512,7 +538,7 @@ sub scon_glyphs
     if ($context->[0] eq 'GLYPH')
     { return defined $context->[1] ? [$context->[1]] : warn("Undefined glyph"); }
     elsif ($context->[0] eq 'GROUP')
-    { return defined $dat->{'voltdat'}{'groups'}{$context->[1]} ? $dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}}) : warn "Unknown glyph group $context->[1]"; }
+    { return defined $dat->{'voltdat'}{'groups'}{$context->[1]} ? [sort {$a <=> $b} @{$dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}})}] : warn "Unknown glyph group $context->[1]"; }
     elsif ($context->[0] eq 'RANGE')
     { return [$context->[1] .. $context->[2]]; }
     elsif ($context->[0] eq 'ENUM')
@@ -558,6 +584,22 @@ sub make_value
     }
     %res
 }
+
+sub make_anchor
+{
+    my ($point) = @_;
+    my (%res, $s, $r);
+    
+    return undef unless (defined $point->{'pos'});
+    return ($point->{'anchor'}) if defined ($point->{'anchor'});
+
+    foreach $s (qw(x y))
+    { $res{$s} = $point->{'pos'}{$s}[0]; }
+    $r = Font::TTF::Anchor->new(%res);
+    $point->{'anchor'} = $r;
+    return $r;
+}
+
 
 __END__
 
