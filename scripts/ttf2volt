@@ -6,10 +6,11 @@ use Getopt::Std;
 use Data::Dumper;
    
 use Font::TTF::Font;
+use Font::TTF::Tags qw( %ttnames readtagsfile);
 
 our ($opt_a, $opt_d, $opt_g, $opt_l, $opt_t, $opt_s, $opt_v, $VERSION);
 
-$VERSION = '0.52';
+$VERSION = '0.53';
 
 my $progname = basename ($0);
 $progname =~ s/\.[^.]+$//;
@@ -36,8 +37,7 @@ options:
     -g n      group creation threshold
     -l file   emit log messages to named file
     -s        do not send warnings to stdout (will still go to log)
-    -t file   name of VOLT tags file. Assumes
-                  C:\\Program Files\\Microsoft VOLT\\TAGS.txt
+    -t file   name of replacement VOLT tags file if needed.
     -v file   Volt project source (.vtp) file to create
     
 The group creation threshold option sets the minimum number of glyphs
@@ -70,8 +70,6 @@ my $g;		# Glyph structure
 my (%GlyphFromID, %GlyphFromName, %GlyphFromCmapUnicode);
 
 my ($gid, $gname, $u);	# Glyph ID, Glyph name, and Unicode
-
-my (%ScriptNames, %LangNames, %FeatureNames);	# lookup full name from tag (from VOLT's tags.txt file)
 
 my ($SLFText, $LookupText);		# generated VOLT source texts: Script/Lang/Feature, Lookups
 
@@ -230,22 +228,9 @@ CMAP: while (($u, $gid) = each %{$cmap->{'val'}})
 
 
 # Try to locate and read VOLT tags.txt file to find names for Scripts, Languages, and Features:
-if (defined $opt_t && open (TAGS, $opt_t) or open(TAGS, "C:\\Program Files\\Microsoft VOLT\\TAGS.txt"))
+if (defined $opt_t)
 {
-	my ($what, $name, $tag);
-	while (<TAGS>)
-	{
-		chomp;
-		($what, $name, $tag) = (m/"([^"]*)", "([^"]*)", "([^"]*)"/);  #"
-		$ScriptNames{$tag} = $name if $what =~ /SCRIPT/i;
-		$LangNames{$tag} = $name if $what =~ /LANGUAGE/i;
-		$FeatureNames{$tag} = $name if $what =~ /FEATURE/i;
-	}
-	close TAGS;
-}
-else 
-{
-	MyWarn ("Couldn't find VOLT tags file.\n");
+    MyWarn "Cannot open VOLT tags file '$opt_t'\n" unless readtagsfile($opt_t);
 }
 
 
@@ -1402,7 +1387,7 @@ map {$scripts{$_} = 1} (keys %{$gpos->{'SCRIPTS'}}) if $gpos;
 foreach $s (sort keys %scripts)
 {
 	$SLFText .= "DEF_SCRIPT ";
-	$SLFText .= "NAME \"$ScriptNames{$s}\" " if defined $ScriptNames{$s};
+	$SLFText .= "NAME \"$ttnames{'SCRIPT'}{$s}\" " if defined $ttnames{'SCRIPT'}{$s};
 	$SLFText .= "TAG \"$s\"\n\n";
 
     # For this script, compile list of languages and then iterate over them
@@ -1421,7 +1406,7 @@ foreach $s (sort keys %scripts)
 		}
 		else
 		{
-			$SLFText .= "NAME \"$LangNames{$l}\" " if defined $LangNames{$l};
+			$SLFText .= "NAME \"$ttnames{'LANGUAGE'}{$l}\" " if defined $ttnames{'LANGUAGE'}{$l};
 			$SLFText .= "TAG \"$l\"\n\n";
 		}
 
@@ -1442,7 +1427,7 @@ foreach $s (sort keys %scripts)
         foreach $f (sort keys %feats)
 		{
 			$SLFText .= "DEF_FEATURE ";
-			$SLFText .= "NAME \"$FeatureNames{$f}\" " if defined $FeatureNames{$f};
+			$SLFText .= "NAME \"$ttnames{'FEATURE'}{$f}\" " if defined $ttnames{'FEATURE'}{$f};
 			$SLFText .= "TAG \"$f\"\n";
 			
 			foreach ( $feats{$f} =~ /\|([^|]+)/g)
