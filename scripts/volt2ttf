@@ -7,7 +7,7 @@ use Getopt::Std;
 
 # don't forget Font::TTF::GDEF
 
-our $DEBUG = 0;
+our $DEBUG = 1;
 my %opts;
 my $VERSION;
 our $CHAIN_CALL;
@@ -89,7 +89,7 @@ sub main
     $f->features_ttf;
     foreach my $t (qw(GSUB GPOS))
     {
-        $f->{'font'}{$t}{'FEATURES'}{'FEATURE_TAGS'} = [sort @{$f->{'font'}{$t}{'FEATURES'}{'FEATURE_TAGS'}}];
+        $f->{'font'}{$t}{'FEATURES'}{'FEAT_TAGS'} = [sort {$f->{'featmap'}{$a} cmp $f->{'featmap'}{$b}} @{$f->{'font'}{$t}{'FEATURES'}{'FEAT_TAGS'}}];
         $f->lookups_ttf($t);
     }
     $f->add_gdef();
@@ -149,6 +149,7 @@ sub append_feat
     my ($self, $font, $script, $lang, $feat, $lindex, $type) = @_;
     my ($fname) = "${feat}_${script}_${lang}";
 
+    $self->{'featmap'}{$fname} = $feat;
     if ($lang eq 'dflt')
     { $font->{$type}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'}; }
 
