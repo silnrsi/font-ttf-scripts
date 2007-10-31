@@ -106,7 +106,10 @@ sub features_ttf
         if ($l->{'id'} =~ m/^([^\\]+)\\/o)
         { $multi = $1; }
         if (defined $multi && defined $multis{$multi})
-        { $l->{' index'} = $multis{$multi}; }
+        {
+            $l->{' index'} = $multis{$multi};
+            $l->{' sub'} = 1;
+        }
         else
         {
             if ($l->{'lookup'}[0] eq 'sub')
@@ -131,7 +134,7 @@ sub features_ttf
                     { $type = 'GSUB'; }
                     else
                     { $type = 'GPOS'; }
-                    $self->append_feat($font, $t->{'tag'}, $l->{'tag'}, $l->{$f}{'tag'}, $dat->{'lookuptags'}{$k}{' index'}, $type);
+                    $self->append_feat($font, $t->{'tag'}, $l->{'tag'}, $l->{$f}{'tag'}, $dat->{'lookuptags'}{$k}{' index'}, $type) unless ($dat->{'lookuptags'}{$k}{' sub'});
                 }
             }
         }
@@ -178,10 +181,19 @@ sub lookups_ttf
             @{$dat->{'lookups'}})
     {
         $flags |= 1 if ($l->{'dir'} =~ /RTL/oi);
-        $flags != 2 if (!$l->{'base'});
+        $flags |= 2 if (!$l->{'base'});
 
         $flags |= 8 if ($l->{'all'} && $l->{'marks'} =~ m/SKIP/oi);
-        # need to add code for mark types ($flags |= $marktype << 8)
+        if ($l->{'all'} and $l->{'all'} ne 'ALL')
+        {
+            if (!defined $self->{'alls'}{$l->{'all'}})
+            {
+                $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
+                foreach $g (@{$self->or_context_glyphs($dat->{'groups'}{$l->{'all'}})})
+                { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
+            }
+            $flags |= $self->{'alls'}{$l->{'all'}} << 8;
+        }
 
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FLAG'} = $flags;
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{' index'} = $l->{' index'};
@@ -478,6 +490,7 @@ sub add_gdef
     my ($font) = $self->{'font'};
     my ($dat) = $self->{'voltdat'};
     my ($gdc) = Font::TTF::Coverage->new(0);       # glyph types
+    my ($gdm) = Font::TTF::Coverage->new(0);
     my %types = (
         'BASE' => 1, 'LIGATURE' => 2, 'MARK' => 3, 'COMPONENT' => 4
     );
@@ -486,11 +499,13 @@ sub add_gdef
     foreach $g (@{$dat->{'glyphs'}})
     {
         $gdc->add($g->{'gnum'}, $types{$g->{'type'}});
+        $gdm->add($g->{'gnum'}, $g->{'mark_class'}) if (defined $g->{'mark_class'});
     }
 
     $font->{'GDEF'} = Font::TTF::GDEF->new('parent' => $font, 'read' => 1);
     $font->{'GDEF'}{'Version'} = 1.0;
     $font->{'GDEF'}{'GLYPH'} = $gdc;
+    $font->{'GDEF'}{'MARKS'} = $gdm if ($gdm->{'max'} > 0);
 }
 
 
