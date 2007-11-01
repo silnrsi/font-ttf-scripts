@@ -51,7 +51,7 @@ sub fret
     my (%opt);
     my ($fh, $fdat);
 
-    getopts("fgh:m:p:qs:", \%opt);
+    getopts("fgh:m:p:qrs:", \%opt);
 
     unless (defined $ARGV[0])
     {
@@ -149,6 +149,7 @@ sub process_font
     my ($gcount, $tr, $tr1, $ppage, @time, @boxhdr, @boxloc, @cids, $numc, $gid);
     my ($type, $rpos);
     my ($optgsize, $maxp);
+    my ($numperow) = $opt{'r'} ? 10 : 4;
 
 #    $font->tables_do(sub { $_[0]->read; });
     @rev = $font->{'cmap'}->read->reverse;
@@ -186,8 +187,8 @@ sub process_font
 #    print "numg = $numg\n";
     ($type, @cids) = $package->make_cids($font);
     $numc = @cids;
-    $maxg = (($maxy - 121) / 67) << 2;
-    $nump = int (($numc + $maxg - 1) / $maxg);
+    $maxg = int(($maxy - 121) / 67) * $numperow;
+    $nump = int(($numc + $maxg - 1) / $maxg);
 #    print "maxg = $maxg\nnump = $nump\n";
     $maxp = $nump;
     $maxp += $numc if ($opt{g});
@@ -223,7 +224,7 @@ use strict;
         " l s [] 0 d ".
         "BT 1 0 0 1 39 " . ($maxy - 81) . " Tm 80 Tz /FI 9 Tf (Size: ) Tj /FB 9 Tf ($tsize pt   ) Tj ".
         "/FI 9 Tf (Em: ) Tj /FB 9 Tf ($upem   ) Tj /FI 9 Tf ".
-        "(Type: ) Tj /FB 9 Tf ($type) Tj 225 3 Td /FR 8 Tf (Glyph) Tj ET\n";
+        "(Type: ) Tj /FB 9 Tf ($type) Tj 225 3 Td /FR 8 Tf (" . ($opt{'r'} ? '' : 'Glyph') . ") Tj ET\n";
     @boxhdr = $package->boxhdr($font);
     @boxloc = ([199, 85], [251, 85], [199, 77], [251, 77]);
     for ($i = 0; $i < 4; $i++)
@@ -264,17 +265,23 @@ use strict;
         @row2 = ($row2[0]);
 
         $ybase = $maxy - 153;
-        for ($row = 0; $row < $maxg / 4; $row++)
+        for ($row = 0; $row < $maxg / $numperow; $row++)
         {
-            $ppage->add(".5 w 36 $ybase 216 64 re S 90 $ybase m 90 " . ($ybase + 64)
-                   . " l S 144 $ybase m 144 " . ($ybase + 64) . " l S"
-                   . " 198 $ybase m 198 " . ($ybase + 64) . " l S"
-                   . " $dots 264 " . ($ybase + 65.5) . " m " . ($maxx - 36) . " "
+            $ppage->add(".5 w 36 $ybase " . ($numperow * 54) . " 64 re S ");
+            for ($i = 0; $i < $numperow - 1; $i++)
+            {
+                my ($x) = 90 + $i * 54;
+                $ppage->add("$x $ybase m $x " . ($ybase + 64) . " l S ");
+            }
+            unless ($opt{'r'})
+            {
+                $ppage->add(" $dots 264 " . ($ybase + 65.5) . " m " . ($maxx - 36) . " "
                    . ($ybase + 65.5) . " l s [] 0 d\n");
+            }
             $yorg = $ybase + 32 - ($font->{'head'}{'yMax'} + $font->{'head'}{'yMin'}) * $tsize / $upem / 2;
-            $ppage->add("$dots 36 $yorg m 252 $yorg l S [] 0 d\n") if ($yorg > $ybase);
+            $ppage->add("$dots 36 $yorg m " . (36 + $numperow * 54) . " $yorg l S [] 0 d\n") if ($yorg > $ybase);
             $xcentre = 63;
-            for ($i = 0; $i < 4; $i++, $xcentre += 54)
+            for ($i = 0; $i < $numperow; $i++, $xcentre += 54)
             {
                 next if ($gcount + $i >= $numc);
                 $gcol = "";
@@ -297,12 +304,15 @@ use strict;
                     $ppage->add("BT 1 0 0 1 $xorg $yorg Tm /T$id $tsize Tf 100 Tz " .
                             $gcol . sprintf("<%04X> Tj " .
                             ($gcol ? "0 g " : "") . "ET\n", $gid));
-                    $gxorg = ($glyph->{'xMax'} + $glyph->{'xMin'}) * $gsize / $upem / 2;
-                    $gxorg = 274 - $gxorg;
-                    $gyorg = $ybase + (3 - $i) * 16 + 8 - ($font->{'head'}{'yMax'} +
-                            $font->{'head'}{'yMin'}) * $gsize / $upem / 2;;
-                    $ppage->add("BT 1 0 0 1 $gxorg $gyorg Tm /T$id $gsize Tf 100 Tz " .
-                            sprintf("<%04X> Tj ET\n", $gid));
+                    unless ($opt{'r'})
+                    {
+                        $gxorg = ($glyph->{'xMax'} + $glyph->{'xMin'}) * $gsize / $upem / 2;
+                        $gxorg = 274 - $gxorg;
+                        $gyorg = $ybase + (3 - $i) * 16 + 8 - ($font->{'head'}{'yMax'} +
+                                $font->{'head'}{'yMin'}) * $gsize / $upem / 2;;
+                        $ppage->add("BT 1 0 0 1 $gxorg $gyorg Tm /T$id $gsize Tf 100 Tz " .
+                                sprintf("<%04X> Tj ET\n", $gid));
+                    }
                 }
                 @parms = ($cids[$gcount + $i], $gid, $glyph, $rev[$gid], $font);
                 @rowt = $package->topdat(@parms);
@@ -315,25 +325,31 @@ use strict;
                 @xorg = ([$xcentre - 26, $xcentre + 24 - $roww[1]],
                         [$xcentre + 25 - $roww[1], $xcentre + 26]);
                 $ppage->add(out_row($pdf, 6, $ybase + 2, \@xorg, \@rowt));
-                @rowt = $package->row1(@parms);
-                @roww = widths(8, \@rowt);
-                push (@row1, [[@rowt], [@roww], $ybase + (3-$i) * 16 + 8.75, 8]);
-                @rowt = $package->row2(@parms);
-                @roww = widths(8, \@rowt);
-                push (@row2, [[@rowt], [@roww], $ybase + (3-$i) * 16 + .75, 8]);
-                $glyph->empty if ($glyph && $numg > 1000 && !$opt{f});
+                unless ($opt{'r'})
+                {
+                    @rowt = $package->row1(@parms);
+                    @roww = widths(8, \@rowt);
+                    push (@row1, [[@rowt], [@roww], $ybase + (3-$i) * 16 + 8.75, 8]);
+                    @rowt = $package->row2(@parms);
+                    @roww = widths(8, \@rowt);
+                    push (@row2, [[@rowt], [@roww], $ybase + (3-$i) * 16 + .75, 8]);
+                    $glyph->empty if ($glyph && $numg > 1000 && !$opt{f});
+                }
             }
-        $gcount += 4;
-        last if ($gcount >= $numc);
-        $ybase -= 67;
+            $gcount += $numperow;
+            last if ($gcount >= $numc);
+            $ybase -= 67;
         }
-    @rowm = maxwidth(\@row1, $maxx - 330);
-    putrows($pdf, \@row1, \@rowm, 294, $ppage);
-    @rowm = maxwidth(\@row2, $maxx - 348);
-    putrows($pdf, \@row2, \@rowm, 312, $ppage);
-    $ppage->{' curstrm'}{'Filter'} = PDFArray(PDFName('FlateDecode'));
-    $ppage->ship_out($pdf);
-    $ppage->empty;
+        unless ($opt{'r'})
+        {
+            @rowm = maxwidth(\@row1, $maxx - 330);
+            putrows($pdf, \@row1, \@rowm, 294, $ppage);
+            @rowm = maxwidth(\@row2, $maxx - 348);
+            putrows($pdf, \@row2, \@rowm, 312, $ppage);
+        }
+        $ppage->{' curstrm'}{'Filter'} = PDFArray(PDFName('FlateDecode'));
+        $ppage->ship_out($pdf);
+        $ppage->empty;
     }
 
     return unless $opt{g};

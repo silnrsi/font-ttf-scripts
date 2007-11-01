@@ -7,7 +7,7 @@ use Getopt::Std;
 
 # don't forget Font::TTF::GDEF
 
-our $DEBUG = 1;
+our $DEBUG = 0;
 my %opts;
 my $VERSION;
 our $CHAIN_CALL;
@@ -39,7 +39,7 @@ Font::TTF::Scripts::Volt::main($if, %opts);
 unless ($CHAIN_CALL)
 { $if->{'font'}->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?" unless ($DEBUG > 1); }
 
-if ($DEBUG)
+if ($opts{'d'} || $DEBUG)
 {
     foreach (qw(GSUB GPOS))
     {
@@ -307,7 +307,14 @@ sub add_gsub_lookup
             my (@output) = @{$self->scon_glyphs($s->[1][0])};
             for ($i = 0; $i < @input; $i++)
             {
-                $sub->{'RULES'}[$sub->{'COVERAGE'}->add($input[$i])][0]{'ACTION'} = [$output[$i]];
+                my ($j) = $sub->{'COVERAGE'}->add($input[$i]);
+                push (@{$sub->{'RULES'}[$j][0]{'ACTION'}}, $output[$i]);
+                if ($sub->{'ACTION_TYPE'} eq 'g' && scalar @{$sub->{'RULES'}[$j][0]{'ACTION'}} > 1)
+                {
+                    $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 3;
+                    $sub->{'ACTION_TYPE'} = 'a';
+                    $sub->{'FORMAT'} = 1;
+                }
             }
         }
         push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);

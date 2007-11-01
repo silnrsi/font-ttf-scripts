@@ -172,11 +172,13 @@ sub out_volt_lookups
     my ($self, $ligtype) = @_;
     my ($glyphs) = $self->{'glyphs'};
     my ($res, $c, $i, $l);
+    my (%output);
 
     foreach $c (sort keys %{$self->{'classes'}})
     {
         next if ($c =~ m/^no_/o);
         next if (grep {$_->{'id'} eq $c} @{$self->{'lookups'}});
+        $output{$c} = 1;
 
         $res .= "DEF_LOOKUP \"$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
@@ -197,6 +199,7 @@ sub out_volt_lookups
     {
         next if ($c =~ m/^no_/o);
         next if (grep {$_->{'id'} eq "l$c"} @{$self->{'lookups'}});
+        $output{"l$c"} = 1;
 
         my ($bnum) = $self->{'ligmap'}{$c};
 
@@ -226,6 +229,7 @@ sub out_volt_lookups
     {
         next if ($c =~ m/^_/o);
         next unless (defined $self->{'lists'}{"_$c"});
+        $output{"base_$c"} = 1;
 
         $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
         $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
@@ -238,6 +242,7 @@ sub out_volt_lookups
     {
         my ($q, $t, $s);
         my ($id) = $l->{'id'};
+        next if ($output{$id});
 #        next if ((defined $self->{'lists'}{$id} && $id !~ m/^_/o)
 #            || (defined $self->{'classes'}{$id} && $id !~ m/^no_/o));
 
@@ -541,7 +546,7 @@ $volt_grammar = <<'EOG';
 
     lk_procmarks : /PROCESS_MARKS|SKIP_MARKS/
 
-    lk_all : qid | 'ALL'
+    lk_all : 'ALL' | qid
             { $return = $item[1] || $item[2]; }
 
     lk_direction : 'DIRECTION' /LTR|RTL/            # what about RTL here?
@@ -573,24 +578,17 @@ $volt_grammar = <<'EOG';
     tag : 'TAG' qid
         { $return = $item[2]; }
                   
-    uni_list : /[0-9a-fA-F,U+\s]+/i
+    uni_list : /[0-9a-fA-F,U+\s]+/o
         { $return = $item[1]; }
     
-    qid : '"' <commit> <skip:''> id_letters '"'
-        { $return = $item[4]; }
+    qid : /"[^"]+"/o
+        { $return = substr($item[1], 1, -1); }
     
-    gid : '"' <commit> <skip:''> id_letters '"'
-        { $return = $dat{'glyph_names'}{$item[4]}; }
+    gid : /"[^"]+"/o
+        { $return = $dat{'glyph_names'}{substr($item[1], 1, -1)}; }
         | /\S+/
         { $return = $dat{'glyph_names'}{$item[1]}; }
         
-    
-    id_letters : /[^"]+/i
-        { $return = $item[1]; }
-    
-    word : /[\w._]+/
-        { $return = $item[1]; }
-    
     num : /-?\d+/
         { $return = $item[1]; }
 EOG

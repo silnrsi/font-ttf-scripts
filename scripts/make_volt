@@ -4,7 +4,7 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('a:hi:l:m:t');
+getopts('a:hi:l:m:nt');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -22,7 +22,7 @@ $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read fo
 
 $comp = $1 if ($opt_l =~ s/(comp)$//o);
 
-$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m);
+$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m) unless ($opt_n);
 if ($opt_i)
 {
     my ($fh, $dat, @map);
@@ -62,8 +62,8 @@ make_volt - Create VOLT code from a TrueType Font
 
 =head1 SYNOPSIS
 
-  make_volt [-a file] [-l ligtype] [-i file] infile outfile
-  make_volt -t [-a file] [-l ligtype] [-i file] infile
+  make_volt [-a file] [-l ligtype] [-i file] [-n] infile outfile
+  make_volt -t [-a file] [-l ligtype] [-i file] [-n] infile
 
 Creates a copy of the infile font file adding a VOLT table to it.
 
@@ -78,6 +78,7 @@ Creates a copy of the infile font file adding a VOLT table to it.
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
   -m "list"     List of anchors that do not imply a MARK glyph (e.g. "_R")
+  -n            Don't generate classes or lookups
   -t            output volt code to stdout and don't generate a font file
 
 =head1 DESCRIPTION

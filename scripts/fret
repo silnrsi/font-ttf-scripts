@@ -67,11 +67,16 @@ sub make_cids
     return ("Glyph ID", @res);
 }
 
+sub boxhdr
+{
+    return ("Advance", "PSName", "GID", "Unicode");
+}
+
 sub lowdat
 {
     my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
 
-    return ($font->{'hmtx'}{'advance'}[$gid], "r|$macrev[$gid]");
+    return ($font->{'hmtx'}{'advance'}[$gid], "r|$font->{'post'}{'VAL'}[$gid]");
 }
 
 
