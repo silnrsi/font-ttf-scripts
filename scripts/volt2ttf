@@ -181,7 +181,7 @@ sub lookups_ttf
     $ltype =~ s/^g//o;
 
     foreach $l (sort {$a->{' index'} <=> $b->{' index'}}
-            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'} && $_->{' include'}}
+            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'}} # && $_->{' include'}}
             @{$dat->{'lookups'}})
     {
         my ($flags);

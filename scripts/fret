@@ -58,6 +58,7 @@ sub make_cids
         $xml->parsefile($ARGV[2]) || die "Can't parse $ARGV[2]";
     }
 
+    @rev = $font->{'cmap'}->read->reverse('array' => 1);
     @map = $font->{'cmap'}->read->reverse;
     $map[$font->{'maxp'}{'numGlyphs'}] = 0;
     foreach $m (@map) { $m = 65536 if $m == 0; }
@@ -79,6 +80,12 @@ sub lowdat
     return ($font->{'hmtx'}{'advance'}[$gid], "r|$font->{'post'}{'VAL'}[$gid]");
 }
 
+sub topdat
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+
+    return ($gid, "r,r|" . join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} @{$rev[$gid]}));
+}
 
 sub row1hdr
 {
@@ -88,7 +95,7 @@ sub row1hdr
     for ($i = 0; $i < $font->{'cmap'}{'Num'}; $i++)
     {
         if ($font->{'cmap'}{'Tables'}[$i]{'Platform'} == 1)
-        { @macrev = $font->{'cmap'}->reverse($i); last; }
+        { @macrev = $font->{'cmap'}->reverse('tnum' => $i); last; }
     }
 
     return ('PSName', 'GID', 'UID', 'Macid',
@@ -101,7 +108,8 @@ sub row1
     my ($aw) = $font->{'hmtx'}{'advance'}[$gid];
     my ($rsb) = $aw - $glyph->{'xMax'};
 
-    return ($font->{'post'}{'VAL'}[$gid], $gid, sprintf("x%04X", $uid), $macrev[$gid],
+    return ($font->{'post'}{'VAL'}[$gid], $gid, 
+            join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} @{$rev[$gid]}), $macrev[$gid],
             "r,b|$aw", "r,i|$glyph->{'xMax'}",
             "r,i|$glyph->{'xMin'}", "r,i|$glyph->{'yMax'}",
             "r,i|$glyph->{'yMin'}");
