@@ -91,7 +91,7 @@ sub row1hdr
         { @macrev = $font->{'cmap'}->reverse($i); last; }
     }
 
-    return ('PSName', 'GID', 'UID',
+    return ('PSName', 'GID', 'UID', 'Macid',
             'r,b|adv', 'r,i|xmax', 'r,i|xmin', 'r,i|ymax', 'r,i|ymin');
 }
 
@@ -101,7 +101,7 @@ sub row1
     my ($aw) = $font->{'hmtx'}{'advance'}[$gid];
     my ($rsb) = $aw - $glyph->{'xMax'};
 
-    return ($font->{'post'}{'VAL'}[$gid], $gid, sprintf("x%04X", $uid),
+    return ($font->{'post'}{'VAL'}[$gid], $gid, sprintf("x%04X", $uid), $macrev[$gid],
             "r,b|$aw", "r,i|$glyph->{'xMax'}",
             "r,i|$glyph->{'xMin'}", "r,i|$glyph->{'yMax'}",
             "r,i|$glyph->{'yMin'}");
