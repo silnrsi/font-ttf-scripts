@@ -4,7 +4,7 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('a:hi:l:m:nt');
+getopts('a:fhi:l:m:nt');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -42,7 +42,9 @@ if ($opt_i)
     @map = $f->align_glyphs($dat);
     $f->merge_volt($dat, \@map);
 }
-$res = $f->out_volt(-ligatures => $opt_l);
+$f->make_groups;
+$f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m}) unless ($opt_n);
+$res = $f->out_volt;
 
 if ($opt_t)
 { print $res; }
@@ -70,6 +72,7 @@ Creates a copy of the infile font file adding a VOLT table to it.
 =head1 OPTIONS
 
   -a file       Attachment Point database .xml file
+  -f            force new lookups even if same named exist
   -h            print manpage
   -i fontfile   merge VOLT table from this font or text file
   -l type       type =
@@ -78,7 +81,7 @@ Creates a copy of the infile font file adding a VOLT table to it.
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
   -m "list"     List of anchors that do not imply a MARK glyph (e.g. "_R")
-  -n            Don't generate classes or lookups
+  -n            Don't generate lookups
   -t            output volt code to stdout and don't generate a font file
 
 =head1 DESCRIPTION

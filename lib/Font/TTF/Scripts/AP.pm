@@ -599,7 +599,7 @@ By default this returns $pname, but the function could be overridden when subcla
 
 sub make_point
 {
-    my ($self, $p, $glyph) = @_;
+    my ($self, $p, $glyph, %opts) = @_;
     $p;
 }
 

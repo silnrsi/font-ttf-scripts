@@ -30,7 +30,7 @@ sub out_volt
     $res = $self->out_volt_glyphs;
     $res .= $self->out_volt_scripts;
     $res .= $self->out_volt_classes;
-    $res .= $self->out_volt_lookups($opts{'-ligatures'});
+    $res .= $self->out_volt_lookups;
     $res .= $self->out_volt_anchors;
     $res .= $self->out_volt_final;
     $res;
@@ -64,7 +64,7 @@ sub out_volt_glyphs
         { $type = $g->{'type'} || 'BASE'; }
         
         $res .= " TYPE $type" if ($type);
-        $res .= " COMPONENTS " . scalar@{$g->{'components'}} if ($g->{'components'});
+        $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});
         $res .= " END_GLYPH\n";
     }
     $res;
@@ -74,68 +74,16 @@ sub out_volt_glyphs
 sub out_volt_classes
 {
     my ($self) = @_;
-    my ($f) = $self->{'font'};
-    my ($lists) = $self->{'lists'};
-    my ($classes) = $self->{'classes'};
-    my ($ligclasses) = $self->{'ligclasses'};
-    my ($vecs) = $self->{'vecs'};
-    my ($glyphs) = $self->{'glyphs'};
-    my ($l, $name, $count, $sep, $psname, $cl, $i, $c);
-    my ($res, %output);
-    
-    foreach $l (sort keys %{$lists})
-    {
-        my ($name) = $l;
-        
-        if ($name !~ m/^_(.*)$/o)
-        { $name = "Takes$name"; }
-        else
-        { $name =~ s/^_//o; }
-        
-        $res .= "DEF_GROUP \"c${name}Dia\"\n  ENUM";
-        $output{"c${name}Dia"} = 1;
-        
-        $count = 0; $sep = '';
-        foreach $cl (@{$lists->{$l}})
-        { $res .= " GLYPH \"$glyphs->[$cl]{'name'}\""; }
-        $res .= " END_ENUM\nEND_GROUP\n";
-    }
-    
-
-    foreach $cl (sort keys %{$classes})
-    {
-        $res .= "DEF_GROUP \"c$cl\"\n  ENUM";
-        $output{"c$cl"} = 1;
-
-        for ($i = 0; $i <= $#{$classes->{$cl}}; $i++)
-        { 
-            $res .= " GLYPH \"$glyphs->[$classes->{$cl}[$i]]{'name'}\"";
-            $res .= "\n" if ($i % 8 == 7);
-        }
-        $res .= " END_ENUM\nEND_GROUP\n";
-    }
-
-    foreach $cl (sort keys %{$ligclasses})
-    {
-        $res .= "DEF_GROUP \"cl$cl\"\n  ENUM";
-        $output{"cl$cl"} = 1;
-        for ($i = 0; $i <= $#{$ligclasses->{$cl}}; $i++)
-        { 
-            $res .= " GLYPH \"$glyphs->[$ligclasses->{$cl}[$i]]{'name'}\"";
-            $res .= "\n" if ($i % 8 == 7);
-        }
-        $res .= " END_ENUM\nEND_GROUP\n";
-    }
+    my ($cl, $res);
 
     foreach $cl (sort keys %{$self->{'groups'}})
     {
         my ($e);
         my ($t) = $cl;
-        next if ($output{$cl});
 
         $res .= "DEF_GROUP \"$cl\"\n ENUM";
         foreach $e (@{$self->{'groups'}{$cl}})
-        { $res .= " " . context($e, $self); }
+        { $res .= " " . out_context($e, $self); }
         $res .= " END_ENUM\nEND_GROUP\n";
     }
     $res;
@@ -174,70 +122,6 @@ sub out_volt_lookups
     my ($res, $c, $i, $l);
     my (%output);
 
-    foreach $c (sort keys %{$self->{'classes'}})
-    {
-        next if ($c =~ m/^no_/o);
-        next if (grep {$_->{'id'} eq $c} @{$self->{'lookups'}});
-        $output{$c} = 1;
-
-        $res .= "DEF_LOOKUP \"$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
-        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
-
-        $res .= "SUB GROUP \"cno_$c\"\n";
-        $res .= "WITH GROUP \"c$c\"\n";
-        $res .= "END_SUB\n";
-#        for ($i = 0; $i < scalar @{$self->{'classes'}{$c}}; $i++)
-#        {
-#            $res .= "SUB GLYPH \"" .($glyphs->[$self->{'classes'}{"no_$c"}[$i]]{'name'}) . "\"\n";
-#            $res .= "WITH GLYPH \"$glyphs->[$self->{'classes'}{$c}[$i]]{'name'}\"\n";
-#            $res .= "END_SUB\n";
-#        }
-        $res .= "END_SUBSTITUTION\n";
-    }
-
-    foreach $c (sort keys %{$self->{'ligclasses'}})
-    {
-        next if ($c =~ m/^no_/o);
-        next if (grep {$_->{'id'} eq "l$c"} @{$self->{'lookups'}});
-        $output{"l$c"} = 1;
-
-        my ($bnum) = $self->{'ligmap'}{$c};
-
-        $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
-        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
-        if ($ligtype eq 'first')
-        { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GROUP \"no_$c\"\n"; }
-        else
-        { $res .= "SUB GROUP \"clno_$c\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
-        $res .= "WITH GROUP \"cl$c\"\n";
-        $res .= "END_SUB\n";
-#        for ($i = 0; $i < scalar @{$self->{'ligclasses'}{$c}}; $i++)
-#        {
-#            my ($gname) = $glyphs->[$self->{'ligclasses'}{"no_$c"}[$i]]{'name'};
-#
-#            if ($ligtype eq 'first')
-#            { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GLYPH \"$gname\"\n"; }
-#            else
-#            { $res .= "SUB GLYPH \"$gname\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
-#            $res .= "WITH GLYPH \"$glyphs->[$self->{'ligclasses'}{$c}[$i]]{'name'}\"\n";
-#            $res .= "END_SUB\n";
-#        }
-        $res .= "END_SUBSTITUTION\n";
-    }
-
-    foreach $c (sort keys %{$self->{'lists'}})
-    {
-        next if ($c =~ m/^_/o);
-        next unless (defined $self->{'lists'}{"_$c"});
-        $output{"base_$c"} = 1;
-
-        $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
-        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
-        $res .= "ATTACH GROUP \"cTakes${c}Dia\"\n";
-        $res .= "TO GROUP \"c${c}Dia\" AT ANCHOR \"$c\"\n";
-        $res .= "END_ATTACH\nEND_POSITION\n";
-    }
-
     foreach $l (@{$self->{'lookups'}})
     {
         my ($q, $t, $s);
@@ -253,6 +137,8 @@ sub out_volt_lookups
         {
             if ($q eq 'all' && $l->{$q} && $l->{$q} ne 'ALL')
             { $res .= " \"$l->{$q}\""; }
+            elsif ($q eq 'dir')
+            { $res .= " DIRECTION $l->{$q}"; }
             else
             { $res .= " $l->{$q}" if ($l->{$q}); }
         }
@@ -264,7 +150,7 @@ sub out_volt_lookups
             {
                 $res .= "\n $c->[0]";
                 foreach $t (@{$c}[1..$#{$c}])
-                { $res .= " ". context($t, $self); }
+                { $res .= " ". out_context($t, $self); }
             }
             $res .= "\nEND_CONTEXT\n";
         }
@@ -275,12 +161,12 @@ sub out_volt_lookups
             {
                 $res .= "SUB";
                 foreach $c (@{$s->[0]})
-                { $res .= " " . context($c, $self); }
+                { $res .= " " . out_context($c, $self); }
                 if ($s->[1])
                 {
                     $res .= "\nWITH";
                     foreach $c (@{$s->[1]})
-                    { $res .= " " . context($c, $self); }
+                    { $res .= " " . out_context($c, $self); }
                 }
                 $res .= "\nEND_SUB\n";
             }
@@ -296,21 +182,29 @@ sub out_volt_lookups
                 {
                     my ($c);
                     foreach $c (@{$s->{'context'}})
-                    { $res .= " " . context($c, $self); }
+                    { $res .= " " . out_context($c, $self); }
                     $res .= "\nTO";
                     foreach $c (@{$s->{'to'}})
-                    { $res .= " " . context($c->[0], $self) . " AT ANCHOR \"$c->[1]\""; }
+                    { $res .= " " . out_context($c->[0], $self) . " AT ANCHOR \"$c->[1]\""; }
                     $res .= "\nEND_ATTACH\n";
+                }
+                elsif ($s->{'type'} eq 'ATTACH_CURSIVE')
+                {
+                    my ($c);
+                    foreach $c (@{$s->{'exits'}})
+                    { $res .= "\nEXIT " . out_context($c, $self); }
+                    foreach $c (@{$s->{'enters'}})
+                    { $res .= "\nENTER " . out_context($c, $self); }
                 }
                 elsif ($s->{'type'} eq 'ADJUST_PAIR')
                 {
                     my ($c);
                     $res .= "\n";
                     foreach $c (@{$s->{'context1'}})
-                    { $res .= " FIRST  " . context($c, $self); }
+                    { $res .= " FIRST  " . out_context($c, $self); }
                     $res .= "\n";
                     foreach $c (@{$s->{'context2'}})
-                    { $res .= " SECOND  " . context($c, $self); }
+                    { $res .= " SECOND  " . out_context($c, $self); }
                     foreach $c (@{$s->{'adj'}})
                     {
                         my ($d);
@@ -324,7 +218,7 @@ sub out_volt_lookups
                 {
                     my ($i);
                     for ($i = 0; $i < @{$s->{'context'}}; $i++)
-                    { $res .= " " . context($s->{'context'}[$i], $self) . " BY " . out_pos($s->{'adj'}[$i]); }
+                    { $res .= " " . out_context($s->{'context'}[$i], $self) . " BY " . out_pos($s->{'adj'}[$i]); }
                     $res .= "\nEND_ADJUST\n";
                 }
             }
@@ -388,6 +282,47 @@ EOT
     $res;
 }
 
+sub out_context
+{
+    my ($cont, $dat) = @_;
+    my ($res, $c);
+
+    if ($cont->[0] eq 'GLYPH')
+    { $res = "$cont->[0] \"$dat->{'glyphs'}[$cont->[1]]{'name'}\""; }
+    elsif ($cont->[0] eq 'GROUP')
+    { $res = "$cont->[0] \"$cont->[1]\""; }
+    elsif ($cont->[0] eq 'RANGE')
+    { $res = "$cont->[0] \"$dat->{'glyphs'}[$cont->[1]]{'name'}\" TO \"$dat->{'glyphs'}[$cont->[2]]{'name'}\""; }
+    elsif ($cont->[0] eq 'ENUM')
+    {
+        $res = "ENUM";
+        foreach $c (@{$cont}[1 .. $#{$cont}])
+        { $res .= " " . context($c); }
+        $res .= " END_ENUM";
+    }
+    $res;
+}
+
+sub out_pos
+{
+    my ($pos) = @_;
+    my ($res, $c);
+    my (%labels) = ('adv' => 'ADV', 'x' => 'DX', 'y' => 'DY');
+
+    $res = "POS";
+    foreach $c (qw(adv x y))
+    {
+        my ($d);
+        if ($pos->{$c})
+        {
+            $res .= " ". $labels{$c} . " " . $pos->{$c}[0];
+            foreach $d (@{$pos->{$c}[1]})
+            { $res .= " ADJUST_BY $d->[0] AT $d->[1]"; }
+        }
+    }
+    $res .= " END_POS";
+    $res;
+}
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
@@ -406,7 +341,7 @@ sub make_point
 {
     my ($self, $p, $glyph, %opts) = @_;
     
-    $glyph->{'props'}{'type'} ||= 'MARK' if ($p =~ m/^_/o && $opts{'-notmark'} !~ m/$p/);
+    $glyph->{'props'}{'type'} ||= 'MARK' if ($p =~ m/^_/o && $opts{'-notmark'} !~ m/\b$p\b/);
     return $p;
 }
 
@@ -426,7 +361,7 @@ $volt_grammar = <<'EOG';
 
     glyph : 'DEF_GLYPH' <commit> qid 'ID' num glyph_unicode(?) glyph_type(?) glyph_component(?) 'END_GLYPH'
             { 
-                $dat{'glyphs'}[$item[5]] = {'uni' => $item[6][0], 'type' => $item[7][0], 'name' => $item[3], 'components' => $item[8][0], 'gnum' => $item[5]};
+                $dat{'glyphs'}[$item[5]] = {'uni' => $item[6][0], 'type' => $item[7][0], 'name' => $item[3], 'component_num' => $item[8][0], 'gnum' => $item[5]};
                 $dat{'glyph_names'}{$item[3]} = $item[5];
                 1;
             }
@@ -550,7 +485,7 @@ $volt_grammar = <<'EOG';
             { $return = $item[1] || $item[2]; }
 
     lk_direction : 'DIRECTION' /LTR|RTL/            # what about RTL here?
-            { $return = "$item[1] $item[2]"; }
+            { $return = $item[2]; }
 
     info : i_grid(?) i_pres(?) i_ppos(?) i_cmap(s?)
             { $dat{'info'} = {
@@ -695,7 +630,7 @@ sub merge_volt
         my ($n) = $self->{'glyphs'}[$map->[$g->{'gnum'}]];
         next unless defined $n;
 
-        $n->{'components'} ||= $g->{'components'};
+        $n->{'component_num'} ||= $g->{'component_num'};
         $n->{'type'} ||= $g->{'type'};
 
         foreach $k (keys %{$g->{'points'}})
@@ -773,44 +708,116 @@ sub map_enum
     }
 }
 
-sub context
+sub make_lookups
 {
-    my ($cont, $dat) = @_;
-    my ($res, $c);
+    my ($self, $ligtype, $opts) = @_;
+    my ($c);
 
-    if ($cont->[0] eq 'GLYPH')
-    { $res = "$cont->[0] \"$dat->{'glyphs'}[$cont->[1]]{'name'}\""; }
-    elsif ($cont->[0] eq 'GROUP')
-    { $res = "$cont->[0] \"$cont->[1]\""; }
-    elsif ($cont->[0] eq 'RANGE')
-    { $res = "$cont->[0] \"$dat->{'glyphs'}[$cont->[1]]{'name'}\" TO \"$dat->{'glyphs'}[$cont->[2]]{'name'}\""; }
-    elsif ($cont->[0] eq 'ENUM')
+    foreach $c (sort keys %{$self->{'classes'}})
     {
-        $res = "ENUM";
-        foreach $c (@{$cont}[1 .. $#{$cont}])
-        { $res .= " " . context($c); }
-        $res .= " END_ENUM";
+        next if ($c =~ m/^no_/o);
+        if ($opts->{'-force'})
+        { $self->{'lookups'} = [grep {$_->{'id'} ne $c} @{$self->{'lookups'}}]; }
+        else
+        { next if (grep {$_->{'id'} eq $c} @{$self->{'lookups'}}); }
+
+        my ($l) = {'id' => $c, 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
+                     'all' => 'ALL', 'dir' => 'LTR', 'contexts' => [],
+                      'lookup' => ['sub', [[[['GROUP', "cno_$c"]], [['GROUP', "c$c"]]]]]};
+        unshift(@{$self->{'lookups'}}, $l);
+
+#        $res .= "DEF_LOOKUP \"$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
+#        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
+
+#        $res .= "SUB GROUP \"cno_$c\"\n";
+#        $res .= "WITH GROUP \"c$c\"\n";
+#        $res .= "END_SUB\n";
+#        $res .= "END_SUBSTITUTION\n";
     }
-    $res;
+
+    foreach $c (sort keys %{$self->{'ligclasses'}})
+    {
+        next if ($c =~ m/^no_/o);
+        if ($opts->{'-force'})
+        { $self->{'lookups'} = [grep {$_->{'id'} ne "l$c"} @{$self->{'lookups'}}]; }
+        else
+        { next if (grep {$_->{'id'} eq "l$c"} @{$self->{'lookups'}}); }
+
+        my ($bnum) = $self->{'ligmap'}{$c};
+
+        my ($l) = {'id' => "l$c", 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
+                     'all' => 'ALL', 'dir' => 'LTR', 'contexts' => []};
+
+#        $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
+#        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
+        if ($ligtype eq 'first')
+        { $l->{'lookup'} = ['sub', [[[['GLYPH', $bnum], ['GROUP', "clno_$c"]], [['GROUP', "cl$c"]]]]]; }
+#        { $res .= "SUB GLYPH \"$glyphs->[$bnum]{'name'}\" GROUP \"no_$c\"\n"; }
+        else
+        { $l->{'lookup'} = ['sub', [[[['GROUP', "clno_$c"], ['GLYPH', $bnum]], [['GROUP', "cl$c"]]]]]; }
+#        { $res .= "SUB GROUP \"clno_$c\" GLYPH \"$glyphs->[$bnum]{'name'}\"\n"; }
+#        $res .= "WITH GROUP \"cl$c\"\n";
+#        $res .= "END_SUB\n";
+#        $res .= "END_SUBSTITUTION\n";
+        unshift(@{$self->{'lookups'}}, $l);
+    }
+
+    foreach $c (sort keys %{$self->{'lists'}})
+    {
+#        print STDERR "$c: ";
+        next if ($c =~ m/^_/o);
+        next unless (defined $self->{'lists'}{"_$c"});
+        if ($opts->{'-force'})
+        { $self->{'lookups'} = [grep {$_->{'id'} ne "base_$c"} @{$self->{'lookups'}}]; }
+        else
+        { next if (grep {$_->{'id'} eq "base_$c"} @{$self->{'lookups'}}); }
+        next if (defined $opts->{'-notmark'} && $opts->{'-notmark'} =~ m/\b_$c\b/);
+
+        my ($l) = {'id' => "base_$c", 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
+                     'all' => 'ALL', 'dir' => 'LTR', 'contexts' => [],
+                      'lookup' => ['pos', [{'type' => 'ATTACH', 'context' => [['GROUP', "cTakes${c}Dia"]],
+                                'to' => [[['GROUP', "c${c}Dia"], $c]]}]]};
+        push(@{$self->{'lookups'}}, $l);
+#        print STDERR join(",", map {$_->{'id'}} @{$self->{'lookups'}}) . "\n";
+
+#        $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
+#        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
+#        $res .= "ATTACH GROUP \"cTakes${c}Dia\"\n";
+#        $res .= "TO GROUP \"c${c}Dia\" AT ANCHOR \"$c\"\n";
+#        $res .= "END_ATTACH\nEND_POSITION\n";
+    }
 }
 
-sub out_pos
+sub make_groups
 {
-    my ($pos) = @_;
-    my ($res, $c);
-    my (%labels) = ('adv' => 'ADV', 'x' => 'DX', 'y' => 'DY');
-
-    $res = "POS";
-    foreach $c (qw(adv x y))
+    my ($self) = @_;
+    my ($lists) = $self->{'lists'};
+    my ($classes) = $self->{'classes'};
+    my ($ligclasses) = $self->{'ligclasses'};
+    my ($l);
+    
+    foreach $l (sort keys %{$lists})
     {
-        my ($d);
-        if ($pos->{$c})
-        {
-            $res .= " ". $labels{$c} . " " . $pos->{$c}[0];
-            foreach $d (@{$pos->{$c}[1]})
-            { $res .= " ADJUST_BY $d->[0] AT $d->[1]"; }
-        }
+        my ($name) = $l;
+
+        if ($name !~ m/^_(.*)$/o)
+        { $name = "Takes$name"; }
+        else
+        { $name =~ s/^_//o; }
+        $self->{'groups'}{"c${name}Dia"} = [map {['GLYPH', $_]} @{$lists->{$l}}];
     }
-    $res .= " END_POS";
-    $res;
+    
+
+    foreach $l (sort keys %{$classes})
+    {
+        $self->{'groups'}{"c$l"} = [map {['GLYPH', $_]} @{$classes->{$l}}];
+    }
+
+    foreach $l (sort keys %{$ligclasses})
+    {
+        $self->{'groups'}{"cl$l"} = [map {['GLYPH', $_]} @{$ligclasses->{$l}}];
+    }
 }
+
+1;
+

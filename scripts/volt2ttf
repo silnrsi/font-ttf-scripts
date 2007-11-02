@@ -102,9 +102,23 @@ sub features_ttf
     my ($font) = $self->{'font'};
     my (%multis);
 
+    foreach $s (sort keys %{$dat->{'scripts'}})
+    {
+        my ($t) = $dat->{'scripts'}{$s};
+        foreach $l (@{$t->{'lang'}})
+        {
+            foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l})
+            {
+                foreach $k (@{$l->{$f}{'lookups'}})
+                { $dat->{'lookuptags'}{$k}{' include'} = 1; }
+            }
+        }
+    }
+
     $dat->{'lookuptags'} = {map {$_->{'id'} => $_} @{$dat->{'lookups'}}} unless (defined $dat->{'lookuptags'});
     foreach $l (@{$dat->{'lookups'}})
     {
+        next unless ($l->{' include'});
         my ($multi);
         if ($l->{'id'} =~ m/^([^\\]+)\\/o)
         { $multi = $1; }
@@ -132,7 +146,6 @@ sub features_ttf
                 my ($type);
                 foreach $k (@{$l->{$f}{'lookups'}})
                 {
-                    $dat->{'lookuptags'}{$k}{' include'} = 1;
                     if ($dat->{'lookuptags'}{$k}{'lookup'}[0] eq 'sub')
                     { $type = 'GSUB'; }
                     else
@@ -181,7 +194,7 @@ sub lookups_ttf
     $ltype =~ s/^g//o;
 
     foreach $l (sort {$a->{' index'} <=> $b->{' index'}}
-            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'}} # && $_->{' include'}}
+            grep {$_->{'lookup'}[0] eq $ltype && defined $_->{' index'} && $_->{' include'}}
             @{$dat->{'lookups'}})
     {
         my ($flags);
