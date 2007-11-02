@@ -93,6 +93,8 @@ sub main
         $f->lookups_ttf($t);
     }
     $f->add_gdef();
+    $f->{'font'}{'OS/2'}->read->{'maxLookups'} = $f->{'maxcontext'};
+    print STDERR "maxcontext=$f->{'maxcontext'}\n";
 }
 
 sub features_ttf
@@ -102,6 +104,7 @@ sub features_ttf
     my ($font) = $self->{'font'};
     my (%multis);
 
+    $dat->{'lookuptags'} = {map {$_->{'id'} => $_} @{$dat->{'lookups'}}} unless (defined $dat->{'lookuptags'});
     foreach $s (sort keys %{$dat->{'scripts'}})
     {
         my ($t) = $dat->{'scripts'}{$s};
@@ -115,7 +118,6 @@ sub features_ttf
         }
     }
 
-    $dat->{'lookuptags'} = {map {$_->{'id'} => $_} @{$dat->{'lookups'}}} unless (defined $dat->{'lookuptags'});
     foreach $l (@{$dat->{'lookups'}})
     {
         next unless ($l->{' include'});
@@ -267,11 +269,16 @@ sub lookups_ttf
             }
             foreach $c (@{$l->{'contexts'}})        # multiple context subrules
             {
+                my ($contlength);
                 my ($clr1) = {};
                 foreach $e (@{$c})
                 { push (@{$clr1->{$e->[0] eq 'LEFT' ? 'PRE' : 'POST'}}, $self->make_coverage(@{$e}[1..$#{$e}])); }
                 if (@{$clr1->{'PRE'}})
-                { $clr1->{'PRE'} = [reverse (@{$clr1->{'PRE'}})]; }
+                {
+                    $clr1->{'PRE'} = [reverse (@{$clr1->{'PRE'}})];
+#                    $contlength = scalar @{$clr1->{'PRE'}};
+                }
+                $contlength += scalar @{$clr1->{'POST'}};
 
                 foreach (@clr)
                 {
@@ -280,6 +287,8 @@ sub lookups_ttf
                         'ACTION_TYPE' => 'l',
                         'RULES' => [[{%$_, %$clr1}]]});
                 }
+                $contlength += scalar @{$clr->{'MATCH'}};
+                $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
             }
             $index = $dat->{"${type}_counters"}++;
         }
@@ -308,6 +317,7 @@ sub add_gsub_lookup
         my ($m) = scalar @{$s->[0]};
         $maxi = $m if ($m > $maxi);
     }
+    $self->{'maxcontext'} = $maxi if ($maxi > $self->{'maxcontext'});
 
     if ($maxi == 1 && $maxo == 1)
     {
@@ -380,7 +390,7 @@ sub add_gpos_lookup
     my ($self, $index, $l) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
-    my ($s);
+    my ($s, $contlength);
 
     foreach $s (@{$l->{'lookup'}[1]})
     {
@@ -403,6 +413,7 @@ sub add_gpos_lookup
             }
             $sub->{'RULES'} = [@rules];
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
+            $contlength = 1;
         }
         elsif ($TYPE2 && $s->{'type'} eq 'ADJUST_PAIR')
         {
@@ -437,6 +448,7 @@ sub add_gpos_lookup
                     [{make_value(%{$r->[2][0]})}, {make_value(%{$r->[2][1]})}];
             }
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
+            $contlength = 2;
         }
         elsif ($s->{'type'} eq 'ADJUST_PAIR')
         {
@@ -448,19 +460,20 @@ sub add_gpos_lookup
                 'ACTION_TYPE' => 'p',
                 'MATCH_TYPE' => 'g',
                 'COVERAGE' => $cover}];
-            for ($i = 0; $i < @{$s->{'context1'}}; $i++)
-            {
-                push (@rules, []);
-                foreach $g (@{$self->scon_glyphs($s->{'context1'}[$i])})
-                { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)] = $rules[$i]; }
-            }
             foreach $r (@{$s->{'adj'}})
             {
                 my (@seconds) = @{$self->scon_glyphs($s->{'context2'}[$r->[1]-1])};
                 my ($action) = [{make_value(%{$r->[2][0]})}, {make_value(%{$r->[2][1]})}];
-                foreach (sort @seconds)
+                foreach (@seconds)
                 { push (@{$rules[$r->[0]-1]}, {'MATCH' => [$_], 'ACTION' => $action}); }
             }
+            for ($i = 0; $i < @{$s->{'context1'}}; $i++)
+            {
+                $rules[$i] = [sort {$a->{'MATCH'}[0] <=> $b->{'MATCH'}[0]} @{$rules[$i]}];
+                foreach $g (@{$self->scon_glyphs($s->{'context1'}[$i])})
+                { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)] = $rules[$i]; }
+            }
+            $contlength = 2;
         }
         elsif ($s->{'type'} eq 'ATTACH_CURSIVE')
         {
@@ -475,6 +488,7 @@ sub add_gpos_lookup
             foreach $g (@{$self->or_context_glyphs(@{$s->{'exits'}})})
             { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'points'}{'exit'}); }
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
+            $contlength = 2;
         }
         elsif ($s->{'type'} eq 'ATTACH')
         {
@@ -504,8 +518,10 @@ sub add_gpos_lookup
                     'MATCH' => [$markc],
                     'MARKS' => [@marks],
                     'RULES' => [@rules]});
+            $contlength = 2;
         }
     }
+    $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
 }
 
 

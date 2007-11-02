@@ -60,7 +60,7 @@ sub out_volt_glyphs
         
         if (defined $g->{'props'}{'type'})
         { $type = $g->{'props'}{'type'} || $g->{'type'}; }
-        elsif (defined $g->{'points'})
+        elsif (defined $g->{'anchors'})
         { $type = $g->{'type'} || 'BASE'; }
         
         $res .= " TYPE $type" if ($type);
@@ -143,17 +143,22 @@ sub out_volt_lookups
             { $res .= " $l->{$q}" if ($l->{$q}); }
         }
         $res .= "\n";
-        foreach $q (@{$l->{'contexts'}})
+        if (scalar @{$l->{'contexts'}})
         {
-            $res .= "IN_CONTEXT";
-            foreach $c (@{$q})
+            foreach $q (@{$l->{'contexts'}})
             {
-                $res .= "\n $c->[0]";
-                foreach $t (@{$c}[1..$#{$c}])
-                { $res .= " ". out_context($t, $self); }
+                $res .= "IN_CONTEXT";
+                foreach $c (@{$q})
+                {
+                    $res .= "\n $c->[0]";
+                    foreach $t (@{$c}[1..$#{$c}])
+                    { $res .= " ". out_context($t, $self); }
+                }
+                $res .= "\nEND_CONTEXT\n";
             }
-            $res .= "\nEND_CONTEXT\n";
         }
+        else
+        { $res .= "IN_CONTEXT\nEND_CONTEXT\n"; }
         if ($l->{'lookup'}[0] eq 'sub')
         {
             $res .= "AS_SUBSTITUTION\n";
@@ -238,13 +243,10 @@ sub out_volt_anchors
     foreach $glyph (@{$self->{'glyphs'}})
     {
         $k = $glyph->{'name'};
-        foreach $i (sort keys %{$glyph->{'points'}})
+        foreach $i (sort keys %{$glyph->{'anchors'}})
         {
-            my ($m) = $i;
-            $m =~ s/^_/MARK_/o;
-
-            $res .= "DEF_ANCHOR \"$m\" ON $glyph->{'gnum'} GLYPH $k COMPONENT 1 " .
-                    "AT POS DX $glyph->{'points'}{$i}{'x'} DY $glyph->{'points'}{$i}{'y'} END_POS " .
+            $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT 1 " .
+                    "AT POS DX $glyph->{'anchors'}{$i}{'pos'}{'x'}[0] DY $glyph->{'anchors'}{$i}{'pos'}{'y'}[0] END_POS " .
                     "END_ANCHOR\n";
         }
     }
@@ -455,7 +457,7 @@ $volt_grammar = <<'EOG';
             { $return = [$item[1], $item[3]]; }
 
     anchor : 'DEF_ANCHOR' <commit> qid 'ON' num 'GLYPH' gid 'COMPONENT' num anchor_locked(?) 'AT' pos 'END_ANCHOR'
-            { $dat{'glyphs'}[$item[5]]{'points'}{$item[3]} = {'pos' => $item[-2], 'component' => $item[9], 'locked' => $item[10][0]}; 1; }
+            { $dat{'glyphs'}[$item[5]]{'anchors'}{$item[3]} = {'pos' => $item[-2], 'component' => $item[9], 'locked' => $item[10][0]}; 1; }
     
     anchor_locked : 'LOCKED'
 
@@ -633,10 +635,10 @@ sub merge_volt
         $n->{'component_num'} ||= $g->{'component_num'};
         $n->{'type'} ||= $g->{'type'};
 
-        foreach $k (keys %{$g->{'points'}})
+        foreach $k (keys %{$g->{'anchors'}})
         {
-            my ($p) = $g->{'points'}{$k};
-            my ($np) = $n->{'points'}{$k};
+            my ($p) = $g->{'anchors'}{$k};
+            my ($np) = $n->{'anchors'}{$k};
 
             if (defined $np)
             {
@@ -650,7 +652,7 @@ sub merge_volt
                 }
             }
             else
-            { $n->{'points'}{$k} = $p; }
+            { $n->{'anchors'}{$k} = $p; }
         }
     }
 
@@ -816,6 +818,25 @@ sub make_groups
     foreach $l (sort keys %{$ligclasses})
     {
         $self->{'groups'}{"cl$l"} = [map {['GLYPH', $_]} @{$ligclasses->{$l}}];
+    }
+}
+
+sub make_anchors
+{
+    my ($self) = @_;
+    my ($g, $p, $k);
+
+    foreach $g (@{$self->{'glyphs'}})
+    {
+        if (defined $g->{'points'})
+        {
+            foreach $p (keys %{$g->{'points'}})
+            {
+                $k = ($p =~ m/^_/o) ? "MARK$p" : $p;
+                $g->{'anchors'}{$k}{'pos'}{'x'}[0] = $g->{'points'}{$p}{'x'};
+                $g->{'anchors'}{$k}{'pos'}{'y'}[0] = $g->{'points'}{$p}{'y'};
+            }
+        }
     }
 }
 

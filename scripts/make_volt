@@ -42,6 +42,7 @@ if ($opt_i)
     @map = $f->align_glyphs($dat);
     $f->merge_volt($dat, \@map);
 }
+$f->make_anchors;
 $f->make_groups;
 $f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m}) unless ($opt_n);
 $res = $f->out_volt;
