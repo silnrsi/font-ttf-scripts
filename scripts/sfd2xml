@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+
+use IO::File;
+use Encode::Unicode;
+use Pod::Usage;
+use Getopt::Std;
+
+getopts('h');
+
+unless ($ARGV[0] || $opt_h)
+{
+    pod2usage(1);
+    exit;
+}
+
+if ($opt_h)
+{
+    pod2usage(-verbose => 2);
+    exit;
+}
+
+my (@chars, $currchar, $fontname, $ascent, $descent);
+
+$s = Font::TTF::Scripts::SFD->new(
+    'FontName' => sub {$fontname = $_[0]; },
+    'Ascent' => sub {$ascent = $_[0]; },
+    'Descent' => sub {$descent = $_[0]; },
+    'StartChar' => sub {
+        my ($name) = @_;
+        $name =~ s/\s*$//o;
+
+        $currchar = {'name' => $name};
+    }, 'Encoding' => sub {
+        my ($str) = @_;
+        my (@vals) = split(' ', $str);
+        $currchar->{'UID'} = $vals[1];
+        $chars[$vals[2]] = $currchar;
+    }, 'AnchorPoint' => sub {
+        my ($str) = @_;
+        my (@values) = split(' ', $str);
+        my ($name) = $values[0];
+
+        $name =~ s/^(['"])(.*?)\1/$2/o;   # "'
+        $name = "_$name" if ($values[3] eq 'mark' && $name !~ m/^_/o);
+        $currchar->{'points'}{$name} = [$values[1], $values[2]];
+    }, 'Comment' => sub {
+        my ($text) = @_;
+        $currchar->{'comment'} = decode('UTF-7', $text);
+    });
+
+$s->parse_file($ARGV[0]);
+
+$upem = $ascent + $descent;   # sigh!
+
+if ($ARGV[1])
+{
+    $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1]";
+    select $outfh;
+}
+
+print <<"EOT";
+<?xml version="1.0"?>
+<font name="$fontname" upem="$upem">
+
+EOT
+
+foreach $c (@chars)
+{
+    next unless (defined $c->{'name'});
+    printf('<glyph PSName="%s"', $c->{'name'});
+    printf(' UID="%04X"',  $c->{'UID'}) if ($c->{'UID'} > 0);
+        # don't output gid it doesn't tie up with generated font
+    if (defined $c->{'points'} || defined $c->{'comment'})
+    {
+        print ">\n";
+        foreach $p (sort keys %{$c->{'points'}})
+        {
+            printf("    <point type='%s'>\n        <location x='%d' y='%d'/>\n    </point>\n",
+                $p, @{$c->{'points'}{$p}});
+        }
+        print("    <note>$c->{'comment'}</note>\n") if (defined $c->{'comment'});
+        print "</glyph>\n";
+    }
+    else
+    { print "/>\n"; }
+}
+print "\n</font>\n";
+
+$outfh->close if ($ARGV[1]);
+
+
+
+package Font::TTF::Scripts::SFD;
+
+use IO::File;
+
+sub new
+{
+    my ($class, %info) = @_;
+    my ($self) = {%info};
+    return bless $self, ref $class || $class;
+}
+
+sub parse_file
+{
+    my ($self, $fname) = @_;
+    my ($fh);
+    my ($command, $text);
+
+    if (ref $fname)
+    { $fh = $fname; }
+    else
+    { $fh = IO::File->new("< $fname") || die "Can't open $fname for reading"; }
+
+    while (<$fh>)
+    {
+        if (m/^\s/o || m/^\d/o)
+        {
+            $text .= $_;
+            next;
+        }
+        elsif (defined $self->{$command})
+        {
+            $text =~ s/\s*$//os;
+            &{$self->{$command}}($text);
+            $command = '';
+            $text = '';
+        }
+
+        if (s/^([^\s:]+):\s*//o)
+        {
+            $command = $1;
+            $text = $_;
+        }
+        else
+        {
+            s/\s*$//o;
+            $command = $_;
+        }
+    }
+    if (defined $self->{$command})
+    { &{$self->{$command}}($text); }
+}
+
+__END__
+
+=head1 TITLE
+
+sfd2xml - export anchor points from a FontForge file
+
+=head1 SYNOPSIS
+
+  sfd2xml infile.sfd [outfile.xml]
+
+Reads a FontForge font file and extracts anchor point information into an XML
+anchor point database.
+
+=head1 OPTIONS
+
+  -h            print manpage
+
+=head1 DESCRIPTION
+
+FontForge's has the concept of anchor points. This program extracts those and
+any glyph comments into an XML anchor point database. See ttfbuilder -h for
+documentation on this format.
+
