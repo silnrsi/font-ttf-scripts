@@ -1,5 +1,304 @@
 package Font::TTF::Scripts::Volt;
 
+=head1 NAME
+
+Font::TTF::Scripts::Volt - Memory representation of a Volt based font
+
+=head1 SYNOPSIS
+
+ use Font::TTF::Scripts::Volt;
+ $fv = Font::TTF::Scripts::Volt->read_font($ttf_file, $ap_file, %opts);
+ $dat = $fv->parse_volt;
+ @map = $fv->align_glyphs($dat);
+ $fv->merge_volt($dat, \@map);
+ $fv->make_anchors;
+ $fv->make_groups;
+ $fv->make_lookups;
+ $res = $fv->out_volt;
+
+=head1 DESCRIPTION
+
+C<Font::TTF::Scripts::Volt> is based on and inherits from C<Font::TTF::Scripts::AP>
+and as such contains all the information in such an object. The read method does
+little beyond calling the corresponding AP method.
+
+The real power in this module is in the Volt parser that can parse Volt source code.
+It does it rather slowly, but it does do it and reads it into an internal format.
+This format can be output and can be merged into an existing font using C<merge_volt>.
+From there it can be output as Volt source. The data structures added represent the
+Volt source.
+
+=over 4
+
+=item glyphs
+
+This is shared with the glyphs array from AP but adds a few Volt specific sub values
+
+=over 4
+
+=item uni
+
+May be an array of values as well as a single value
+
+=item type
+
+MARK, BASE, etc.
+
+=item component_num
+
+Number of components in a ligature
+
+=item name
+
+Volt name in the source
+
+=back
+
+=item scripts
+
+This is a hash of script structures keyed off the script name as used in Volt it contains
+
+=over 4
+
+=item tag
+
+Four letter script tag
+
+=item langs
+
+An array of language structures consisting of (nearly there)
+
+=over 4
+
+=item name
+
+Language name as in Volt
+
+=item tag
+
+Language tag that ends up in the font
+
+=item <feature name>
+
+Hash of features by name each containing (last one)
+
+=over 4
+
+=item name
+
+Name of the feature as used to reference it
+
+=item tag
+
+Feature tag that ends up in the font
+
+=item lookups
+
+Array of names of lookups associated with this feature
+
+=back
+
+=back
+
+=item anchors
+
+This is a hash by anchor name that contains a sub hash with the following elements:
+
+=over 4
+
+=item pos
+
+A C<pos> type containing the actual position of the anchor point
+
+=item locked
+
+Contains LOCKED if the anchor point is locked
+
+=item component
+
+Contains the component number for a ligature or 1 normally.
+
+=back
+
+=back
+
+=item groups
+
+A hash of group definitions by name. The contents is an array of <context> corresponding
+to each element in the group's defining enum.
+
+=item lookups
+
+An array of lookups in the order they appear in the Volt source. Each lookup consists of
+
+=over 4
+
+=item id
+
+Lookup name
+
+=item base
+
+Contains PROCESS_BASE if that is in the lookup
+
+=item marks
+
+Contains either PROCESS_MARKS or SKIP_MARKS
+
+=item all
+
+Contains a group name or ALL according to what is to be processed
+
+=item dir
+
+Contains LTR or RTL
+
+=item contexts
+
+Contains an array of contexts as per IN_CONTEXT. Each element of the array is itself
+an array corresponding to the elements in a context. In turn each of these elements
+consists of an array with two elements: A string LEFT or RIGHT and a C<context>
+
+=item lookup
+
+This is an array of subactions within the lookup. Each element of this array is itself
+an array with a first element giving the lookup type: C<sub> or C<pos> and the second
+element being the content of the lookup.
+
+For a C<sub> lookup the second element is an array each item of which is a substitution
+pair held in an array. The first element of this substitution pair is an array of
+C<context>s to be substituted and the second element is an array of C<context>s that
+the subsitutition is substituted with.
+
+For a C<pos> lookup, the second element is an array hashes, one per sublookup. The
+elements in the hash are dependent on the type of positioning but have consistent
+meaning:
+
+=over 4
+
+=item type
+
+The type of positioning. May be ATTACH, ATTACH_CURSIVE, ADJUST_SINGLE, ADJUST_PAIR.
+
+=item context
+
+Gives the context glyph for ATTACH and ADJUST_SINGLE lookups and consists of a
+single C<context>
+
+=item context1
+
+The first context glyph for an ADJUST_PAIR. It consists of an array of C<context>s
+which are referenced by number according to their index (starting at 1) in the
+positioning.
+
+=item context2
+
+The second context glyph for an ADJUST_PAIR. It consists of an array of C<contexts>s
+which correspond to the second number in a position.
+
+=item exits
+
+An array of C<context>s one for each glyph with an C<exit> anchor. Used only in
+ATTACH_CURSIVE
+
+=item enters
+
+An array of C<context>s one for each glyph with an C<entry> anchor. Used only in
+ATTACH_CURSIVE
+
+=item to
+
+Used in an ATTACH to specify which glyphs the C<context> glyphs are attached to and
+with which anchor point. Each element of this array is an array with two elements:
+a C<context> to specify the glyph moving (the base glyph is specified by the
+C<context> hash entry) and the name of the anchor point used to link the two. The
+base glyph has an anchor with the anchor name and the second glyph has an anchor
+with the anchor named prefixed by MARK_
+
+=item adj
+
+An adjustment is used in a ADJUST_SINGLE as an array of positioning elements of type
+C<pos> each one corresponding to a C<context> in the context array.
+
+For an ADJUST_PAIR the adj is an array of arrays. Each sub array has 3 elements:
+first index into the context1 array (starting at 1), second index into the context2
+array (starting at 1) and a C<pos> to specify the actual adjustment of those two
+glyphs.
+
+=back
+
+=back
+
+=item info
+
+The info hash contains some global information for the whole font with the following
+hash elements:
+
+=over 4
+
+=item ppos
+
+Specifies the pixesl per em for positioning purpsoes
+
+=item grid
+
+Specifies the pixels per em for the grid
+
+=item pres
+
+Specifies the presentation pixels per em
+
+=item cmap
+
+This is an array of cmap entries, each of which is an array of 3 numbers.
+
+=back
+
+In addition to extra entries in the main object there are two types that are used
+in various places:
+
+=head2 Context
+
+A context consists of an array with two elements. The first element gives the type
+of the context item and the second the value. The context types are:
+
+=over 4
+
+=item GLYPH
+
+The second array element contains a glyph id. Note it does not contain a glyph name.
+The name is resolved to an id in the parser and converted back to a name during output.
+
+=item GROUP
+
+The second array element is a string holding the name of the group being referenced
+
+=item RANGE
+
+The second two array elements are the first and last glyph id for the range. Ranges
+are particularly difficult to work with when merging different glyph arrays so should
+be avoided
+
+=item ENUM
+
+An enum is a way of embedding a list of contexts within a context. The remaining
+elements in the array are C<context>s
+
+=back
+
+=head2 Pos
+
+A positioning element is a glorious animal. You would think that it could just be
+an C<x> and C<y> co-ordinate. You would be so wrong! A C<pos> is a hash with
+three elements: C<x>, C<y> and C<adv>. C<adv> specifies changes to the advance
+width of a glyph in ADJUST_PAIR.
+
+Each of these hash entries is an array. The first element of the array is the
+actual co-ordinate value. The second is an optionally empty array of adjustments
+to that co-ordinate. Each element of that array is a two element array of the
+adjust value and the ppem value at which the adjustment occurs.
+
+=cut
 use Parse::RecDescent;
 use Algorithm::Diff qw(sdiff);
 use Font::TTF::Font;
@@ -531,6 +830,12 @@ $volt_grammar = <<'EOG';
 EOG
 
 #" to keep editors happy
+
+=head2 $f->parse_volt([$vtext])
+
+Parses volt source. If no C<$vtext> then take it from the C<TSIV> table in the font.
+
+=cut
 
 sub parse_volt
 {
