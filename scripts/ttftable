@@ -1,0 +1,224 @@
+#!/usr/bin/perl
+#{([
+
+use strict;
+use Font::TTF::Font;
+use Pod::Usage;
+use Getopt::Long;
+
+our $VERSION = 0.01;    # BH      2007-11-04     First release
+
+
+# Regarding $CHAIN_CALL
+#
+# I've got some code to handle chaining, but it won't work yet so don't try it. Several things need to be fixed:
+# - When processing an export, the incoming font must first be updated. Then realize that the the desired 
+#   table may have been modified by previous program in the chain, which means the ' dat' isn't valid. 
+#   To obtain a valid ' dat', the table's out() function  must be called (perhaps using IO::String). 
+# - When processing an import, need to figure out a way that programs subsequent to us use the
+#   replaced ' dat' value rather than read from the font. Perhaps we go ahead and read() the table using
+#   IO::String
+
+our $CHAIN_CALL;
+
+my (@exports, @imports, @deletes, $textmode);
+
+my $f;
+
+unless ($CHAIN_CALL)
+{
+    my $help;
+    
+    GetOptions (
+        'export=s' =>  \@exports,
+        'import=s' =>  \@imports,
+        'delete|remove=s' => \@deletes,
+        'text'  =>      \$textmode,
+        'help|?'   =>   \$help) or pod2usage(2);
+        
+    pod2usage( -verbose => 2) if $help;
+
+    pod2usage('-msg' => "missing in.ttf parameter\n", '-verbose' => 1) unless defined $ARGV[0];
+
+    $f = Font::TTF::Font->open($ARGV[0]) || die "Can't read font '$ARGV[0]'";
+
+}
+
+# Deletes is special because:
+#   There are magic words like "graphite"
+#   it doesn't have the tag=fname format, so allow it to have be simple list.
+# While we're at it, go ahead and trim and pad the tags
+@deletes = map {sprintf('%-4.4s', $_)} grep {$_} split(/[\s,;]+/, join(',', (map { 
+        s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
+        s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
+        s/\bopentype\b/ GDEF GSUB GPOS /oi;
+    $_ } (@deletes))));
+
+
+# First, read data to be imported and save it for later
+
+my %importeddata;
+
+for (@imports)
+{
+    # Parse the tag=fname value, making up a suitable name if needed.
+    
+    my ($tag, $fname) = m/^([^=]{1,4})(?:=(.*))?$/o;
+    unless (defined ($tag))
+    {
+        warn "Do not understand \"-import $_\" -- ignoring\n";
+        next;
+    }
+    $fname = "$ARGV[0].$tag.dat" unless $fname;
+    $fname =~ s/[\\\/:*?"<>|]//oig;      # Characters disallowed in filenames
+    
+    # Pad and trim table tag
+    $tag = sprintf('%-4.4s', $tag);
+    
+    # Slurp in and save the data to go into the font table:
+    open (IN, $fname) or die "Cannot open file '$fname' for reading. ";
+    local $/ = undef;		# slurp mode for read:
+    binmode IN unless $textmode;
+    $importeddata{$tag} = <IN>;
+    close IN;
+}    
+
+# Now that we've read all the input files (which may also be output files!), we can do the export:
+
+for (@exports)
+{
+    # Parse the tag=fname value, making up a suitable name if needed.
+    
+    my ($tag, $fname) = m/^([^=]{1,4})(?:=(.*))?$/o;
+    unless (defined ($tag))
+    {
+        warn "Do not understand \"-export $_\" -- ignoring\n";
+        next;
+    }
+
+    $fname = "$ARGV[0].$tag.dat" unless $fname;
+    $fname =~ s/[\\\/:*?"<>|]//oig;      # Characters disallowed in filenames
+    
+    # Pad and trim table tag
+    $tag = sprintf('%-4.4s', $tag);
+
+    # Check that the table exists
+    unless (defined $f->{$tag})
+    {
+        warn "Tag $tag not defined in input font -- export request ignored\n";
+        next;
+    }
+
+    # Get the data directly
+
+    # OK, I don't use read_dat() because tables like head and maxp have already
+    # been read and thus read_dat() will noop. 
+    # If we ever implement CHAIN_CALL this has got to be fixed up, but for 
+    # now we can hack it:
+
+    my $dat;
+    $f->{$tag}{' INFILE'}->seek($f->{$tag}{' OFFSET'}, 0);
+    $f->{$tag}{' INFILE'}->read($dat, $f->{$tag}{' LENGTH'});
+
+    # Export the table
+    open(OUT, ">" . $fname) or die "Couldn't open '$fname' for writing. ";
+    if ($textmode)
+    {
+        # Seems there ought to be a better way to do this, but I have no idea
+        # what the font table uses for line ending conventions, so i brute force
+        # convert anything to \n then let iolayers fix it up
+        $dat =~ s/\r\n|\n\r|[\r\n]/\n/g;
+	}
+    else
+    {
+        binmode(OUT);
+    }
+    print OUT $dat;
+    close OUT;
+}
+
+
+# Remove tables the user doesn't want:
+
+for my $tag (@deletes)
+{
+    delete $f->{$tag} if defined $f->{$tag};
+}
+
+# Finally, complete import of tables
+
+for my $tag (keys %importeddata)
+{
+    # Create, if it doesn't exist, the tables we are going to replace
+    $f->{$tag} = Font::TTF::Table->new (PARENT => $f, NAME => $tag) unless exists $f->{$tag};
+    
+    # Now we can set the data
+    $f->{$tag}{' dat'} = $importeddata{$tag};
+    $f->{$tag}{' read'} = 0;    # Make sure ' dat' is written to file. (Fix this up for CHAIN_CALL)
+}
+
+
+    
+unless ($CHAIN_CALL)
+{ 
+    $f->out($ARGV[1]) || die "Can't write to font file '$ARGV[1]'. Do you have it installed?" if defined $ARGV[1]; 
+}
+
+
+
+#])}
+
+__END__
+
+=head1 TITLE
+
+ttftable - import, export, or delete TrueType font tables
+
+=head1 SYNOPSIS
+
+ttftable [options] in.ttf [out.ttf]
+
+Opens in.ttf for reading, optionally imports, exports, and/or deletes tables from the font, 
+then writes the modified font to out.ttf if provided.
+
+=head1 OPTIONS
+
+  -export tag[=fname]  Name of table to export, and optional datafile name
+  -import tag[=fname]  Name of table to import, and optional datafile name
+  -delete taglist      List of tables to remove from font
+  -text                Use text mode i/o for datafiles 
+  -help                Help
+
+Option names may be abbreviated; -export, -import, and -delete options may be repeated.
+    
+=head1 DESCRIPTION
+
+After opening font file in.ttf, ttftable can export one or more of the 
+truetype tables to separate files, import one or more font tables from 
+separate files, and/or delete specified tables from the font. 
+
+Changes are written to out.ttf if supplied.
+
+Tables are identified by their four-character tag. For the -delete option,
+more than one table tag can be supplied, and the following (case 
+insensitive) magic words can also be used:
+
+  graphite  delete SIL Graphite tables (Silf Feat Gloc Glat Sill Sile)
+  volt      delete Microsoft VOLT tables (TSIV TSID TSIP TSIS)
+  opentype  delete OpenTYpe tables (GDEF GSUB GPOS)
+
+The parameter to -export and -import is a table tag optionally followed by
+equals sign and a filename. If the filename is not provided, ttftable
+makes up a file name by appending ".I<tagname>.dat" to the input
+font file name.
+
+Font tables such as TSIV that contain text use various conventions for line ending. 
+During -export, the -text option will convert any line-endings in the font data to what is needed by 
+your platform. During -import, the -text option simply converts your platform line endings
+to newline (\n) character, which may not be what you want, so use with caution.
+
+Arrangements of command lines options that import and export the same
+table and/or the same data file will "do the right thing" except that
+external files can contain only one table.
+
+=cut
