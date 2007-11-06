@@ -22,7 +22,7 @@ $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read fo
 
 $comp = $1 if ($opt_l =~ s/(comp)$//o);
 
-$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m) unless ($opt_n);
+$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m);
 if ($opt_i)
 {
     my ($fh, $dat, @map);

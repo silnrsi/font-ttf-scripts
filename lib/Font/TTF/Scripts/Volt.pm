@@ -299,6 +299,7 @@ to that co-ordinate. Each element of that array is a two element array of the
 adjust value and the ppem value at which the adjustment occurs.
 
 =cut
+
 use Parse::RecDescent;
 use Algorithm::Diff qw(sdiff);
 use Font::TTF::Font;
@@ -778,7 +779,7 @@ $volt_grammar = <<'EOG';
     pos_adj : 'ADJUST_BY' <commit> num 'AT' num
             { $return = [$item[3], $item[5]]; }
 
-    lk_procbase : 'PROCESS_BASE'
+    lk_procbase : /SKIP_BASE|PROCESS_BASE/
 
     lk_procmarks : /PROCESS_MARKS|SKIP_MARKS/
 

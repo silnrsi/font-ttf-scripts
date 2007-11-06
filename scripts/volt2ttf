@@ -94,7 +94,7 @@ sub main
     }
     $f->add_gdef();
     $f->{'font'}{'OS/2'}->read->{'maxLookups'} = $f->{'maxcontext'};
-    print STDERR "maxcontext=$f->{'maxcontext'}\n";
+#    print STDERR "maxcontext=$f->{'maxcontext'}\n";
 }
 
 sub features_ttf
@@ -236,6 +236,7 @@ sub lookups_ttf
                         { $clr->{'MATCH'}[$i] = Font::TTF::Coverage->new(1); }
                         foreach (@{$glyphs})
                         { $clr->{'MATCH'}[$i]->add($_); }
+                        $clr->{'MATCH'}[$i]->sort;
                     }
                 }
             }
@@ -307,7 +308,7 @@ sub add_gsub_lookup
     my ($self, $index, $l) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
-    my ($s, $maxi, $maxo);
+    my ($s, $maxi, $maxo, @map, $sub);
 
 # which of the 3 types of subst are we? 1:1, 1:many, many:1
     foreach $s (@{$l->{'lookup'}[1]})
@@ -321,7 +322,7 @@ sub add_gsub_lookup
 
     if ($maxi == 1 && $maxo == 1)
     {
-        my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 2, ' index' => $index};
+        $sub = {'ACTION_TYPE' => 'g', 'FORMAT' => 2, ' index' => $index};
         $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 1;
         $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
         foreach $s (@{$l->{'lookup'}[1]})
@@ -340,12 +341,10 @@ sub add_gsub_lookup
                 }
             }
         }
-        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
-        return;
     }
     elsif ($maxi == 1)
     {
-        my ($sub) = {'ACTION_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
+        $sub = {'ACTION_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
         my ($i);
         $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 2;
         $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
@@ -357,11 +356,10 @@ sub add_gsub_lookup
             for ($i = 0; $i < @{$input}; $i++)
             { $sub->{'RULES'}[$sub->{'COVERAGE'}->add($input->[$i])][0]{'ACTION'} = $output[$i]; }
         }
-        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
     }
     else        # ligature - many:1
     {
-        my ($sub) = {'ACTION_TYPE' => 'g', 'MATCH_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
+        $sub = {'ACTION_TYPE' => 'g', 'MATCH_TYPE' => 'g', 'FORMAT' => 1, ' index' => $index};
         my (@input, @new_input);
         $font->{'GSUB'}{'LOOKUP'}[$index]{'TYPE'} = 4;
         $sub->{'COVERAGE'} = Font::TTF::Coverage->new(1);
@@ -380,8 +378,11 @@ sub add_gsub_lookup
                 }
             }
         }
-        push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
     }
+    @map = $sub->{'COVERAGE'}->sort;
+    $sub->{'RULES'} = [map {$sub->{'RULES'}[$map[$_]]} (0 .. @map-1)];
+    push (@{$font->{'GSUB'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
+    return;
 }
 
 
@@ -390,7 +391,7 @@ sub add_gpos_lookup
     my ($self, $index, $l) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
-    my ($s, $contlength);
+    my ($s, $contlength, @map);
 
     foreach $s (@{$l->{'lookup'}[1]})
     {
@@ -411,7 +412,8 @@ sub add_gpos_lookup
                     push (@rules, [{'ACTION' => [{make_value(%{$s->{'adj'}[$i]})}]}]);
                 }
             }
-            $sub->{'RULES'} = [@rules];
+            @map = $sub->{'COVERAGE'}->sort;
+            $sub->{'RULES'} = [map {$rules[$map[$_]]} (0 .. @map-1)];
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
             $contlength = 1;
         }
@@ -615,6 +617,7 @@ sub make_coverage
         foreach (@{$glyphs})
         { $cover->add($_); }
     }
+    $cover->sort;
     return $cover;
 }
 
