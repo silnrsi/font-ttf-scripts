@@ -12,6 +12,7 @@
 # 1.6   MJPH    10-NOV-2000     Add -v
 # 1.7	RMH	     2-Dec-2003	    Add -w
 # 1.7.1 MJPH    27-APR-2006     Add docs for man pages, up version report
+# 1.8   MJPH     8-NOV-2007     Support v3 OS/2 tables and some handling of those beyond
 
 require 'ttfmod.pl';
 require 'getopts.pl';
@@ -23,7 +24,7 @@ if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[
     die 'HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
         [-t num] [-u hex] [-w width] <infile> <outfile>
 
-v1.7.1, 27-APR-2006  (c) martin_hosken@sil.org
+v1.8, 8-NOV-2007  (c) martin_hosken@sil.org
 
 Hacks the OS/2 table of a ttf file copying from infile to outfile.
     -c      change codepage information (a 64 bit hex number)
