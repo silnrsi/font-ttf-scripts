@@ -12,8 +12,8 @@ if ($opt_t)
     { $volt_text .= $_; }
     $inf->close;
 }
-elsif (defined $f->{'font'}{'TSIV'})
-{ $volt_text = $f->{'font'}{'TSIV'}->read->{' dat'}; }
+elsif (defined $font->{'font'}{'TSIV'})
+{ $volt_text = $font->{'font'}{'TSIV'}->read->{' dat'}; }
 else
 { die "No VOLT table in the font, nothing to do"; }
 $name = $font->{'font'}{'name'}->read->find_name(2);
@@ -34,12 +34,12 @@ for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
     if ($glyph->{'points'} || $glyph->{'type'})
     {
         print ">\n";
-        foreach $p (sort keys %{$glyph->{'points'}})
+        foreach $p (sort keys %{$glyph->{'anchors'}})
         {
             $n = $p;
             $n =~ s/^MARK_/_/o;
             print "    <point type='$n'>\n";
-            print "        <location x='$glyph->{'points'}{$p}{'pos'}{'x'}[0]' y='$glyph->{'points'}{$p}{'pos'}{'y'}[0]'/>\n";
+            print "        <location x='$glyph->{'anchors'}{$p}{'pos'}{'x'}[0]' y='$glyph->{'anchors'}{$p}{'pos'}{'y'}[0]'/>\n";
             print "    </point>\n";
         }
         print "    <property name='VOLT_type' value='$glyph->{'type'}'/>\n" if ($glyph->{'type'});
