@@ -859,6 +859,7 @@ sub parse_volt
 
     $str = $font->{'TSIV'}->read->{' dat'} unless ($str);
     $str .= " ";        # ensure final space to match
+    $str =~ s/\r\n?/\n/og;
     $str =~ m/^\x{FEFF}?\s*/ogcs;
 
 #    glyph : 'DEF_GLYPH' <commit> qid 'ID' num glyph_unicode(?) glyph_type(?) glyph_component(?) 'END_GLYPH'
@@ -1195,7 +1196,7 @@ sub parse_volt
     while ($str =~ m/\GCMAP_FORMAT\s+(\d+)\s+(\d+)\s+(\d+)\s+/ogc)
     { push (@{$res->{'info'}{'cmap'}}, [$1, $2, $3]); }
 
-    unless ($str =~ m/\GEND\s*$/ogcs)
+    unless ($str =~ m/\GEND/ogcs)
     { die "Unable to parse: " . substr($str, pos($str), 20); }
 
     return $res;
