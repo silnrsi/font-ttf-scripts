@@ -95,16 +95,27 @@ sub hackos2
         }
     else
         {
-        if ($ver == 1)
+        if ($ver == 2)
             {
             read(INFILE, $dat1, 8);
             $dat .= $dat1;
             }
-        elsif (defined $opt_c)
+        elsif ($ver == 1 || defined $opt_c)
             {
             substr($dat, 0, 2) = pack("n", 1);
             $dat .= pack("x8", 0);
             $len = 86;
+            }
+        else
+            {
+            read(INFILE, $dat1, 18);
+            $dat .= $dat1;
+            $len = 96;
+            if ($ver > 3)
+                {
+                print "Warning, version of OS/2 table too recent. Reverting it to v3\n";
+                substr($dat, 0, 2) = pack('n', 3);
+                }
             }
         }
     if (defined $opt_c)
