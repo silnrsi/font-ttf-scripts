@@ -56,7 +56,7 @@ sub fret
     unless (defined $ARGV[0])
     {
         die <<'EOT';
-FRET [-f] [-g] [-s size] [-p package] [-q] font_file [out_file]
+FRET [-f] [-g] [-r] [-s size] [-p package] [-q] font_file [out_file]
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
 
@@ -70,7 +70,8 @@ if present)
   -m points     Sets glyph size in the box regardless of what is calculated
                 Regardless of the consequences for clashes
   -p package    Perl package specification to use for report information
-  -q            quiet mode  
+  -q            quiet mode
+  -r            Don't output report lines, fill the page with glyph boxes
   -s size       paper size: a4, ltr, legal
 EOT
     }
