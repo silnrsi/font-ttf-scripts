@@ -146,11 +146,11 @@ __END__
 
 =head1 TITLE
 
-sfd2xml - export anchor points from a FontForge file
+sfd2ap - export anchor points from a FontForge file
 
 =head1 SYNOPSIS
 
-  sfd2xml infile.sfd [outfile.xml]
+  sfd2ap infile.sfd [outfile.xml]
 
 Reads a FontForge font file and extracts anchor point information into an XML
 anchor point database.
@@ -165,3 +165,8 @@ FontForge's has the concept of anchor points. This program extracts those and
 any glyph comments into an XML anchor point database. See ttfbuilder -h for
 documentation on this format.
 
+=head1 SEE ALSO
+
+ttfbuilder, volt2ap
+
+=cut

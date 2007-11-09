@@ -70,11 +70,11 @@ __END__
 
 =head1 TITLE
 
-volt2xml - create attachment point database from VOLT source in a TrueType Font
+volt2ap - create attachment point database from VOLT source in a TrueType Font
 
 =head1 SYNOPSIS
 
-  volt2xml [-t voltdat.txt] infile.ttf > outfile.xml
+  volt2ap [-t voltdat.txt] infile.ttf > outfile.xml
 
 =head1 OPTIONS
 
@@ -83,11 +83,12 @@ volt2xml - create attachment point database from VOLT source in a TrueType Font
     
 =head1 DESCRIPTION
 
-volt2xml parses the volt source in a font to extract attachment point information
-which it prints to stdout
+volt2ap parses the volt source in a font to extract attachment point information
+which it prints to stdout in the form of an XML attachment point database. For more
+information on the file format see L<ttfbuilder>
 
 =head1 SEE ALSO
 
-ttfbuilder, make_volt, voltExportAnchors
+ttfbuilder, make_volt
 
 =cut

@@ -860,6 +860,8 @@ sub parse_volt
     $str = $font->{'TSIV'}->read->{' dat'} unless ($str);
     $str .= " ";        # ensure final space to match
     $str =~ s/\r\n?/\n/og;
+
+    # DON'T MAKE ANY CHANGES TO $str AFTER THIS LINE
     $str =~ m/^\x{FEFF}?\s*/ogcs;
 
 #    glyph : 'DEF_GLYPH' <commit> qid 'ID' num glyph_unicode(?) glyph_type(?) glyph_component(?) 'END_GLYPH'
