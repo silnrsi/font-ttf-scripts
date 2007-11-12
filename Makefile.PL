@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
 
-$VERSION = "0.9";
+$VERSION = "0.10";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;
