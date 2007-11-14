@@ -757,6 +757,7 @@ sub ProcessGSUBLookup ($)		# GSUB lookup index to process
         		die "Font has more than one ACTION entry for GSUB lookup '$name' (type 6 format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0][0]{'ACTION'}} > 0;
         
         		# Fetch target rule lookup index:
+                next unless (defined $sub->{'RULES'}[0][0]{'ACTION'}[0]);
         		my ($offset, $ti) = @{$sub->{'RULES'}[0][0]{'ACTION'}[0]};
         		die "OOPS: assignment failed" unless defined $ti;
         
@@ -1327,6 +1328,7 @@ sub ProcessGPOSLookup ($)		# GPOS lookup index to process
         		die "Font has more than one ACTION entry for GPOS ookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0][0]{'ACTION'}} > 0;
         
         		# Fetch target rule lookup index:
+                next unless (defined $sub->{'RULES'}[0][0]{'ACTION'}[0]);
         		my ($offset, $ti) = @{$sub->{'RULES'}[0][0]{'ACTION'}[0]};
         		die "OOPS: assignment failed" unless defined $ti;
         
