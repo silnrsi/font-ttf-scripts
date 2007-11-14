@@ -113,7 +113,7 @@ ttfname - renames font files
 
 =head1 SYNOPSIS
 
-  ttfname [-f "new_full_name"] -n "new_name" [-t num] [-q] in.ttf out.ttf
+  ttfname [-f "full_name"] -n "name" [-t num] [-q] infile.ttf outfile.ttf
 Renames the TTF with the given name and outputs the newly named font to
 out.ttf.
 
