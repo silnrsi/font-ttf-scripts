@@ -51,7 +51,7 @@ unless ($CHAIN_CALL)
 
     if ($opts{h})
     {
-        pod2usage( -verbose => 2);
+        pod2usage( -verbose => 2, -noperldoc => 1);
         exit;
     }
 

@@ -14,7 +14,7 @@ unless ($ARGV[1] || $opt_h)
 
 if ($opt_h)
 {
-    pod2usage(-verbose => 2);
+    pod2usage(-verbose => 2, -noperldoc => 1);
     exit;
 }
 

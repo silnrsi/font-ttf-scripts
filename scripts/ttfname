@@ -19,7 +19,7 @@ unless ($CHAIN_CALL)
 
     if ($opts{h})
     {
-        pod2usage( -verbose => 2);
+        pod2usage( -verbose => 2, -noperldoc => 1);
         exit;
     }
 
@@ -113,9 +113,9 @@ ttfname - renames font files
 
 =head1 SYNOPSIS
 
-  TTFNAME [-f "new_full_name"] -n "new_name" [-t num] [-q] <infile> <outfile>
+  ttfname [-f "new_full_name"] -n "new_name" [-t num] [-q] in.ttf out.ttf
 Renames the TTF with the given name and outputs the newly named font to
-<outfile>.
+out.ttf.
 
 =head1 OPTIONS
 

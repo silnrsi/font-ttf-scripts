@@ -36,9 +36,9 @@ unless ($CHAIN_CALL)
         'text'  =>      \$textmode,
         'help|?'   =>   \$help) or pod2usage(2);
         
-    pod2usage( -verbose => 2) if $help;
+    pod2usage( -verbose => 2, -noperldoc => 1) if $help;
 
-    pod2usage('-msg' => "missing in.ttf parameter\n", '-verbose' => 1) unless defined $ARGV[0];
+    pod2usage(-msg => "missing infile.ttf parameter\n", -verbose => 1) unless defined $ARGV[0];
 
     $f = Font::TTF::Font->open($ARGV[0]) || die "Can't read font '$ARGV[0]'";
 
@@ -176,16 +176,18 @@ ttftable - import, export, or delete TrueType font tables
 
 =head1 SYNOPSIS
 
-ttftable [options] in.ttf [out.ttf]
+ttftable [options] infile.ttf [outfile.ttf]
 
-Opens in.ttf for reading, optionally imports, exports, and/or deletes tables from the font, 
-then writes the modified font to out.ttf if provided.
+Opens infile.ttf for reading, optionally imports, exports, and/or deletes tables from the font, 
+then writes the modified font to outfile.ttf if provided.
 
 =head1 OPTIONS
 
-  -export tag[=fname]  Name of table to export, and optional datafile name
-  -import tag[=fname]  Name of table to import, and optional datafile name
-  -delete taglist      List of tables to remove from font
+  -export tag          Name of table to export to default datafile
+  -export "tag=fname"  Name of table to export and optional datafile name
+  -import tag          Name of table to import from default datafile
+  -import "tag=fname"  Name of table to import and optional datafile name
+  -delete tag[,tag...] List of tables to remove from font
   -text                Use text mode i/o for datafiles 
   -help                Help
 
@@ -193,11 +195,11 @@ Option names may be abbreviated; -export, -import, and -delete options may be re
     
 =head1 DESCRIPTION
 
-After opening font file in.ttf, ttftable can export one or more of the 
+After opening font file infile.ttf, ttftable can export one or more of the 
 truetype tables to separate files, import one or more font tables from 
 separate files, and/or delete specified tables from the font. 
 
-Changes are written to out.ttf if supplied.
+Changes are written to outfile.ttf if supplied.
 
 Tables are identified by their four-character tag. For the -delete option,
 more than one table tag can be supplied, and the following (case 
@@ -210,7 +212,8 @@ insensitive) magic words can also be used:
 The parameter to -export and -import is a table tag optionally followed by
 equals sign and a filename. If the filename is not provided, ttftable
 makes up a file name by appending ".I<tagname>.dat" to the input
-font file name.
+font file name. CAUTION: Windows users should
+include quotes around parameters of the form tag=fname.
 
 Font tables such as TSIV that contain text use various conventions for line ending. 
 During -export, the -text option will convert any line-endings in the font data to what is needed by 
