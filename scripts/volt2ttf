@@ -283,7 +283,7 @@ sub lookups_ttf
 
                 foreach (@clr)
                 {
-                    if ($c->[0])
+                    if ($c->[0] =~ m/^EXCEPT/o)
                     {
                         # first the full context match that does nothing
                         push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,

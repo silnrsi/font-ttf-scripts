@@ -450,8 +450,10 @@ sub out_volt_lookups
         {
             foreach $q (@{$l->{'contexts'}})
             {
-                $res .= 'EXCEPT ' if ($q->[0]);
-                $res .= "IN_CONTEXT";
+                if ($q->[0] =~ m/^EXCEPT/oi)
+                { $res .= "EXCEPT_CONTEXT"; }
+                else
+                { $res .= "IN_CONTEXT"; }
                 foreach $c (@{$q}[1..$#{$q}])
                 {
                     $res .= "\n $c->[0]";
@@ -709,8 +711,8 @@ $volt_grammar = <<'EOG';
                                           'contexts' => [@{$item[8]}],
                                           'lookup' => $item[9] }); }
 
-    lk_context : 'EXCEPT'(?) 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
-            { $return = [@{$item[2]}]; }
+    lk_context : /EXCEPT_CONTEXT|IN_CONTEXT/ lk_context_lt(s?) 'END_CONTEXT'
+            { $return = [$item[1], @{$item[2]}]; }
 
     lk_context_lt : /LEFT|RIGHT/ context(s)
             { $return = [$item[1], @{$item[-1]}]; }
@@ -983,9 +985,9 @@ sub parse_volt
                 'all' => $4 || $5,
                 'dir' => $6});
 
-#    lk_context : 'EXCEPT'(?) 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
-#            { $return = [$item[1][0], @{$item[3]}]; }
-        while ($str =~ m/\G(?:(EXCEPT)\s+)?IN_CONTEXT\s+/ogc)
+#    lk_context : /EXCEPT_CONTEXT|IN_CONTEXT/ lk_context_lt(s?) 'END_CONTEXT'
+#            { $return = [$item[1], @{$item[3]}]; }
+        while ($str =~ m/\G(EXCEPT_CONTEXT|IN_CONTEXT)\s+/ogc)
         {
             my (@context);
             push (@context, $1);
