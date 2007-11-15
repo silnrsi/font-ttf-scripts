@@ -157,7 +157,10 @@ Contains LTR or RTL
 
 Contains an array of contexts as per IN_CONTEXT. Each element of the array is itself
 an array corresponding to the elements in a context. In turn each of these elements
-consists of an array with two elements: A string LEFT or RIGHT and a C<context>
+consists of an array with two elements: A string LEFT or RIGHT and a C<context>.
+
+The first element of the array is not a context it either is empty or contains the
+word 'EXCEPT' to indiciate that this is an EXCEPT IN_CONTEXT construct.
 
 =item lookup
 
@@ -447,8 +450,9 @@ sub out_volt_lookups
         {
             foreach $q (@{$l->{'contexts'}})
             {
+                $res .= 'EXCEPT ' if ($q->[0]);
                 $res .= "IN_CONTEXT";
-                foreach $c (@{$q})
+                foreach $c (@{$q}[1..$#{$q}])
                 {
                     $res .= "\n $c->[0]";
                     foreach $t (@{$c}[1..$#{$c}])
@@ -705,7 +709,7 @@ $volt_grammar = <<'EOG';
                                           'contexts' => [@{$item[8]}],
                                           'lookup' => $item[9] }); }
 
-    lk_context : 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
+    lk_context : 'EXCEPT'(?) 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
             { $return = [@{$item[2]}]; }
 
     lk_context_lt : /LEFT|RIGHT/ context(s)
@@ -979,11 +983,12 @@ sub parse_volt
                 'all' => $4 || $5,
                 'dir' => $6});
 
-#    lk_context : 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
-#            { $return = [@{$item[2]}]; }
-        while ($str =~ m/\GIN_CONTEXT\s+/ogc)
+#    lk_context : 'EXCEPT'(?) 'IN_CONTEXT' lk_context_lt(s?) 'END_CONTEXT'
+#            { $return = [$item[1][0], @{$item[3]}]; }
+        while ($str =~ m/\G(?:(EXCEPT)\s+)?IN_CONTEXT\s+/ogc)
         {
             my (@context);
+            push (@context, $1);
 
 #    lk_context_lt : /LEFT|RIGHT/ context(s)
 #            { $return = [$item[1], @{$item[-1]}]; }
@@ -1414,7 +1419,7 @@ sub merge_volt
     {
         my ($c);
 
-        foreach $c (@{$g->{'contexts'}})
+        foreach $c (@{$g->{'contexts'}}[1..$#{$g->{'contexts'}}])
         {
             foreach (@{$c})
             { map_enum($map, $_->[1]); }

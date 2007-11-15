@@ -217,7 +217,7 @@ sub lookups_ttf
 
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FLAG'} = $flags;
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{' index'} = $l->{' index'};
-        if (defined $l->{'contexts'}[0][0])
+        if (defined $l->{'contexts'}[0][1])
         {
             $font->{$type}{'LOOKUP'}[$l->{' index'}]{'TYPE'} = $type eq 'GSUB' ? 6 : 8;
 # use a context chaining subrule and then add a new lookup for the action
@@ -272,7 +272,7 @@ sub lookups_ttf
             {
                 my ($contlength);
                 my ($clr1) = {};
-                foreach $e (@{$c})
+                foreach $e (@{$c}[1..$#{$c}])
                 { push (@{$clr1->{$e->[0] eq 'LEFT' ? 'PRE' : 'POST'}}, $self->make_coverage(@{$e}[1..$#{$e}])); }
                 if (@{$clr1->{'PRE'}})
                 {
@@ -283,10 +283,26 @@ sub lookups_ttf
 
                 foreach (@clr)
                 {
-                    push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
-                        'MATCH_TYPE' => 'o',
-                        'ACTION_TYPE' => 'l',
-                        'RULES' => [[{%$_, %$clr1}]]});
+                    if ($c->[0])
+                    {
+                        # first the full context match that does nothing
+                        push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
+                            'MATCH_TYPE' => 'o',
+                            'ACTION_TYPE' => 'l',
+                            'RULES' => [[{'MATCH' => $_->{'MATCH'}, 'ACTION' => [], %$clr1}]]});
+                        # then just match the core string and do the lookup
+                        push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
+                            'MATCH_TYPE' => 'o',
+                            'ACTION_TYPE' => 'l',
+                            'RULES' => [[{%$_}]]});
+                    }
+                    else
+                    {
+                        push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
+                            'MATCH_TYPE' => 'o',
+                            'ACTION_TYPE' => 'l',
+                            'RULES' => [[{%$_, %$clr1}]]});
+                    }
                 }
                 $contlength += scalar @{$clr->{'MATCH'}};
                 $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
@@ -486,9 +502,9 @@ sub add_gpos_lookup
                     'ACTION_TYPE' => 'e',
                     'COVERAGE' => $cover};
             foreach $g (@{$self->or_context_glyphs(@{$s->{'enters'}})})
-            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[0] = make_anchor($dat->{'glyphs'}[$g]{'points'}{'entry'}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[0] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'entry'}); }
             foreach $g (@{$self->or_context_glyphs(@{$s->{'exits'}})})
-            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'points'}{'exit'}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'exit'}); }
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
             $contlength = 2;
         }
@@ -501,7 +517,7 @@ sub add_gpos_lookup
             {
                 $anchors{$c->[1]} = $acount++ unless (defined $anchors{$c->[1]});
                 foreach $g (@{$self->scon_glyphs($c->[0])})
-                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'points'}{"MARK_$c->[1]"})]; }
+                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'anchors'}{"MARK_$c->[1]"})]; }
             }
             foreach $g (sort {$a <=> $b} @{$self->or_context_glyphs(@{$s->{'context'}})})
             {
@@ -509,8 +525,8 @@ sub add_gpos_lookup
                 $ismark = ($dat->{'glyphs'}[$g]{'type'} eq 'MARK') ? 2 : 1 unless ($ismark);
                 foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
                 {
-                    if (defined $dat->{'glyphs'}[$g]{'points'}{$k})
-                    { $rules[$i][0]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'points'}{$k}); }
+                    if (defined $dat->{'glyphs'}[$g]{'anchors'}{$k})
+                    { $rules[$i][0]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}); }
                 }
             }
             $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = $ismark == 2 ? '6' : '4';
