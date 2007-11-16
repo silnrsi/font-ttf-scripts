@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Win32::TieRegistry(Delimiter => '/');
+use Win32::TieRegistry(Delimiter => '/', qw( REG_EXPAND_SZ));
 use Getopt::Std;
 use Win32::MagicAPI qw(user32);
 
@@ -55,7 +55,7 @@ sub addpathnt
         $currPath = $path;
         $out = 1;
     }
-    $Registry->{$regKey} = $currPath if ($out);
+    $Registry->{$regKey} = [$currPath, REG_EXPAND_SZ] if ($out);
     print DEBUG "Path is now $Registry->{$regKey}\n" if ($opt_d);
 }
 
@@ -67,6 +67,6 @@ sub removepathnt
     
     print DEBUG "removing $path from $currPath\n" if ($opt_d);
     if ($currPath =~ s/;\Q$path//oi || $currPath =~ s/\Q$path;//oi)
-    { $Registry->{$regKey} = $currPath; }
+    { $Registry->{$regKey} = [$currPath, REG_EXPAND_SZ]; }
     print DEBUG "path now $Registry->{$regKey}\n" if ($opt_d);
 }
