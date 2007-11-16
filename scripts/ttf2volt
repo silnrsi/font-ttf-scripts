@@ -58,6 +58,9 @@ my ($cmap, $post, $gsub, $gpos, $gdef);	# Various tables in font
 
 my $g;		# Glyph structure
 
+# MAJOR TO-DO: Someday this should all be rewritten to generate the internal datastructure used by Volt.pm.  Then this
+# would become a library module and command-line option for make_volt.  Some day.
+
 # Glyph data are stored in structures (anonymous hashes) containing the following elements (all optional):
 #	ID			glyph ID
 #	NAME		glyph name, derived from postname
@@ -546,6 +549,129 @@ sub GetContext($$)       # subtable and either 'PRE' or 'POST'
 }
 
 ##########################
+# CoalesceChainContextSubtables()
+#
+# Chaining Context Lookups (GSUB 6, GPOS 8) need some preprocessing to coalesce adjacent subtables a into single VOLT lookup.
+# While this step isn't actually needed for some situations, it is required as part of the support for "EXCEPT_CONTEXT".
+# The way EXCEPT_CONTEXT works is to split the single VOLT lookup into multiple subtables where the first has zero actions but
+# does have all the context, the second has no context but does have all the action. Since there is no way to express this
+# in VOLT as two separate lookups (can't have zero actions), we have to coalesce these subtables.
+#
+# VOLT also uses separate subtables for normal "IN_CONTEXT" rules when there are multiple contexts of differing lengths.
+# These wouldn't have to be coalesced into a single VOLT lookup, but since we have to handle the EXCEPT_CONTEXT we may as well
+# do it all.
+#
+# So the following routine preprocesses the subtables of a lookup to coalesce such subtables and generate the context strings.
+#
+
+sub CoalesceChainContextSubtables ($$)
+{
+    my $l = shift;      # ref to chaining context lookup structure
+    my $parent = shift; # ref to GSUB or GPOS table
+    
+    my $name = $l->{'-name'};
+ 
+    # Loop through the subtables. 
+    # Loop is constructed this way because I may be deleting subtables as I go through
+    my $subtbl;
+	for ($subtbl = 0; $subtbl < scalar (@{$l->{'SUB'}});   )    
+	{
+	    my $sub = $l->{'SUB'}[$subtbl];
+	    if ($sub->{'FORMAT'} != 3) 
+	        { MyWarn "Lookup '$name' has unhandled subtable format $sub->{'FORMAT'} -- ignoring subtable.\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+   		
+   		# I don't think it is possible to have more than one RULES entry, but if a font shows
+   		# up with this I want to know about it...
+   		if ($#{$sub->{'RULES'}} > 0)
+        	{ MyWarn "Font has more than one RULES entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+        
+        # Don't ask me why Martin has another array in the structure at this point, but he does:
+        if ($#{$sub->{'RULES'}[0]} > 0)
+		    { MyWarn "Font has more than one RULES[0] entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+
+		# For now, cannot handle more than one ACTION item
+		if ($#{$sub->{'RULES'}[0][0]{'ACTION'}} > 0)
+		    { MyWarn "Font has more than one ACTION entry for lookup '$name' (type $l->{'TYPE'}  format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+
+		# In order to coalesce two subtables, the MATCH of the two subtables must be equivalent, and if both subtables have an Action, then that must match
+        # So we'll calculate $matchID and $lookupID, two values that we can compare with previous and next lookups.
+        # While we're at it we'll format the context strings
+        
+        my ($lookupID, $context, $matchID);
+        
+        # Start by building $lookupID from the ACTION.
+        if (defined $sub->{'RULES'}[0][0]{'ACTION'}[0])
+        {
+            # This has a rule, so it isn't an EXCEPT_CONTEXT subtable.
+       		my ($offset, $ti) = @{$sub->{'RULES'}[0][0]{'ACTION'}[0]};
+    		unless (defined $ti)
+    		    { MyWarn "OOPS: ACTION not defined in lookup '$name' (type $l->{'TYPE'}  format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+
+    		# For now, offset must be 0 and target rule must not be anything complex 
+    		if ($offset != 0)
+    		    { MyWarn "Font has nonzero ACTION offset for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+    		
+    		if ($parent->{'LOOKUP'}[$ti]{'TYPE'} > (ref ($parent) eq 'Font::TTF::GSUB' ? 4 : 6))
+    		    { MyWarn "Font has complex lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+    		
+    		if ($#{$parent->{'LOOKUP'}[$ti]{'SUB'}} > 0)
+    		    { MyWarn "Font has multi-subtable lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'}) -- ignoring subtable\n"; splice (@{$l->{'SUB'}}, $subtbl,1); next;}
+    		$lookupID = $ti;
+    		$context = "IN_CONTEXT\n";
+        }
+        else
+        {
+            # This has no rule, so it is an EXCEPT_CONTEXT subtable.
+            $context = "EXCEPT_CONTEXT\n";
+        }
+        
+		# Finish constructing the context string:
+		$context .= GetContext ($sub, 'PRE')  if exists $sub->{'RULES'}[0][0]{'PRE'};
+        $context .= GetContext ($sub, 'POST') if exists $sub->{'RULES'}[0][0]{'POST'};
+        $context .= "END_CONTEXT\n";
+        
+		# Now, calculate a string which uniquely describes this subtable's match sequence:
+		my $matchID = '|';
+		foreach my $ctx (@{$sub->{'RULES'}[0][0]{'MATCH'}})
+		{
+		    if ($sub->{'MATCH_TYPE'} eq 'o')
+		    {
+		        $matchID .= join(',', sort {$a <=> $b} keys %{$ctx->{'val'}}) . '|';
+		    }
+	        else
+            {
+                MyWarn "MATCH_TYPE is '$sub->{'MATCH_TYPE'}' rather than expected 'o' in CoalesceChainContextSubtables.\n";
+            }
+        }
+        
+        # See if we can coalesce this subtable with the previous one:
+        
+        if ($subtbl > 0 &&
+            $l->{'SUB'}[$subtbl-1]{'-matchID'} eq $matchID &&
+            (!defined $l->{'SUB'}[$subtbl-1]{'-lookupID'} || ($l->{'SUB'}[$subtbl-1]{'-lookupID'} eq $lookupID)))
+        {
+            # Whoo hoo! we can coalesce them:
+            # First, concatinate its context with ours
+            $context = $l->{'SUB'}[$subtbl-1]{'-context'} . $context;
+            # Now blow it away!
+            splice (@{$l->{'SUB'}}, $subtbl-1, 1) ;
+        }
+        else
+        {
+            # Couldn't coalesce, so be sure to bump loop variable for next pass:
+            $subtbl++;
+        }
+        
+        # Finally, store my private data into this subtable:
+        $sub->{'-matchID'} = $matchID;
+        $sub->{'-context'} = $context;
+        $sub->{'-lookupID'} = $lookupID;
+    }
+} 
+
+
+
+##########################
 # WriteSimpleGSUBLookup()
 #
 # Routine to append a simple GSUB lookup (types 1 - 4) subtable to $LookupText
@@ -720,8 +846,8 @@ sub ProcessGSUBLookup ($)		# GSUB lookup index to process
 {
 	my $lid = shift;	# lookup index
 	my $l= $gsub->{'LOOKUP'}[$lid];		# lookup structure
-	my $nsubs = scalar (@{$l->{'SUB'}});    # Number of subtables
-	
+
+	my $nsubs = scalar (@{$l->{'SUB'}});    # Number of subtables	
  
 	foreach my $subtbl (0 .. $nsubs-1)
     {
@@ -745,44 +871,26 @@ sub ProcessGSUBLookup ($)		# GSUB lookup index to process
     		# For now, just handling format 3:
     		if ($sub->{'FORMAT'} == 3)
             {
-     
-        		# I don't think it is possible to have more than one RULES entry, but if a font shows
-        		# up with this I want to know about it...
-        		die "Font has more than one RULES entry for GSUB lookup '$name' (type 6 format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}} > 0;
-        
-        		# Don't ask me why Martin has another array in the structure at this point, but he does:
-        		die "Font has more than one RULES[0] entry for GSUB lookup '$name' (type 6 format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0]} > 0;
-        
-        		# For now, cannot handle more than one ACTION item
-        		die "Font has more than one ACTION entry for GSUB lookup '$name' (type 6 format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0][0]{'ACTION'}} > 0;
-        
-        		# Fetch target rule lookup index:
-                next unless (defined $sub->{'RULES'}[0][0]{'ACTION'}[0]);
-        		my ($offset, $ti) = @{$sub->{'RULES'}[0][0]{'ACTION'}[0]};
-        		die "OOPS: assignment failed" unless defined $ti;
-        
-        		# For now, offset must be 0 and target rule must not be anything complex 
-        		die "Font has nonzero ACTION offset for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $offset != 0;
-        		die "Font has complex lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $gsub->{'LOOKUP'}[$ti]{'TYPE'} > 4;
-        		die "Font has multi-subtable lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$gsub->{'LOOKUP'}[$ti]{'SUB'}} > 0;
-        
-        		# OK, pick out the context definitions
-        		#my $pre = GetContext $sub->{'RULES'}[0][0]{'PRE'};
-        		#my $post = GetContext $sub->{'RULES'}[0][0]{'POST'};
+    		    # All the gruntwork has been done by CoalesceChainContextSubtables()
         
         		# TODO: It is possible that the type 6 lookup we are processing has a coverage (MATCH) that is smaller than that
         		# specified by the target lookup. I don't think VOLT would construct such a thing, but some other tool might.
         		# We really should pick up the MATCH string and pass it to WriteSimpleGSUBLookup to do some
         		# error checking of some sort.
-        
+
         		# OK, now we can emit the lookup
         
                 WriteLookupHeader ($l, $name);
-            	$LookupText .= "IN_CONTEXT\n";
-            	$LookupText .= GetContext ($sub, 'PRE')  if exists $sub->{'RULES'}[0][0]{'PRE'};
-            	$LookupText .= GetContext ($sub, 'POST') if exists $sub->{'RULES'}[0][0]{'POST'};
-            	$LookupText .= "END_CONTEXT\nAS_SUBSTITUTION\n";
-        		WriteSimpleGSUBLookup ($gsub->{'LOOKUP'}[$ti], $name, 0);
+                $LookupText .= $sub->{'-context'};
+            	$LookupText .= "AS_SUBSTITUTION\n";
+            	if (defined $sub->{'-lookupID'})
+            	{
+            	    WriteSimpleGSUBLookup ($gsub->{'LOOKUP'}[$sub->{'-lookupID'}], $name, 0);
+            	}
+            	else
+            	{
+            	    MyWarn "Undefined target lookup in GSUB lookup '$name'\n";
+            	}
       			$LookupText .= "END_SUBSTITUTION\n";
       		}
 	    	else
@@ -1176,7 +1284,7 @@ sub WriteSimpleGPOSLookup ($$$)		# lookup structure reference, name to be used i
         }
         else
         {
-		    MyWarn "GPOS '$name' has unrecognized format $sub->{'FORMAT'}}.\n"; 
+		    MyWarn "GPOS '$name' has unrecognized format $sub->{'FORMAT'}.\n"; 
 		}
 
         $LookupText .= "\nEND_ADJUST\n";	
@@ -1300,8 +1408,9 @@ sub ProcessGPOSLookup ($)		# GPOS lookup index to process
 {
 	my $lid = shift;	# lookup index
 	my $l= $gpos->{'LOOKUP'}[$lid];		# lookup structure
-	my $nsubs = scalar (@{$l->{'SUB'}});    # Number of subtables
 	
+	
+	my $nsubs = scalar (@{$l->{'SUB'}});    # Number of subtables
  
 	foreach my $subtbl (0 .. $nsubs-1)
     {
@@ -1322,20 +1431,7 @@ sub ProcessGPOSLookup ($)		# GPOS lookup index to process
     		# This is just like GSUB:
     		if ($sub->{'FORMAT'} == 3)
     		{
-        		die "Cannot handle GPOS lookup type $l->{'TYPE'} format $sub->{'FORMAT'}." if $sub->{'FORMAT'} != 3;
-        		die "Font has more than one RULES entry for GPOS lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}} > 0;
-        		die "Font has more than one RULES[0] entry for GPOS lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0]} > 0;
-        		die "Font has more than one ACTION entry for GPOS ookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$sub->{'RULES'}[0][0]{'ACTION'}} > 0;
-        
-        		# Fetch target rule lookup index:
-                next unless (defined $sub->{'RULES'}[0][0]{'ACTION'}[0]);
-        		my ($offset, $ti) = @{$sub->{'RULES'}[0][0]{'ACTION'}[0]};
-        		die "OOPS: assignment failed" unless defined $ti;
-        
-        		# For now, offset must be 0 and target rule must not be anything complex 
-        		die "Font has nonzero ACTION offset for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $offset != 0;
-        		die "Font has complex lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $gpos->{'LOOKUP'}[$ti]{'TYPE'} > 6;
-        		die "Font has multi-subtable lookup in ACTION entry for lookup '$name' (type $l->{'TYPE'} format $sub->{'FORMAT'})." if $#{$gpos->{'LOOKUP'}[$ti]{'SUB'}} > 0;
+    		    # All the gruntwork has been done by CoalesceChainContextSubtables()
         
         		# TODO: It is possible that the type 6 lookup we are processing has a coverage (MATCH) that is smaller than that
         		# specified by the target lookup. I don't think VOLT would construct such a thing, but some other tool might.
@@ -1345,11 +1441,16 @@ sub ProcessGPOSLookup ($)		# GPOS lookup index to process
         		# OK, now we can emit the lookup
         
                 WriteLookupHeader ($l, $name);
-            	$LookupText .= "IN_CONTEXT\n";
-            	$LookupText .= GetContext ($sub, 'PRE')  if exists $sub->{'RULES'}[0][0]{'PRE'};
-            	$LookupText .= GetContext ($sub, 'POST') if exists $sub->{'RULES'}[0][0]{'POST'};
-            	$LookupText .= "END_CONTEXT\nAS_POSITION\n";
-        		WriteSimpleGPOSLookup ($gpos->{'LOOKUP'}[$ti], $name, 0);
+            	$LookupText .= $sub->{'-context'};
+            	$LookupText .= "AS_POSITION\n";
+            	if (defined $sub->{'-lookupID'})
+            	{
+            	    WriteSimpleGPOSLookup ($gpos->{'LOOKUP'}[$sub->{'-lookupID'}], $name, 0);
+            	}
+            	else
+            	{
+            	    MyWarn "Undefined target lookup in GSUB lookup '$name'\n";
+            	}
       			$LookupText .= "END_POSITION\n";
       		}
       		else
@@ -1441,19 +1542,21 @@ foreach $s (sort keys %scripts)
 			    my $tbl = ($which eq 'S' ? $gsub : $gpos);
 			    foreach my $lid (@{$tbl->{'FEATURES'}{$actualfeat}{'LOOKUPS'}})
 			    {
-			        # Make sure we remember to process this one:
-			        $tbl->{'-LookupsNeeded'}[$lid] = 1;
-			        my $nsubs = scalar (@{$tbl->{'LOOKUP'}[$lid]{'SUB'}});    # Number of subtables
-			        my $lname;
-			        if (exists $tbl->{'LOOKUP'}[$lid]{'-name'})
-			        {
-			            $lname = $tbl->{'LOOKUP'}[$lid]{'-name'};
-			        }
-			        else
-			        {   
-			            $lname = "$f" . "_$lid";
-			            $tbl->{'LOOKUP'}[$lid]{'-name'} = $lname;
-			        }
+                    unless ($tbl->{'-LookupsNeeded'}[$lid])
+                    {
+                        # One time processing for this lookup:
+                        
+    			        # Make sure we remember to include this one in DEF_LOOKUPs:
+    			        $tbl->{'-LookupsNeeded'}[$lid] = 1;
+    			        
+    			        # Give it a name:
+    			        $tbl->{'LOOKUP'}[$lid]{'-name'} = "$f" . "_$lid";
+    			        
+    			        # If this is a chaining context lookup, we need to coalesce subtables.
+    			        CoalesceChainContextSubtables ($tbl->{'LOOKUP'}[$lid],$tbl) if $tbl->{'LOOKUP'}[$lid]{'TYPE'} == ($which eq 'S' ? 6 : 8);
+    			    }
+   			        my $nsubs = scalar (@{$tbl->{'LOOKUP'}[$lid]{'SUB'}});    # Number of subtables
+   			        my $lname = $tbl->{'LOOKUP'}[$lid]{'-name'};
 			        foreach (0 .. $nsubs-1)
 			        {
 			            $SLFText .= " LOOKUP \"$lname" . ($nsubs > 1 ? "\\$_" : '') . "\"";
