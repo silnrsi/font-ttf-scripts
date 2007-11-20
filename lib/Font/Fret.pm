@@ -51,7 +51,7 @@ sub fret
     my (%opt);
     my ($fh, $fdat);
 
-    getopts("fgh:m:p:qrs:", \%opt);
+    getopts("d:fgh:m:p:qrs:", \%opt);
 
     unless (defined $ARGV[0])
     {
@@ -63,6 +63,7 @@ contexts the package may be over-ridden. Paper size may also be specified.
 If no out_file is given then out_file becomes font_file.pdf (removing .ttf
 if present)
 
+  -d num        Sets time for testing purposes
   -f            Don't try to save memory on large fonts (>1000 glyphs)
   -g            Add one glyph per page report following summary report
   -h            Mode for glyph per page output. Bitfield:
@@ -208,7 +209,7 @@ no strict;
     $ftrleft = "BT 1 0 0 1 36 27 Tm 80 Tz /FR 7 Tf (FRET v$VERSION "
         . "Package $package " . ${"${package}::VERSION"} . ") Tj ET\n";
 use strict;
-    @time = split(/\s+/, localtime());
+    @time = split(/\s+/, localtime($opt{d} || time()));
     $tr = "Printed at $time[3] on $time[0] $time[2] $time[1] $time[4]   Page ";
     @time = split(/\s+/, localtime($font->{'head'}->getdate));
     $hdrrw = "Modified at $time[3] on $time[0] $time[2] $time[1] $time[4]";
