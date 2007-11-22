@@ -3,6 +3,11 @@
 use Test::Simple tests => 1;
 use File::Compare;
 
-system("scripts/fret", "-d", "1000000000", "t/testfont.ttf");
-ok (!compare("t/testfont.pdf", "t/base/testfont.pdf"));
+$cmd = "scripts/fret";
+$cmd =~ s{/}{\\}og if ($^O eq 'MSWin32');
+
+system($cmd, "-d", "1000000000", "t/testfont.ttf");
+$res = compare("t/testfont.pdf", "t/base/testfont.pdf");
+ok (!$res);
+unlink "t/testfont.pdf" unless ($res);
 
