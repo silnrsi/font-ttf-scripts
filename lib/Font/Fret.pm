@@ -281,7 +281,7 @@ use strict;
                    . ($ybase + 65.5) . " l s [] 0 d\n");
             }
             $yorg = $ybase + 32 - ($font->{'head'}{'yMax'} + $font->{'head'}{'yMin'}) * $tsize / $upem / 2;
-            $ppage->add("$dots 36 $yorg m " . (36 + $numperow * 54) . " $yorg l S [] 0 d\n") if ($yorg > $ybase);
+            $ppage->add(sprintf("%s 36 %.4f m %d %.4f l S [] 0 d\n", $dots, $yorg, 36 + $numperow * 54, $yorg)) if ($yorg > $ybase);
             $xcentre = 63;
             for ($i = 0; $i < $numperow; $i++, $xcentre += 54)
             {
@@ -635,7 +635,7 @@ sub out_row
         { $f .= sprintf("%.4f", $xc); }
         else
         { $f .= sprintf("%.4f", $xl); }
-        $f .= " $yorg Tm ";
+        $f .= sprintf(" %.4f Tm ", $yorg);
         $g = PDFStr($e);
         $f .= "/F$ft $pt Tf 80 Tz " . $g->as_pdf . " Tj ET";
         $f .= " 0 g" if ($col);
