@@ -1254,27 +1254,27 @@ sub parse_pos
 
     return undef unless ($$str =~ m/\GPOS\s+/ogc);
 
-#    pos_adv : 'ADV' <commit> num pos_adj(s?)
+#    pos_adv : 'ADV' <commit> num? pos_adj(s?)
 #            { $return = [$item[3], $item[4]]; }
-    if ($$str =~ m/\GADV\s+(-?\d+)\s+/ogc)
+    if ($$str =~ m/\GADV\s+(-?\d+)?\s+/ogc)
     {
         my ($val) = $1;
         my (@adjs) = parse_adjs($str);
         $res->{'adv'} = [$val, [@adjs]];
     }
 
-#    pos_dx : 'DX' <commit> num pos_adj(s?)
+#    pos_dx : 'DX' <commit> num? pos_adj(s?)
 #            { $return = [$item[3], $item[4]]; }
-    if ($$str =~ m/\GDX\s+(-?\d+)\s+/ogc)
+    if ($$str =~ m/\GDX\s+(-?\d+)?\s+/ogc)
     {
         my ($val) = $1;
         my (@adjs) = parse_adjs($str);
         $res->{'x'} = [$val, [@adjs]];
     }
 
-#    pos_dy : 'DY' <commit> num pos_adj(s?)
+#    pos_dy : 'DY' <commit> num? pos_adj(s?)
 #            { $return = [$item[3], $item[4]]; }
-    if ($$str =~ m/\GDY\s+(-?\d+)\s+/ogc)
+    if ($$str =~ m/\GDY\s+(-?\d+)?\s+/ogc)
     {
         my ($val) = $1;
         my (@adjs) = parse_adjs($str);
@@ -1421,10 +1421,10 @@ sub merge_volt
     {
         my ($c);
 
-        foreach $c (@{$g->{'contexts'}}[1..$#{$g->{'contexts'}}])
+        foreach $c (@{$g->{'contexts'}})
         {
             foreach (@{$c})
-            { map_enum($map, $_->[1]); }
+            { map_enum($map, $_->[1]) if (ref $_); }
         }
         if ($g->{'lookup'}[0] eq 'sub')
         {
