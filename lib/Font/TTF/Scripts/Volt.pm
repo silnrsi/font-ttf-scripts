@@ -52,6 +52,26 @@ Number of components in a ligature
 
 Volt name in the source
 
+=item anchors
+
+This is a hash by anchor name that contains a sub hash with the following elements:
+
+=over 4
+
+=item pos
+
+A C<pos> type containing the actual position of the anchor point
+
+=item locked
+
+Contains LOCKED if the anchor point is locked
+
+=item component
+
+Contains the component number for a ligature or 1 normally.
+
+=back
+
 =back
 
 =item scripts
@@ -97,26 +117,6 @@ Feature tag that ends up in the font
 Array of names of lookups associated with this feature
 
 =back
-
-=back
-
-=item anchors
-
-This is a hash by anchor name that contains a sub hash with the following elements:
-
-=over 4
-
-=item pos
-
-A C<pos> type containing the actual position of the anchor point
-
-=item locked
-
-Contains LOCKED if the anchor point is locked
-
-=item component
-
-Contains the component number for a ligature or 1 normally.
 
 =back
 
