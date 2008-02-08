@@ -1,10 +1,12 @@
 #! /usr/bin/perl
+use strict;
 use Font::TTF::Scripts::GDL;
 use IO::File;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('a:hi:l:n:p:s:z:');
+our ($opt_a, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_s, $opt_z);
+getopts('a:e:hi:l:n:o:p:s:z:');
 
 unless ($ARGV[1] || $opt_h)
 {
@@ -18,15 +20,42 @@ if ($opt_h)
     exit;
 }
 
-$comp = $1 if ($opt_l =~ s/(comp)$//oi);
+my %opts;
 
-$f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opt_a) || die "Can't read font information";
-$outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
+# Parse -e file if supplied
+if ($opt_e) 
+{
+    my @glist;
+	open (IN, "<$opt_e") or die "Couldn't open '$opt_e' for reading.";
+	while (<IN>)
+	{
+		s/[\r\n]*$//o;      # platform-safe chomp
+		s/;.*$//o;          # Strip comments
+		s/ //go;            # Strip whitespace
+		push (@glist, $_) unless $_ eq '';
+	}
+    close IN;
+	$opts{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+}
 
-foreach $g (@{$f->{'glyphs'}})
+$opts{'-omittedAPs'} = $opt_o if $opt_o;
+
+my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opt_a, %opts) || die "Can't read font information";
+
+if (exists $f->{'WARNINGS'})
+{
+	warn $f->{'WARNINGS'};
+}
+
+
+my $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
+
+my $comp = $1 if ($opt_l =~ s/(comp)$//oi);
+
+foreach my $g (@{$f->{'glyphs'}})
 {
     my ($points) = {};
-    foreach $p (keys %{$g->{'points'}})
+    foreach my $p (keys %{$g->{'points'}})
     {
         my ($pname) = $p;
 
@@ -69,6 +98,8 @@ Creates font specific GDL from a font and optional attachment point database
 =head1 OPTIONS
 
   -a file       Attachment point database
+  -e file       A file containing names (1 per line) of glyphs that are 
+                known to have no outline (thus shouldn't generate warning). 
   -h            print manpage
   -i file       add #include statement at end of file
   -l type       type =
@@ -77,6 +108,7 @@ Creates font specific GDL from a font and optional attachment point database
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
   -n num        Add a normalization substitution with the given pass number
+  -o "list"     List of AP names to omit
   -p num        Add auto positioning attachment rules with the given pass number
   -s num        Add ligature substitution rules with the given pass number
   -z bitfield   Bitfield of various controls:

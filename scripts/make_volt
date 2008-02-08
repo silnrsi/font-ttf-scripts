@@ -1,10 +1,12 @@
 #!/usr/bin/perl
+use strict;
 use Font::TTF::Font;
 use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('a:fhi:l:m:nt');
+our ($opt_a, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t);
+getopts('a:e:fhi:l:m:no:t');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -18,14 +20,40 @@ if ($opt_h)
     exit;
 }
 
-$f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font information";
+my %opts;
 
-$comp = $1 if ($opt_l =~ s/(comp)$//o);
+# Parse -e file if supplied
+if ($opt_e) 
+{
+	my @glist;
+	open (IN, "<$opt_e") or die "Couldn't open '$opt_e' for reading.";
+	while (<IN>)
+	{
+		s/[\r\n]*$//o;      # platform-safe chomp
+		s/;.*$//o;          # Strip comments
+		s/ //go;            # Strip whitespace
+		push (@glist, $_) unless $_ eq '';
+	}
+    close IN;
+	$opts{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+}
+
+$opts{'-omittedAPs'} = $opt_o if $opt_o;
+
+my $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a, %opts) || die "Can't read font information";
+
+if (exists $f->{'WARNINGS'})
+{
+	warn $f->{'WARNINGS'};
+}
+
+
+my $comp = $1 if ($opt_l =~ s/(comp)$//o);
 
 $f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m);
 if ($opt_i)
 {
-    my ($fh, $dat, @map);
+    my ($fh, $dat, @map, $vtext);
     if ($fh = Font::TTF::Font->open($opt_i))
     {
         $vtext = $fh->{'TSIV'}->read->{' dat'};
@@ -45,7 +73,8 @@ if ($opt_i)
 $f->make_anchors;
 $f->make_groups;
 $f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m}) unless ($opt_n);
-$res = $f->out_volt;
+
+my $res = $f->out_volt;
 
 if ($opt_t)
 { print $res; }
@@ -73,6 +102,8 @@ Creates a copy of the infile font file adding a VOLT table to it.
 =head1 OPTIONS
 
   -a file       Attachment Point database .xml file
+  -e file       A file containing names (1 per line) of glyphs that are 
+                known to have no outline (thus shouldn't generate warning). 
   -f            force new lookups even if same named exist
   -h            print manpage
   -i fontfile   merge VOLT table from this font or text file
@@ -83,6 +114,7 @@ Creates a copy of the infile font file adding a VOLT table to it.
                     lastcomp - treat extensons as part of elements, as last
   -m "list"     List of anchors that do not imply a MARK glyph (e.g. "_R")
   -n            Don't generate lookups
+  -o "list"     List of AP names to omit
   -t            output volt code to stdout and don't generate a font file
 
 =head1 DESCRIPTION
