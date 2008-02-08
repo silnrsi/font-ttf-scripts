@@ -168,7 +168,8 @@ use XML::Parser::Expat;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "0.07";  # MH    add make_names if you don't want make_classes
+$VERSION = "0.08";  # BH	Generalize values for %opts so can be space- or comma-separated list in a scalar, or can be an array ref.
+# $VERSION = "0.07";  # MH    add make_names if you don't want make_classes
 # $VERSION = "0.06";  # MH    debug glyph alternates for ligature creation, add Unicode
 # $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
 # $VERSION = "0.04";	# BH   in progress
@@ -199,7 +200,8 @@ Options that may be supplied throught the C<%opts> hash include:
 
 =item -omittedAPs
 
-A comma-separated list of attachment point types to ignore.
+A list of attachment point types to ignore. Can be a string containing comma- or space-separated names,
+or a ref to an array of strings. 
 
 =item -strictap
 
@@ -208,8 +210,9 @@ points on the outline of the glyph.
 
 =item -knownemptyglyphs
 
-A comma-separated list of names of glyphs that are known to have no outline 
-(thus shouldn't generate warning).
+A list of names of glyphs that are known to have no outline 
+(thus shouldn't generate warning). Can be a string containing comma- or space-separated names,
+or a ref to an array of strings.
 
 =item -errorfh
 
@@ -228,8 +231,9 @@ sub read_font
     bless $self, ref $class || $class;
 
     my (%omittedAPs, %known_empty_glyphs);
-    map {$omittedAPs{$_} = $omittedAPs{"_$_"} = 1} split (',', $opts{'-omittedAPs'});
-    map {$known_empty_glyphs{$_} = 1} split (',', $opts{'-knownemptyglyphs'});
+    map {$omittedAPs{$_} = 1} ( ref ($opts{'-omittedAPs'}) eq 'ARRAY' ? @{$opts{'-omittedAPs'}} : ($opts{'-omittedAPs'} =~m/[^\s,]+/go));
+    map {$omittedAPs{"_$_"} = 1} grep {/^[^_]/} keys %omittedAPs;
+    map {$known_empty_glyphs{$_} = 1} ( ref ($opts{'-knownemptyglyphs'}) eq 'ARRAY' ? @{$opts{'-knownemptyglyphs'}} : ($opts{'-knownemptyglyphs'} =~m/[^\s,]+/go));
 
     $f = Font::TTF::Font->open($fname) || die "Can't open font $fname";
     foreach $t (qw(post cmap loca name))
@@ -238,6 +242,14 @@ sub read_font
     $self->{'font'} = $f;
     $self->{'cmap'} = $f->{'cmap'}->find_ms->{'val'} || die "Can't find Unicode table in font $fname";
     my (@reverse) = $f->{'cmap'}->reverse('array' => 1);
+    
+#    my $minUID;
+#    if (exists $f->{'OS/2'})
+#    {
+#    		my $os2 = $f->{'OS/2'}->read || die "Can't read OS/2 table in font $fname";
+#    		$minUID = $os2->{'usFirstCharIndex'};
+#    }
+#	printf STDERR "FirstCharIndex = U+%04X\n", $minUID;
 
     $xml = XML::Parser::Expat->new();
     $xml->setHandlers('Start' => sub {
@@ -253,27 +265,46 @@ sub read_font
             {
                 my ($uni) = hex($attrs{'UID'});
                 $ug = $self->{'cmap'}{$uni};
-                $self->error($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") unless (defined $ug);
-                $cur_glyph->{'gnum'} = $ug;
+                if (defined $ug)
+                {
+                	$cur_glyph->{'gnum'} = $ug;
+                }
+                else
+                {	
+                	$self->error($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") ;
+                }
                 $cur_glyph->{'uni'} = [$uni];
                 # delete $attrs{'UID'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
             if (defined $attrs{'PSName'})
             {
                 $pg = $f->{'post'}{'STRINGS'}{$attrs{'PSName'}};
-                $self->error($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") unless (defined $pg);
-                $self->error($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
-                        if (defined $attrs{'UID'} && $pg != $ug);
-                $cur_glyph->{'gnum'} ||= $pg;
+                unless (defined $pg)
+                {
+                	# Failed to find glyph by the supplied PSName -- see if this is one of two special cases.
+                	# These cases exist because FontLab doesn't use the correct (Apple-specified) name for U+000D and U+00A7
+                	$pg = $f->{'post'}{'STRINGS'}{'nonmarkingreturn'} if $attrs{'PSName'} eq 'CR';
+                	$pg = $f->{'post'}{'STRINGS'}{'macron'} 			if $attrs{'PSName'} eq 'overscore';
+                }
+				if (defined $pg)
+				{
+                	$self->error($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
+	                        if (defined $ug && $pg != $ug);
+	                $cur_glyph->{'gnum'} ||= $pg;
+	            }
+                else
+                {
+                	$self->error($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") ;
+                }
                 # delete $attrs{'PSName'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
             if (defined $attrs{'GID'})
             {
                 $ig = $attrs{'GID'};
                 $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of Unicode ID: $attrs{'UID'}")
-                        if (defined $attrs{'UID'} && $ug != $ig);
+                        if (defined $ug && $ug != $ig);
                 $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
-                        if (defined $attrs{'PSName'} && $pg != $ig);
+                        if (defined $pg && $pg != $ig);
                 $cur_glyph->{'gnum'} ||= $ig;
                 # delete $attrs{'GID'}; # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
@@ -293,7 +324,7 @@ sub read_font
             }
             else
             {
-                $self->error($xml, $cur_glyph, undef, "No glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+                $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
             }
 
             # MH's code includes the following two lines, but these are redundant with 
@@ -410,7 +441,7 @@ sub read_font
         }
         else
         {
-            $self->error($xml, $cur_glyph, undef, "No glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+            $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
         }
     }
     $self;
