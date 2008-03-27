@@ -19,8 +19,8 @@ debian/
 pm_to_blib
 \~$
 dev/
-build/
+^build
 dists/
 ^libfont-
 description-pak
-^doc
+^doc-pak

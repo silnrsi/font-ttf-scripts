@@ -1,3 +1,10 @@
+libfont-ttf-scripts-perl (0.8-1ubuntu1) gutsy; urgency=low
+
+  * Non-maintainer upload.
+  * package for gutsy
+
+ -- Martin Hosken <martin_hosken@sil.org>  Mon, 04 Feb 2008 16:30:26 +0700
+
 libfont-ttf-scripts-perl (0.8-1) feisty; urgency=low
 
   * Bug fixes particularly in ttfname

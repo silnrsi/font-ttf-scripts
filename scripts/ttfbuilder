@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
+$VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
+# $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
 # $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
 # $VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
 # $VERSION = 0.23;    # MJPH      11-AUG-2005     Fix handling empty glyphs (no outline)
@@ -235,7 +236,7 @@ sub main
             
             unless (($attrs{'PSName'} && ($gid = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
                     || ($attrs{'UID'} && ($gid = $c->{'val'}{hex($attrs{'UID'})}))
-                    || ($gid = $attrs{'GID'}) || defined $attrs{'GID'})
+                    || ($gid = $attrs{'GID'}) || defined $attrs{'GID'} || ($opt_d & 128) == 128)
             { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+" . ($attrs{UID} ? $attrs{UID} : "0000") . " for $tag in $opt_c"); }
     
             $aglyph = {
@@ -1021,6 +1022,7 @@ out.xml.
                  space) on lhs
               5: Default to not allowing overstriking on rhs
               6: Disable some warnings
+              7: Don't report missing glyphs
   -h          Help
   -x file     Attachment database to read
   -z file     Attachment database to output

@@ -8,7 +8,7 @@ Standards-Version: 3.6.1
 
 Package: libfont-ttf-scripts-perl
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, libfont-ttf-perl (>= 0.41)
+Depends: ${perl:Depends}, ${misc:Depends}, libfont-ttf-perl (>= 0.43), libtext-pdf-perl, libalgorithm-diff-perl, libparse-recdescent-perl (>= 1.51)
 Description:  Smart font script supporting modules and scripts for TTF/OTF
  This module contains a number of useful programs for hacking with TTF files:
  .
