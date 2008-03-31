@@ -168,7 +168,8 @@ use XML::Parser::Expat;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "0.08";  # BH	Generalize values for %opts so can be space- or comma-separated list in a scalar, or can be an array ref.
+$VERSION = "0.09";  # MH  Add classes property support
+# $VERSION = "0.08";  # BH	Generalize values for %opts so can be space- or comma-separated list in a scalar, or can be an array ref.
 # $VERSION = "0.07";  # MH    add make_names if you don't want make_classes
 # $VERSION = "0.06";  # MH    debug glyph alternates for ligature creation, add Unicode
 # $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
@@ -532,6 +533,15 @@ sub make_classes
         }
         foreach (split('/', $glyph->{'post'}))
         { $namemap{$_} = $i; }
+        if (defined $glyph->{'props'}{'classes'})
+        {
+            my ($c);
+            foreach $c (split(' ', $glyph->{'props'}{'classes'}))
+            {
+                $c =~ s/^c//o;
+                push (@${classes{$c}}, $glyph->{'gnum'});
+            }
+        }
     }
 
     # need a separate loop since using other glyphs' names

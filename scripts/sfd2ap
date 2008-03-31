@@ -4,6 +4,7 @@ use IO::File;
 use Encode::Unicode;
 use Pod::Usage;
 use Getopt::Std;
+use Encode;
 
 getopts('h');
 
@@ -46,6 +47,8 @@ $s = Font::TTF::Scripts::SFD->new(
     }, 'Comment' => sub {
         my ($text) = @_;
         $currchar->{'comment'} = decode('UTF-7', $text);
+        $currchar->{'comment'} =~ s/^"//o;
+        $currchar->{'comment'} =~ s/"$//o;
     });
 
 $s->parse_file($ARGV[0]);
@@ -78,6 +81,8 @@ foreach $c (@chars)
             printf("    <point type='%s'>\n        <location x='%d' y='%d'/>\n    </point>\n",
                 $p, @{$c->{'points'}{$p}});
         }
+        if ($c->{'comment'} =~ s/^[Cc]lasses:\s+(.*?)\s*$//om)
+        { print ("    <property name='classes' value='$1'/>\n"); }
         print("    <note>$c->{'comment'}</note>\n") if (defined $c->{'comment'});
         print "</glyph>\n";
     }

@@ -1,0 +1,215 @@
+#!/usr/bin/perl
+
+use XML::Parser;
+use Pod::Usage;
+use Getopt::Std;
+use Font::TTF::PSNames;
+
+getopts('c:h');
+
+unless ($ARGV[0] || $opt_h)
+{
+    pod2usage(1);
+    exit;
+}
+
+if ($opt_h)
+{
+    pod2usage(-verbose => 2, -noperldoc => 1);
+    exit;
+}
+
+my ($indent, $currclass, $text, %classes, $isempty);
+my ($xml) = XML::Parser->new(Handlers => {
+    Start => sub {
+        my ($xp, $tag, %attrs) = @_;
+
+        if ($tag eq 'class')
+        { $currclass = $attrs{'name'} }
+        $text = '';
+    },
+    End => sub {
+        my ($xp, $tag) = @_;
+
+        if ($tag eq 'class')
+        {
+            $classes{$currclass} = [split(' ', $text)];
+        }
+    },
+    Char => sub {
+        my ($xp, $str) = @_;
+        $text .= $str;
+    }});
+
+$xml->parsefile($opt_c);
+$text = '';
+
+my ($xml) = XML::Parser->new(Handlers => {
+    Init => sub {
+        print "<?xml version='1.0' encoding='UTF-8'?>\n";
+    },
+    Start => sub {
+        my ($xp, $tag, %attrs) = @_;
+        $isempty = dotext($text, $isempty);
+        print ">" if ($isempty);
+        start($xp, \$tag, \%attrs);
+        print "\n" . (" " x $indent) . "<$tag";
+        foreach $k (sort keys %attrs)
+        { print " $k='$attrs{$k}'"; }
+        $isempty = 1;
+        $indent += 4;
+        $text = '';
+    },
+    End => sub {
+        my ($xp, $tag) = @_;
+        $isempty = dotext($text, $isempty);
+        $isempty = end($xp, \$tag, $isempty);
+        $indent -= 4;
+        if ($isempty)
+        {
+            print "/>";
+            $isempty = 0;
+        }
+        else
+        { print "\n" . (" " x $indent) . "</$tag>"; }
+        $text = '';
+    },
+    Char => sub {
+        my ($xp, $str) = @_;
+        $text .= $str;
+    }});
+    
+$xml->parsefile($ARGV[0]);
+
+sub dotext
+{
+    my ($str, $isempty) = @_;
+    $str =~ s/^\s+//o;
+    $str =~ s/\s+$//o;
+    if ($str)
+    {
+        print ">" if ($isempty);
+        print $str;
+        $isempty = 0;
+    }
+    return $isempty;
+}
+
+
+sub start
+{
+    my ($xp, $tagr, $attrs) = @_;
+
+    if ($$tagr eq 'glyph')
+    {
+        $classlist = get_classes(\%classes, $attrs->{'PSName'}, $attrs->{'UID'});    }
+    elsif ($$tagr eq 'property' && $attrs->{'name'} eq 'classes')
+    {
+        my ($val) = merge_classes($classlist, $attrs->{'value'});
+        $attrs->{'value'} = $val;
+        $classlist = undef;
+    }
+}
+
+sub end
+{
+    my ($xp, $tagr, $isempty) = @_;
+
+    if ($$tagr eq 'glyph' && $classlist)
+    {
+        print ">" if ($isempty);
+        print "\n" . (" " x $indent) . "<property name='classes' value='$classlist'/>";
+        return 0;
+    }
+    return $isempty;
+}
+
+sub get_classes
+{
+    my ($classes, $psname, $uid) = @_;
+    my ($c, $res);
+
+    foreach $c (keys %$classes)
+    {
+        my ($g);
+        foreach $g (@{$classes->{$c}})
+        {
+            if (match_glyph($g, $psname, $uid))
+            {
+                $res .= "$c ";
+                last;
+            }
+        }
+    }
+    $res =~ s/\s+$//o;
+    return $res;
+}
+
+sub merge_classes
+{
+    my ($list, $base) = @_;
+    my (%list) = map {$_ => 1} split(' ', $list);
+    my (%base) = map {$_ => 1} split(' ', $base);
+    my (%res) = (%base, %list);
+    my ($res) = join(" ", sort keys %res);
+    return $res;
+}
+
+sub match_glyph
+{
+    my ($name, $psname, $uid) = @_;
+    my ($cname) = canon($name);
+    my ($cpsname) = canon($psname);
+
+    return 1 if ($psname eq $name);
+    return 1 if ($cname eq $uid);
+    return 1 if ($cname eq $cpsname);
+}
+
+sub canon
+{
+    my ($name) = @_;
+
+    my ($uids, $exts) = Font::TTF::PSNames::parse($name);
+    my ($res) = join("_", map {sprintf("%04X", $_)} @{$uids});
+    $res .= "." . join(".", @$exts) if (scalar @$exts);
+    $res;
+}
+
+__END__
+
+=head1 TITLE
+
+add_classes - add class information to an attachment point database
+
+=head1 SYNOPSIS
+
+  add_classes -c classes.xml infile.xml
+
+For each glyph in the infile.xml attachment point database, find all the
+classes in classes.xml containing names that match the glyph. Ensure that
+the classes property contains a list of those classes that match. Print
+the results to stdout.
+
+=head1 OPTIONS
+
+  -c classes.xml    List of classes and their contents
+  -h                print manpage
+
+=head1 DESCRIPTION
+
+Inserting a classes property in an attachment point database allows one to
+create context classes in the generated GDL or VOLT.
+
+The DTD for the classes file is:
+
+    <!ELEMENT classes (class)*>
+
+    <!ELEMENT class (#PCDATA)>
+    <!ATTLIST class
+        name    CDATA #REQUIRED>
+
+=head1 SEE ALSO
+
+
+
