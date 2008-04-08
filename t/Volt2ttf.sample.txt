@@ -1,0 +1,13 @@
+﻿Single:  ب ب‍ ‍ب‍ ‍ب	(contextual forms should display)
+Multiple:  آ	(Maddah should be red in Word)
+Alternate: 
+Ligature: بِّ	(Kasra should be between beh & shadda)
+Chained context: ۝۱۲	(1 and 2 should both be inside ayah)
+Single Adjust: XZX 	(Z should be raised)
+Pair adjust: AW	(A‌W should be kerned)
+Cursive attach: بلا لا	(not sure how to test)
+Mark to base: بَ اَ  	(Mark should be positioned)
+Mark to mark:  بَۙ اَۙ	(Both marks should be positioned)
+Chained context:  ABABCBC ADADCDC  (middle B should be raised; middle D lowered)
+
+

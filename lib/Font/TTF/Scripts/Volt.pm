@@ -188,13 +188,13 @@ The type of positioning. May be ATTACH, ATTACH_CURSIVE, ADJUST_SINGLE, ADJUST_PA
 Gives the context glyph for ATTACH and ADJUST_SINGLE lookups and consists of a
 single C<context>
 
-=item context1
+=item first
 
 The first context glyph for an ADJUST_PAIR. It consists of an array of C<context>s
 which are referenced by number according to their index (starting at 1) in the
 positioning.
 
-=item context2
+=item second
 
 The second context glyph for an ADJUST_PAIR. It consists of an array of C<contexts>s
 which correspond to the second number in a position.
@@ -224,7 +224,7 @@ An adjustment is used in a ADJUST_SINGLE as an array of positioning elements of 
 C<pos> each one corresponding to a C<context> in the context array.
 
 For an ADJUST_PAIR the adj is an array of arrays. Each sub array has 3 elements:
-first index into the context1 array (starting at 1), second index into the context2
+first index into the C<first> array (starting at 1), second index into the C<second>
 array (starting at 1) and a C<pos> to specify the actual adjustment of those two
 glyphs.
 
@@ -511,10 +511,10 @@ sub out_volt_lookups
                 {
                     my ($c);
                     $res .= "\n";
-                    foreach $c (@{$s->{'context1'}})
+                    foreach $c (@{$s->{'first'}})
                     { $res .= " FIRST  " . out_context($c, $self); }
                     $res .= "\n";
-                    foreach $c (@{$s->{'context2'}})
+                    foreach $c (@{$s->{'second'}})
                     { $res .= " SECOND  " . out_context($c, $self); }
                     foreach $c (@{$s->{'adj'}})
                     {
@@ -640,7 +640,7 @@ sub make_name
     else
     { 
         $gname =~ s{/.*$}{}o;
-        $gname =~ s/[.;\-\"\'&$#\/]//og;
+        $gname =~ s/[.;\-\"\'&$\#\/]//og;
     }
     $gname;
 }
@@ -739,7 +739,7 @@ $volt_grammar = <<'EOG';
         | 'ATTACH' <commit> context(s) 'TO' attach(s) 'END_ATTACH'
             { $return = {'type' => $item[1], 'context' => $item[3], 'to' => $item[5] }; }
         | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
-            { $return = {'type' => $item[1], 'context1' => $item[3], 'context2' => $item[4], 'adj' => $item[5]}; }
+            { $return = {'type' => $item[1], 'first' => $item[3], 'second' => $item[4], 'adj' => $item[5]}; }
         | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
             { $return = {'type' => $item[1], 'context' => [map {$_->[0]} @{$item[3]}], 'adj' => [map {$_->[1]} @{$item[3]}]}; }
 
@@ -1087,7 +1087,7 @@ sub parse_volt
                         { die "Expected END_ATTACH in LOOKUP $name, found: " . substr($str, pos($str), 20); }
                     }
 #        | 'ADJUST_PAIR' <commit> post_first(s) post_second(s) post_adj(s) 'END_ADJUST'
-#            { $return = {'type' => $item[1], 'context1' => $item[3], 'context2' => $item[4], 'adj' => $item[5]}; }
+#            { $return = {'type' => $item[1], 'first' => $item[3], 'second' => $item[4], 'adj' => $item[5]}; }
                     elsif ($str =~ m/\GADJUST_PAIR\s+/ogc)
                     {
                         my (@firsts, @seconds, @adjs);
@@ -1119,8 +1119,8 @@ sub parse_volt
                             push (@adjs, [$l, $r, [@poses]]);
                         }
                         push (@content, {'type' => 'ADJUST_PAIR',
-                                'context1' => [@firsts],
-                                'context2' => [@seconds],
+                                'first' => [@firsts],
+                                'second' => [@seconds],
                                 'adj' => [@adjs]});
                         unless ($str =~ m/\GEND_ADJUST\s+/ogc)
                         { die "Expected END_ADJUST in LOOKUP $name, found: " . substr($str, pos($str), 20); }
@@ -1438,7 +1438,7 @@ sub merge_volt
         {
             foreach $c (@{$g->{'lookup'}[1]})
             {
-                foreach (qw(context context1 context2 enters exits))
+                foreach (qw(context first second enters exits))
                 { map_enum($map, @{$c->{$_}}) if (defined $c->{$_}); }
             }
         }
