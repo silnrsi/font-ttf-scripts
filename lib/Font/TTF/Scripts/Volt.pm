@@ -124,7 +124,7 @@ Array of names of lookups associated with this feature
 
 =item groups
 
-A hash of group definitions by name. The contents is an array of <context> corresponding
+A hash of group definitions by name. The contents is an array of C<context_item>s corresponding
 to each element in the group's defining enum.
 
 =item lookups
@@ -156,11 +156,9 @@ Contains LTR or RTL
 =item contexts
 
 Contains an array of contexts as per IN_CONTEXT. Each element of the array is itself
-an array corresponding to the elements in a context. In turn each of these elements
-consists of an array with two elements: A string LEFT or RIGHT and a C<context>.
-
-The first element of the array is not a context it either is empty or contains the
-word 'EXCEPT' to indiciate that this is an EXCEPT IN_CONTEXT construct.
+an array corresponding to the elements in a context. The first element this
+array is a string IN_CONTEXT or EXCEPT_CONTEXT depending on the type of context. Subsequent
+elements are arrays that consist of two elements: A string LEFT or RIGHT and a C<context_item>.
 
 =item lookup
 
@@ -168,9 +166,9 @@ This is an array of subactions within the lookup. Each element of this array is 
 an array with a first element giving the lookup type: C<sub> or C<pos> and the second
 element being the content of the lookup.
 
-For a C<sub> lookup the second element is an array each item of which is a substitution
+For a C<sub> lookup the second element is an array each element of which is a substitution
 pair held in an array. The first element of this substitution pair is an array of
-C<context>s to be substituted and the second element is an array of C<context>s that
+C<context_item>s to be substituted and the second element is an array of C<context_item>s that
 the subsitutition is substituted with.
 
 For a C<pos> lookup, the second element is an array hashes, one per sublookup. The
@@ -185,35 +183,35 @@ The type of positioning. May be ATTACH, ATTACH_CURSIVE, ADJUST_SINGLE, ADJUST_PA
 
 =item context
 
-Gives the context glyph for ATTACH and ADJUST_SINGLE lookups and consists of a
-single C<context>
+Gives the context glyph for ATTACH and ADJUST_SINGLE lookups and consists of an array
+of C<context_item>s
 
 =item first
 
-The first context glyph for an ADJUST_PAIR. It consists of an array of C<context>s
+The first context glyph for an ADJUST_PAIR. It consists of an array of C<context_item>s
 which are referenced by number according to their index (starting at 1) in the
 positioning.
 
 =item second
 
-The second context glyph for an ADJUST_PAIR. It consists of an array of C<contexts>s
+The second context glyph for an ADJUST_PAIR. It consists of an array of C<contexts_item>s
 which correspond to the second number in a position.
 
 =item exits
 
-An array of C<context>s one for each glyph with an C<exit> anchor. Used only in
+An array of C<context_item>s one for each glyph with an C<exit> anchor. Used only in
 ATTACH_CURSIVE
 
 =item enters
 
-An array of C<context>s one for each glyph with an C<entry> anchor. Used only in
+An array of C<context_item>s one for each glyph with an C<entry> anchor. Used only in
 ATTACH_CURSIVE
 
 =item to
 
-Used in an ATTACH to specify which glyphs the C<context> glyphs are attached to and
+Used in an ATTACH to specify what glyphs are being attached and
 with which anchor point. Each element of this array is an array with two elements:
-a C<context> to specify the glyph moving (the base glyph is specified by the
+a C<context_item> to specify the moving glyph(s) (the non-moving glyph is specified by the
 C<context> hash entry) and the name of the anchor point used to link the two. The
 base glyph has an anchor with the anchor name and the second glyph has an anchor
 with the anchor named prefixed by MARK_
@@ -221,7 +219,7 @@ with the anchor named prefixed by MARK_
 =item adj
 
 An adjustment is used in a ADJUST_SINGLE as an array of positioning elements of type
-C<pos> each one corresponding to a C<context> in the context array.
+C<pos> each one corresponding to a C<context_item> in the context array.
 
 For an ADJUST_PAIR the adj is an array of arrays. Each sub array has 3 elements:
 first index into the C<first> array (starting at 1), second index into the C<second>
@@ -260,10 +258,10 @@ This is an array of cmap entries, each of which is an array of 3 numbers.
 In addition to extra entries in the main object there are two types that are used
 in various places:
 
-=head2 Context
+=head2 context_item
 
-A context consists of an array with two elements. The first element gives the type
-of the context item and the second the value. The context types are:
+A C<context_item> consists of an array with two or three elements. The first, a string, gives the type
+of the context item and the subsequent elements give the value. The context types are:
 
 =over 4
 
@@ -285,7 +283,7 @@ be avoided
 =item ENUM
 
 An enum is a way of embedding a list of contexts within a context. The remaining
-elements in the array are C<context>s
+elements in the array are C<context_item>s
 
 =back
 

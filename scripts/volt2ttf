@@ -600,10 +600,12 @@ sub add_gdef
 }
 
 
-=comment
+=begin comment
 
-takes a context list and returns an array ref of flattened arrays of glyph ids that
+Takes a lookup context list (as from IN_CONTEXT) and returns an array of flattened arrays of glyph ids that
 map to the context list.
+
+=end comment
 
 =cut
 
@@ -623,6 +625,18 @@ sub context_glyphs
     return @input;
 }
 
+
+=begin comment
+
+Takes a context list and returns a flattened array of glyph ids, duplicates removed
+and sorted in order of appearance in the context list. (If a glyph appears multiple
+times, the earliest one is kept).  [This is very un-VOLTish since order within a group
+doesn't matter. Need to investigate. -bh]
+
+=end comment
+
+=cut
+
 sub or_context_glyphs
 {
     my ($dat, @list) = @_;
@@ -636,6 +650,16 @@ sub or_context_glyphs
     }
     return [sort {$res{$a} <=> $res{$b}} keys %res];
 }
+
+=begin comment
+
+Takes single C<context_item> and returns a array of glyph ids.
+The array is normally sorted by glyph id, but not so in the
+case of an ENUM -- this might be a bug.
+
+=end comment
+
+=cut
 
 sub scon_glyphs
 {
