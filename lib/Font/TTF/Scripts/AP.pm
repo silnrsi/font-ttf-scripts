@@ -43,6 +43,10 @@ Actual glyph ID from font.
 
 Actual Postscript name from font.
 
+=item name
+
+This element is set by L</"make_names"> or L</"make_classes"> and is the replacement name returned by L</"make_name">.
+
 =back
 
 Note: The C<uni>, C<gnum> and C<post> values are based on the C<UID>, C<GID>, and C<PSName> fields
@@ -146,7 +150,7 @@ each bit set to 1 if the corresponding glyph has the given attachment point.
 
 =item ligclasses
 
-Optionally created by make_classes if ligatures are requested and they exist. The base forms class is no_I<code> while the ligatures are held in I<code>.
+Optionally created by L</"make_classes"> if ligatures are requested and they exist. The base forms class is no_I<code> while the ligatures are held in I<code>.
 
 =item WARNINGS
 
@@ -211,7 +215,8 @@ points on the outline of the glyph.
 
 =item -knownemptyglyphs
 
-A list of names of glyphs that are known to have no outline 
+If this option is specified, C<read_font> will warn if glyphs that should have outlines don't.
+The option value should be a list of names of glyphs that are known to have no outline 
 (thus shouldn't generate warning). Can be a string containing comma- or space-separated names,
 or a ref to an array of strings.
 
@@ -243,6 +248,8 @@ sub read_font
     $self->{'font'} = $f;
     $self->{'cmap'} = $f->{'cmap'}->find_ms->{'val'} || die "Can't find Unicode table in font $fname";
     my (@reverse) = $f->{'cmap'}->reverse('array' => 1);
+    my ($numg) = $f->{'maxp'}{'numGlyphs'};
+
     
 #    my $minUID;
 #    if (exists $f->{'OS/2'})
@@ -306,6 +313,8 @@ sub read_font
                         if (defined $ug && $ug != $ig);
                 $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
                         if (defined $pg && $pg != $ig);
+                $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} is >= number of glyphs in font ($numg)")
+                        if ($ig < 0 || $ig >= $numg);
                 $cur_glyph->{'gnum'} ||= $ig;
                 # delete $attrs{'GID'}; # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
@@ -323,7 +332,7 @@ sub read_font
                 { $cur_glyph->{'props'}{'drawn'} = 1; }
                 $cur_glyph->{'glyph'}->get_points;
             }
-            else
+            elsif ($opts{'-knownemptyglyphs'})
             {
                 $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
             }
@@ -440,7 +449,7 @@ sub read_font
             { $cur_glyph->{'props'}{'drawn'} = 1; }
             $cur_glyph->{'glyph'}->get_points;
         }
-        else
+        elsif ($opts{'-knownemptyglyphs'})
         {
             $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
         }
@@ -450,7 +459,9 @@ sub read_font
 
 =head2 $ap->make_names
 
-Create name records for all the glyphs in the font
+An alternative to L</"make_classes">, this method just creates name records for all the glyphs in the font. 
+That is, for every glyph record in C<glyphs>, L</"make_names"> invokes L</"make_name"> and saves the result 
+in the glyph' sC<name> element.
 
 =cut
 
@@ -539,7 +550,7 @@ sub make_classes
             foreach $c (split(' ', $glyph->{'props'}{'classes'}))
             {
                 $c =~ s/^c//o;
-                push (@${classes{$c}}, $glyph->{'gnum'});
+                push (@{$classes{$c}}, $glyph->{'gnum'});
             }
         }
     }
