@@ -171,6 +171,7 @@ sub canon
     my ($name) = @_;
 
     my ($uids, $exts) = Font::TTF::PSNames::parse($name);
+    return $name unless scalar(@{$uids});
     my ($res) = join("_", map {sprintf("%04X", $_)} @{$uids});
     $res .= "." . join(".", @$exts) if (scalar @$exts);
     $res;
