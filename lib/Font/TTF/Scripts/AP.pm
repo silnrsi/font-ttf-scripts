@@ -24,7 +24,6 @@ Reference to a L<font|Font::TTF::Font> structure. C<read_font> will cause at lea
 the L<post|Font::TTF::Post>, L<cmap|Font::TTF::Cmap>, L<loca|Font::TTF::Loca>, and 
 L<name|Font::TTF::Name> tables to be read in.
 
-
 =item glyphs
 
 An array of references to glyph data structures, indexed by glyphID. Stucture elements are:
@@ -320,7 +319,6 @@ sub read_font
             }
             $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$cur_glyph->{'gnum'}];
             $cur_glyph->{'uni'} = $reverse[$cur_glyph->{'gnum'}] if (!defined $cur_glyph->{'uni'} && defined $reverse[$cur_glyph->{'gnum'}]);
-            $cur_glyph->{'PSName'} = $cur_glyph->{'post'} if ($cur_glyph->{'post'} && $cur_glyph->{'post'} ne '.notdef');
 
             if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$cur_glyph->{'gnum'}])
             {
@@ -437,7 +435,6 @@ sub read_font
         my ($cur_glyph) = {'gnum' => $i};
         $cur_glyph->{'uni'} = $reverse[$i] if (defined $reverse[$i]);
         $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$i];
-        $cur_glyph->{'PSName'} = $cur_glyph->{'post'} if ($cur_glyph->{'post'} && $cur_glyph->{'post'} ne '.notdef');
         $self->{'glyphs'}[$i] = $cur_glyph;
         if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$i])
         {

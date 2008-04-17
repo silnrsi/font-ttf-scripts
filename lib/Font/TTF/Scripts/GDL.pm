@@ -36,8 +36,8 @@ sub out_gdl
     {
         $glyph = $self->{'glyphs'}[$i];
         $fh->print("$glyph->{'name'} = ");
-        if ($opts{'-psnames'} && $glyph->{'PSName'})
-        { $fh->print("postscript(\"$glyph->{'PSName'}\")"); }
+        if ($opts{'-psnames'} && $glyph->{'post'} && $glyph->{'post'} ne '.notdef')
+        { $fh->print("postscript(\"$glyph->{'post'}\")"); }
         else
         { $fh->print("glyphid($i)"); }
 
