@@ -111,7 +111,7 @@ sub features_ttf
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
     my (%multis);
-    my ($s, $t, $l, $f, $k);    # Script name, script struct, lang struct, feature name, lookup name.
+    my ($t, $s, $l, $ft, $k);    # Script tag, script struct, lang struct, feature tag, lookup name.
 
     # Lookups don't actually have tags (they are just numbered). Volt users give lookups names, however,
     # and these names link features to lookups, so we have to be able to find lookups by name.
@@ -120,14 +120,14 @@ sub features_ttf
     
     # There can be unused lookups in the VOLT source, i.e., lookups which aren't tied to a feature.
     # Mark the needed lookups by setting ' include' on the lookup.
-    foreach $s (sort keys %{$dat->{'scripts'}}) # For each script name in VOLT source (in alpha order)
+    foreach $t (sort keys %{$dat->{'scripts'}}) # For each script name in VOLT source (in alpha order)
     {
-        my ($t) = $dat->{'scripts'}{$s};
-        foreach $l (@{$t->{'lang'}})    # For each VOLT lang within this script
+        my ($s) = $dat->{'scripts'}{$t};
+        foreach $l (@{$s->{'langs'}})    # For each VOLT lang within this script
         {
-            foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l}) # For each VOLT feature name within this lang
+            foreach $ft (sort keys %{$l->{'features'}}) # For each VOLT feature tag within this lang
             {
-                foreach $k (@{$l->{$f}{'lookups'}}) # For each VOLT lookup within this feature
+                foreach $k (@{$l->{'features'}{$ft}{'lookups'}}) # For each VOLT lookup name within this feature
                 { $dat->{'lookuptags'}{$k}{' include'} = 1; }
             }
         }
@@ -160,23 +160,22 @@ sub features_ttf
     
     
     # Initialize OT script/lang/feature structure
-    foreach $s (sort keys %{$dat->{'scripts'}})
+    foreach $t (sort keys %{$dat->{'scripts'}})
     {
-        my ($t) = $dat->{'scripts'}{$s};
-
-        foreach $l (@{$t->{'lang'}})
+        my ($s) = $dat->{'scripts'}{$t};
+        foreach $l (@{$s->{'langs'}})
         {
-            foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l})
+            foreach $ft (sort keys %{$l->{'features'}})
             {
                 my ($type);
-                foreach $k (@{$l->{$f}{'lookups'}})
+                foreach $k (@{$l->{'features'}{$ft}{'lookups'}})
                 {
                     next if ($dat->{'lookuptags'}{$k}{' sub'});
                     if ($dat->{'lookuptags'}{$k}{'lookup'}[0] eq 'sub')
                     { $type = 'GSUB'; }
                     else
                     { $type = 'GPOS'; }
-                    $self->append_feat($font, $t->{'tag'}, $l->{'tag'}, $l->{$f}{'tag'}, $dat->{'lookuptags'}{$k}{' index'}, $type);
+                    $self->append_feat($font, $s->{'tag'}, $l->{'tag'}, $ft, $dat->{'lookuptags'}{$k}{' index'}, $type);
                 }
             }
         }

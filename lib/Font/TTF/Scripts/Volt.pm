@@ -22,23 +22,24 @@ C<Font::TTF::Scripts::Volt> is based on and inherits from C<Font::TTF::Scripts::
 and as such contains all the information in such an object. The read method does
 little beyond calling the corresponding AP method.
 
-The real power in this module is in the Volt parser that can parse Volt source code.
-It does it rather slowly, but it does do it and reads it into an internal format.
-This format can be output and can be merged into an existing font using C<merge_volt>.
-From there it can be output as Volt source. The data structures added represent the
-Volt source.
+The real power in this module is in the C<parse_volt> that can parse Volt source code.
+It does it rather slowly, but it does do it and reads it into an internal data structure.
+This data structure can then be merged into an existing font using C<align_glyphs> and C<merge_volt>.
+From there it can be output as Volt source. The data structure representing the Volt source
+is a hash containing the following elements:
 
 =over 4
 
 =item glyphs
 
-This is shared with the glyphs array from AP but adds a few Volt specific sub values
+Similar to the glyphs array from AP but adds a few Volt specific sub values
 
 =over 4
 
 =item uni
 
-May be an array of values as well as a single value
+An optional array of Unicode values (as decimal integers). Note that, unlike the AP structure
+returned, this is an array, not a scalar.
 
 =item type
 
@@ -54,7 +55,7 @@ Volt name in the source
 
 =item anchors
 
-This is a hash by anchor name that contains a sub hash with the following elements:
+An optional hash by anchor name that contains a sub hash with the following elements:
 
 =over 4
 
@@ -76,13 +77,17 @@ Contains the component number for a ligature or 1 normally.
 
 =item scripts
 
-This is a hash of script structures keyed off the script name as used in Volt it contains
+A hash of script structures keyed off the script tag as used in Volt, containing:
 
 =over 4
 
+=item name
+
+Optional script name as in Volt
+
 =item tag
 
-Four letter script tag
+Four letter script tag that ends up in the font
 
 =item langs
 
@@ -92,25 +97,25 @@ An array of language structures consisting of (nearly there)
 
 =item name
 
-Language name as in Volt
+Optional language name as in Volt
 
 =item tag
 
-Language tag that ends up in the font
+Four letter language tag that ends up in the font
 
-=item <feature name>
+=item features
 
-Hash of features by name each containing (last one)
+Hash of feature structures keyed by feature tag, each containing (last one)
 
 =over 4
 
 =item name
 
-Name of the feature as used to reference it
+Optional name of the feature
 
 =item tag
 
-Feature tag that ends up in the font
+Four letter feature tag that ends up in the font
 
 =item lookups
 
@@ -162,7 +167,7 @@ elements are arrays that consist of two elements: A string LEFT or RIGHT and a C
 
 =item lookup
 
-This is an array of subactions within the lookup. Each element of this array is itself
+An array of subactions within the lookup. Each element of this array is itself
 an array with a first element giving the lookup type: C<sub> or C<pos> and the second
 element being the content of the lookup.
 
@@ -251,7 +256,7 @@ Specifies the presentation pixels per em
 
 =item cmap
 
-This is an array of cmap entries, each of which is an array of 3 numbers.
+An array of cmap entries, each of which is an array of 3 numbers.
 
 =back
 
@@ -302,11 +307,12 @@ adjust value and the ppem value at which the adjustment occurs.
 =cut
 
 #use Parse::RecDescent;
+
+use strict;
 use Algorithm::Diff qw(sdiff);
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
 
-use strict;
 use vars qw($VERSION @ISA %dat $volt_grammar $volt_parser);
 @ISA = qw(Font::TTF::Scripts::AP);
 
@@ -393,19 +399,20 @@ sub out_volt_classes
 sub out_volt_scripts
 {
     my ($self) = @_;
-    my ($res, $lk, $s, $f, $l);
+    my ($res, $lk, $st, $ft, $l);
 
-    foreach $s (sort keys %{$self->{'scripts'}})
+    foreach $st (sort keys %{$self->{'scripts'}})
     {
-        my ($t) = $self->{'scripts'}{$s};
-        $res .= "DEF_SCRIPT NAME \"$s\" TAG \"$t->{'tag'}\"\n";
-        foreach $l (@{$t->{'lang'}})
+        my ($s) = $self->{'scripts'}{$st};
+        $res .= "DEF_SCRIPT " . ($s->{'name'} ? "NAME \"$s->{'name'}\" " : '') . "TAG \"$st\"\n";
+        foreach $l (@{$s->{'langs'}})
         {
-            $res .= "DEF_LANGSYS NAME \"$l->{'name'}\" TAG \"$l->{'tag'}\"\n";
-            foreach $f (sort grep {$_ ne 'name' && $_ ne 'tag'} keys %{$l})
+            $res .= "DEF_LANGSYS " . ( $l->{'name'} ? "NAME \"$l->{'name'}\" " : '') . "TAG \"$l->{'tag'}\"\n";
+            foreach $ft (sort keys %{$l->{'features'}})
             {
-                $res .= "DEF_FEATURE NAME \"$f\" TAG \"$l->{$f}{'tag'}\"\n";
-                foreach $lk (@{$l->{$f}{'lookups'}})
+                my $f = $l->{'features'}{$ft};
+                $res .= "DEF_FEATURE " . ($f->{'name'} ? "NAME \"$f->{'name'}\" " : '') . "TAG \"$ft\"\n";
+                foreach $lk (@{$f->{'lookups'}})
                 { $res .= " LOOKUP \"$lk\""; }
                 $res .= "\nEND_FEATURE\n";
             }
@@ -504,6 +511,7 @@ sub out_volt_lookups
                     { $res .= "\nEXIT " . out_context($c, $self); }
                     foreach $c (@{$s->{'enters'}})
                     { $res .= "\nENTER " . out_context($c, $self); }
+                    $res .= "\nEND_ATTACH\n";
                 }
                 elsif ($s->{'type'} eq 'ADJUST_PAIR')
                 {
@@ -638,7 +646,7 @@ sub make_name
     else
     { 
         $gname =~ s{/.*$}{}o;
-        $gname =~ s/[.;\-\"\'&$\#\/]//og;
+        $gname =~ s/[;\-\"\'&$\#\/]//og;
     }
     $gname;
 }
@@ -685,11 +693,11 @@ $volt_grammar = <<'EOG';
     glyph_component : 'COMPONENTS' num
             { $return = $item[-1]; }
 
-    script : 'DEF_SCRIPT' <commit> name tag langsys(s?) 'END_SCRIPT'
-            { $dat{'scripts'}{$item[3]} = {'tag' => $item[4], 'lang' => $item[5]}; }
+    script : 'DEF_SCRIPT' <commit> name? tag langsys(s?) 'END_SCRIPT'
+            { $dat{'scripts'}{$item[4]} = {'name' => $item[3], 'tag' => $item[4], 'langs' => $item[5]}; }
 
-    langsys : 'DEF_LANGSYS' name tag feature(s?) 'END_LANGSYS'
-            { $return = { 'name' => $item[2], 'tag' => $item[3], map {$_->{'name'} => $_} @{$item[4]}}; }
+    langsys : 'DEF_LANGSYS' name? tag feature(s?) 'END_LANGSYS'
+            { $return = { 'name' => $item[2], 'tag' => $item[3], 'features' => { map {$_->{'tag'} => $_} @{$item[4]}}}; }
 
     feature : 'DEF_FEATURE' name tag lookup_ref(s?) 'END_FEATURE'
             { $return = { 'name' => $item[2], 'tag' => $item[3], 'lookups' => $item[4]}; }
@@ -901,53 +909,53 @@ sub parse_volt
         $res->{'glyph_names'}{$name} = $gnum;
     }
 
-#    script : 'DEF_SCRIPT' <commit> name tag langsys(s?) 'END_SCRIPT'
-#            { $dat{'scripts'}{$item[3]} = {'tag' => $item[4], 'lang' => $item[5]}; }
-    while ($str =~ m/\GDEF_SCRIPT\s+NAME\s+"([^"]+)"\s+TAG\s+"([^"]+)"\s+/ogc)
+#    script : 'DEF_SCRIPT' <commit> name? tag langsys(s?) 'END_SCRIPT'
+#            { $dat{'scripts'}{$item[3]} = {'tag' => $item[4], 'langs' => $item[5]}; }
+    while ($str =~ m/\GDEF_SCRIPT\s+(?:NAME\s+"([^"]+)"\s+)?TAG\s+"([^"]+)"\s+/ogc)
     {
         my ($name, $tag) = ($1, $2);
         my (@langs);
 
-#    langsys : 'DEF_LANGSYS' name tag feature(s?) 'END_LANGSYS'
+#    langsys : 'DEF_LANGSYS' name? tag feature(s?) 'END_LANGSYS'
 #            { $return = { 'name' => $item[2], 'tag' => $item[3], map {$_->{'name'} => $_} @{$item[4]}}; }
-        while ($str =~ m/\GDEF_LANGSYS\s+NAME\s+"([^"]+)"\s+TAG\s+"([^"]+)"\s+/ogc)
+        while ($str =~ m/\GDEF_LANGSYS\s+(?:NAME\s+"([^"]+)"\s+)?TAG\s+"([^"]+)"\s+/ogc)
         {
             my ($lname, $ltag) = ($1, $2);
             my (%feats);
 
-#    feature : 'DEF_FEATURE' name tag lookup_ref(s?) 'END_FEATURE'
+#    feature : 'DEF_FEATURE' name? tag lookup_ref(s?) 'END_FEATURE'
 #            { $return = { 'name' => $item[2], 'tag' => $item[3], 'lookups' => $item[4]}; }
-            while ($str =~ m/\GDEF_FEATURE\s+NAME\s+"([^"]+)"\s+TAG\s+"([^"]+)"\s+/ogc)
+            while ($str =~ m/\GDEF_FEATURE\s+(?:NAME\s+"([^"]+)"\s+)?TAG\s+"([^"]+)"\s+/ogc)
             {
                 my ($fname, $ftag) = ($1, $2);
                 my (@lkups);
 
 #    lookup_ref : 'LOOKUP' qid
 #        { $return = $item[2]; }
-                while ($str =~ m/\GLOOKUP\s+"([^"]+)"\s+/ogc)
+                while ($str =~ m/\GLOOKUP\s+"([^"]+)"\s+/ogc)   # "
                 {
                     my ($kname) = ($1);
                     push (@lkups, $kname);
                 }
-                $feats{$fname} = {'name' => $fname, 'tag' => $ftag, 'lookups' => [@lkups]};
+                $feats{$ftag} = {'name' => $fname, 'tag' => $ftag, 'lookups' => [@lkups]};
 
                 unless ($str =~ m/\GEND_FEATURE\s+/ogc)
                 { die "Expected END_FEATURE, found: " . substr($str, pos($str), 20); }
             }
-            push (@langs, {'name' => $lname, 'tag' => $ltag, %feats});
+            push (@langs, {'name' => $lname, 'tag' => $ltag, 'features' => {%feats}});
 
             unless ($str =~ m/\GEND_LANGSYS\s+/ogc)
             { die "Expected END_LANGSYS, found: " . substr($str, pos($str), 20); }
         }
 
-        $res->{'scripts'}{$name} = {'tag' => $tag, 'lang' => [@langs]};
+        $res->{'scripts'}{$tag} = {'name' => $name, 'tag' => $tag, 'langs' => [@langs]};
         unless ($str =~ m/\GEND_SCRIPT\s+/ogc)
         { die "Expected END_SCRIPT, found: " . substr($str, pos($str), 20); }
     }
 
 #    group : 'DEF_GROUP' <commit> qid enum(?) 'END_GROUP'
 #            { $dat{'groups'}{$item[3]} = $item[4][0]; }
-    while ($str =~ m/\GDEF_GROUP\s+"([^"]+)"\s+(?:ENUM\s+)?/ogc)
+    while ($str =~ m/\GDEF_GROUP\s+"([^"]+)"\s+(?:ENUM\s+)?/ogc)    # "
     {
         my ($name) = ($1);
         my (@entries) = parse_enum(\$str, $res);
@@ -1075,7 +1083,7 @@ sub parse_volt
                         {
                             my (@acont) = parse_enum(\$str, $res);
                             last unless (@acont);
-                            if ($str =~ m/\GAT\s+ANCHOR\s+"([^"]+)"\s+/ogc)
+                            if ($str =~ m/\GAT\s+ANCHOR\s+"([^"]+)"\s+/ogc) # "
                             { push (@anchors, [$acont[0], $1]); }
                             else
                             { die "Expected AT ANCHOR in LOOKUP $name, found: " . substr($str, pos($str), 20); }
@@ -1220,9 +1228,9 @@ sub parse_enum
 #             | enum                 { $return = ['ENUM', @{$item[1]}]; }
     while (1)
     {
-        if ($$str =~ m/\GGLYPH\s+(?:"([^"]+)"|(\S+))\s+/ogc)
+        if ($$str =~ m/\GGLYPH\s+(?:"([^"]+)"|(\S+))\s+/ogc)    #"
         { push (@res, ['GLYPH', $dat->{'glyph_names'}{$1 || $2}]); }
-        elsif ($$str =~ m/\GGROUP\s+"([^"]+)"\s+/ogc )
+        elsif ($$str =~ m/\GGROUP\s+"([^"]+)"\s+/ogc )          #"
         { push (@res, ['GROUP', $1]); }
         elsif ($$str =~ m/\GRANGE\s+(?:"([^"]+)"|(\S+))\s+TO\s+(?:"([^"]+)"|(\S+))\s+/ogc)
         { push (@res, ['RANGE', $dat->{'glyph_names'}{$1 || $2}, $dat->{'glyph_names'}{$3 || $4}]); }
@@ -1297,6 +1305,20 @@ sub parse_adjs
     { push (@res, [$1, $2]); }
     return @res;
 }
+
+=head2 $fv->align_glyphs($dat)
+
+Provides one possible way to map glyph names in a new font with an existing VOLT project.
+
+Compares the list of glyphs found during L</"$fv-\>read_font"> (the I<new> glyph list) with the list 
+from L</"$fv-\>parse_volt"> in $dat (the I<old> glyph list>, returning an array that provides
+a mapping between old and new glyph IDs. The array is indexed by old glyph ID and returns the
+new glyph ID.
+
+This implementation works by C<sdiff>ing the two ordered lists of glyph C<name>s and 
+then matching them up, first by C<name> then by C<uni>.
+
+=cut
 
 sub align_glyphs
 {
@@ -1390,7 +1412,7 @@ sub merge_volt
 
         $n->{'component_num'} ||= $g->{'component_num'};
         $n->{'type'} ||= $g->{'type'};
-
+        
         foreach $k (keys %{$g->{'anchors'}})
         {
             my ($p) = $g->{'anchors'}{$k};
@@ -1522,7 +1544,6 @@ sub make_lookups
 
     foreach $c (sort keys %{$self->{'lists'}})
     {
-#        print STDERR "$c: ";
         next if ($c =~ m/^_/o);
         next unless (defined $self->{'lists'}{"_$c"});
         if ($opts->{'-force'})
@@ -1536,7 +1557,6 @@ sub make_lookups
                       'lookup' => ['pos', [{'type' => 'ATTACH', 'context' => [['GROUP', "cTakes${c}Dia"]],
                                 'to' => [[['GROUP', "c${c}Dia"], $c]]}]]};
         push(@{$self->{'lookups'}}, $l);
-#        print STDERR join(",", map {$_->{'id'}} @{$self->{'lookups'}}) . "\n";
 
 #        $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
 #        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
@@ -1545,6 +1565,13 @@ sub make_lookups
 #        $res .= "END_ATTACH\nEND_POSITION\n";
     }
 }
+
+=head2 $fv->make_groups
+
+Convert all C<lists>, C<classes> and C<ligclasses>
+into Volt C<groups>.
+
+=cut
 
 sub make_groups
 {
@@ -1577,6 +1604,12 @@ sub make_groups
     }
 }
 
+=head2 $fv->make_anchors
+
+Convert all attachment points in $fv into Volt C<anchors>
+
+=cut
+
 sub make_anchors
 {
     my ($self) = @_;
@@ -1598,3 +1631,8 @@ sub make_anchors
 
 1;
 
+=head1 See also
+
+L<Font::TTF::Scripts::AP>
+
+=cut
