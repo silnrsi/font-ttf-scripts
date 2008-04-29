@@ -324,7 +324,7 @@ sub read_font
 {
     my ($self) = Font::TTF::Scripts::AP::read_font(@_);
 
-    $self->{'glyphs'}[0]{'post'} = 'glyph0';        # hack to make volt happy, not sure why
+    #$self->{'glyphs'}[0]{'post'} = 'glyph0';        # hack to make volt happy, not sure why
     $self;
 }
 
@@ -365,10 +365,12 @@ sub out_volt_glyphs
             { $res .= " UNICODE $g->{'uni'}[0]"; }
         }
         
-        if (defined $g->{'props'}{'type'})
-        { $type = $g->{'props'}{'type'} || $g->{'type'}; }
-        elsif (defined $g->{'anchors'})
-        { $type = $g->{'type'} || 'BASE'; }
+        # if (defined $g->{'props'}{'type'})
+        # { $type = $g->{'props'}{'type'} || $g->{'type'}; }
+        # elsif (defined $g->{'anchors'})
+        # { $type = $g->{'type'} || 'BASE'; }        
+        $type = $g->{'props'}{'type'} || $g->{'type'};
+        $type ||= 'BASE' if defined $g->{'anchors'};
         
         $res .= " TYPE $type" if ($type);
         $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});
@@ -557,9 +559,12 @@ sub out_volt_anchors
         $k = $glyph->{'name'};
         foreach $i (sort keys %{$glyph->{'anchors'}})
         {
-            $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT 1 " .
-                    "AT POS DX $glyph->{'anchors'}{$i}{'pos'}{'x'}[0] DY $glyph->{'anchors'}{$i}{'pos'}{'y'}[0] END_POS " .
-                    "END_ANCHOR\n";
+            $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT $glyph->{'anchors'}{$i}{'component'} " .
+                ($glyph->{'anchors'}{$i}{'locked'} ? 'LOCKED ' : '') .
+                "AT POS " .
+                ($glyph->{'anchors'}{$i}{'pos'}{'x'}[0] ? "DX $glyph->{'anchors'}{$i}{'pos'}{'x'}[0] " : '') .
+                ($glyph->{'anchors'}{$i}{'pos'}{'y'}[0] ? "DY $glyph->{'anchors'}{$i}{'pos'}{'y'}[0] " : '') .
+                "END_POS END_ANCHOR\n";
         }
     }
     $res;
@@ -648,6 +653,8 @@ sub make_name
         $gname =~ s{/.*$}{}o;
         $gname =~ s/[;\-\"\'&$\#\/]//og;
     }
+    if ($gname eq '.notdef')
+    { $gname = "glyph$glyph->{'gnum'}"; }
     $gname;
 }
 
@@ -1310,8 +1317,8 @@ sub parse_adjs
 
 Provides one possible way to map glyph names in a new font with an existing VOLT project.
 
-Compares the list of glyphs found during L</"$fv-\>read_font"> (the I<new> glyph list) with the list 
-from L</"$fv-\>parse_volt"> in $dat (the I<old> glyph list>, returning an array that provides
+Compares the list of glyphs found during L</"read_font"> (the I<new> glyph list) with the list 
+from L</"parse_volt"> in $dat (the I<old> glyph list>, returning an array that provides
 a mapping between old and new glyph IDs. The array is indexed by old glyph ID and returns the
 new glyph ID.
 
@@ -1410,8 +1417,8 @@ sub merge_volt
         my ($n) = $self->{'glyphs'}[$map->[$g->{'gnum'}]];
         next unless defined $n;
 
-        $n->{'component_num'} ||= $g->{'component_num'};
-        $n->{'type'} ||= $g->{'type'};
+        foreach (qw(component_num type name))
+        { $n->{$_} ||= $g->{$_}; }
         
         foreach $k (keys %{$g->{'anchors'}})
         {
@@ -1420,9 +1427,8 @@ sub merge_volt
 
             if (defined $np)
             {
-                $np->{'component'} ||= $p->{'component'};
-                $np->{'locked'} ||= $p->{'locked'};
-                $np->{'pos'} ||= $p->{'pos'};
+                foreach (qw(component locked pos))
+                { $np->{$_} ||= $p->{$_}; }
                 if ($np->{'pos'})
                 {
                     $np->{'pos'}{'x'} = $np->{'x'};
