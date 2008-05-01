@@ -347,13 +347,14 @@ sub out_volt_glyphs
 {
     my ($self) = @_;
     my ($c) = $self->{'font'}{'cmap'}->read->find_ms;
-    my ($g, $res, $i, $type, @revmap, $u);
+    my ($g, $res, $i, @revmap, $u);
 
     foreach $u (keys %{$c->{'val'}})
     { push(@{$revmap[$c->{'val'}{$u}]}, $u); }
     
     for ($i = 0; $i < $self->{'font'}{'maxp'}{'numGlyphs'}; $i++)
     {
+        my ($type);
         $g = $self->{'glyphs'}[$i];
         $res .= "DEF_GLYPH \"$g->{'name'}\" ID $i";
         if (defined $g->{'uni'})
