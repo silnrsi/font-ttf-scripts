@@ -560,6 +560,7 @@ sub out_volt_anchors
         $k = $glyph->{'name'};
         foreach $i (sort keys %{$glyph->{'anchors'}})
         {
+            $glyph->{'anchors'}{$i}{'component'} ||= 1;
             $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT $glyph->{'anchors'}{$i}{'component'} " .
                 ($glyph->{'anchors'}{$i}{'locked'} ? 'LOCKED ' : '') .
                 "AT POS " .
