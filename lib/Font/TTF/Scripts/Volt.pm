@@ -1367,6 +1367,7 @@ sub align_glyphs
             {
                 foreach $u (@{$uni})
                 {
+                    next unless (defined $u);
                     foreach $g (@{$self->{'glyphs'}})
                     {
                         if (ref $g->{'uni'} && grep {$_ == $u} @{$g->{'uni'}} && !defined $revmap[$g->{'gnum'}])
@@ -1379,7 +1380,13 @@ sub align_glyphs
                     {
                         $map[$gnum] = $gnew;
                         $revmap[$gnew] = $gnum;
+                        last;
                     }
+                }
+                unless ($gnew)
+                {
+                    print STDERR "Can't find alignment for glyph $s->[1]\n";
+                    $self->{'error'} = 1;
                 }
             }
     # make it a deletion (i.e. in old but not in new)
@@ -1484,7 +1491,7 @@ sub map_enum
     {
         if (ref $c->[0])
         { map_enum($map, @{$c}); }
-        if ($c->[0] eq 'GLYPH')
+        elsif ($c->[0] eq 'GLYPH')
         { $c->[1] = $map->[$c->[1]]; }
         elsif ($c->[0] eq 'RANGE')      # yukky we'll do it simply - don't use ranges
         {

@@ -86,6 +86,8 @@ else
     $f->{'font'}->out($ARGV[1]);
 }
 
+exit($f->{'error'});
+
 __END__
 
 =head1 TITLE
