@@ -1,5 +1,5 @@
 
-DEF_GLYPH "glyph0" ID 0 TYPE BASE END_GLYPH
+DEF_GLYPH ".notdef" ID 0 TYPE BASE END_GLYPH
 DEF_GLYPH ".null" ID 1 TYPE BASE END_GLYPH
 DEF_GLYPH "nonmarkingreturn" ID 2 TYPE BASE END_GLYPH
 DEF_GLYPH "space" ID 3 UNICODE 32 TYPE BASE END_GLYPH
@@ -88,7 +88,7 @@ DEF_GLYPH "q" ID 85 UNICODE 113 TYPE BASE END_GLYPH
 DEF_GLYPH "r" ID 86 UNICODE 114 TYPE BASE END_GLYPH
 DEF_GLYPH "s" ID 87 UNICODE 115 TYPE BASE END_GLYPH
 DEF_GLYPH "t" ID 88 UNICODE 116 TYPE BASE END_GLYPH
-DEF_GLYPH "u" ID 89 UNICODE 117 TYPE BASE END_GLYPH
+DEF_GLYPH "u" ID 89 UNICODE 117 TYPE LIGATURE COMPONENTS 3 END_GLYPH
 DEF_GLYPH "v" ID 90 UNICODE 118 TYPE BASE END_GLYPH
 DEF_GLYPH "w" ID 91 UNICODE 119 TYPE BASE END_GLYPH
 DEF_GLYPH "x" ID 92 UNICODE 120 TYPE BASE END_GLYPH
@@ -148,7 +148,7 @@ DEF_GLYPH "plusminus" ID 145 UNICODE 177 END_GLYPH
 DEF_GLYPH "twosuperior" ID 146 UNICODE 178 END_GLYPH
 DEF_GLYPH "threesuperior" ID 147 UNICODE 179 END_GLYPH
 DEF_GLYPH "acute" ID 148 UNICODE 180 END_GLYPH
-DEF_GLYPH "micro" ID 149 UNICODEVALUES "U+00B5,U+03BC" END_GLYPH
+DEF_GLYPH "micro" ID 149 UNICODEVALUES "U+03BC,U+00B5" END_GLYPH
 DEF_GLYPH "paragraph" ID 150 UNICODE 182 END_GLYPH
 DEF_GLYPH "periodcentered" ID 151 UNICODE 183 END_GLYPH
 DEF_GLYPH "uni2219" ID 152 UNICODE 8729 END_GLYPH
@@ -1203,9 +1203,6 @@ DEF_LANGSYS NAME "Default" TAG "dflt"
 DEF_FEATURE NAME "Contextual Alternates" TAG "calt"
  LOOKUP "Sign\4digits" LOOKUP "Sign\3digits" LOOKUP "Sign\2digits" LOOKUP "Sign\digitsMedium" LOOKUP "Sign\digitsSmall" LOOKUP "DaggerAlefToLarge"
 END_FEATURE
-DEF_FEATURE NAME "Cursive Positioning" TAG "curs"
- LOOKUP "LamAlefConnection"
-END_FEATURE
 DEF_FEATURE NAME "Glyph Composition/Decomposition" TAG "ccmp"
  LOOKUP "DecomposeForColor"
 END_FEATURE
@@ -1213,130 +1210,19 @@ DEF_FEATURE NAME "Initial Forms" TAG "init"
  LOOKUP "ltrInit"
 END_FEATURE
 DEF_FEATURE NAME "Mark Positioning" TAG "mark"
- LOOKUP "MarksAbove" LOOKUP "DaggerOnLam" LOOKUP "MarksBelow" LOOKUP "AlefMark2BelowAfterLam" LOOKUP "DigitToSign"
+ LOOKUP "Marks" LOOKUP "DaggerOnLam" LOOKUP "DigitToSign"
 END_FEATURE
 DEF_FEATURE NAME "Mark to Mark Positioning" TAG "mkmk"
- LOOKUP "MarksToMarkAbove" LOOKUP "MarksToMarkBelow" LOOKUP "DigitToDigit"
+ LOOKUP "LamAlefMarks" LOOKUP "MarksToMarkAbove" LOOKUP "MarksToMarkBelow" LOOKUP "DigitToDigit"
 END_FEATURE
 DEF_FEATURE NAME "Medial Forms" TAG "medi"
  LOOKUP "ltrMedi"
 END_FEATURE
 DEF_FEATURE NAME "Required Ligatures" TAG "rlig"
- LOOKUP "Ligatures\Part1" LOOKUP "Ligatures\Part2a" LOOKUP "Ligatures\Part2b" LOOKUP "ShaddaLigatures" LOOKUP "ShaddaKasraLigatures" LOOKUP "ComposeLowHamzaAbove" LOOKUP "HamzaLigatures"
-END_FEATURE
-DEF_FEATURE NAME "Stylistic Alternates" TAG "salt"
- LOOKUP "AyahAlternates"
+ LOOKUP "DecomposeForColor" LOOKUP "ShaddaLigatures" LOOKUP "ShaddaKasraLigatures" LOOKUP "LamAlefLiga" LOOKUP "ComposeLowHamzaAbove" LOOKUP "HamzaLigatures"
 END_FEATURE
 DEF_FEATURE NAME "Terminal Forms" TAG "fina"
  LOOKUP "ltrFina"
-END_FEATURE
-END_LANGSYS
-DEF_LANGSYS NAME "Kurdish" TAG "KUR "
-
-DEF_FEATURE NAME "Contextual Alternates" TAG "calt"
- LOOKUP "Sign\4digits" LOOKUP "Sign\3digits" LOOKUP "Sign\2digits" LOOKUP "Sign\digitsMedium" LOOKUP "Sign\digitsSmall" LOOKUP "DaggerAlefToLarge" LOOKUP "KurdishAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Cursive Positioning" TAG "curs"
- LOOKUP "LamAlefConnection"
-END_FEATURE
-DEF_FEATURE NAME "Glyph Composition Decomposition" TAG "ccmp"
- LOOKUP "DecomposeForColor"
-END_FEATURE
-DEF_FEATURE NAME "Initial Forms" TAG "init"
- LOOKUP "ltrInit"
-END_FEATURE
-DEF_FEATURE NAME "Mark Positioning" TAG "mark"
- LOOKUP "MarksAbove" LOOKUP "DaggerOnLam" LOOKUP "MarksBelow" LOOKUP "AlefMark2BelowAfterLam" LOOKUP "DigitToSign"
-END_FEATURE
-DEF_FEATURE NAME "Mark to Mark Positioning" TAG "mkmk"
- LOOKUP "MarksToMarkAbove" LOOKUP "MarksToMarkBelow" LOOKUP "DigitToDigit"
-END_FEATURE
-DEF_FEATURE NAME "Medial Forms" TAG "medi"
- LOOKUP "ltrMedi"
-END_FEATURE
-DEF_FEATURE NAME "Required Ligatures" TAG "rlig"
- LOOKUP "Ligatures\Part1" LOOKUP "Ligatures\Part2a" LOOKUP "Ligatures\Part2b" LOOKUP "ShaddaLigatures" LOOKUP "ShaddaKasraLigatures" LOOKUP "ComposeLowHamzaAbove" LOOKUP "HamzaLigatures"
-END_FEATURE
-DEF_FEATURE NAME "Stylistic Alternates" TAG "salt"
- LOOKUP "AyahAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Terminal Forms" TAG "fina"
- LOOKUP "ltrFina"
-END_FEATURE
-END_LANGSYS
-DEF_LANGSYS NAME "Sindhi" TAG "SND "
-
-DEF_FEATURE NAME "Contextual Alternates" TAG "calt"
- LOOKUP "Sign\4digits" LOOKUP "Sign\3digits" LOOKUP "Sign\2digits" LOOKUP "Sign\digitsMedium" LOOKUP "Sign\digitsSmall" LOOKUP "DaggerAlefToLarge" LOOKUP "SindhiAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Cursive Positioning" TAG "curs"
- LOOKUP "LamAlefConnection"
-END_FEATURE
-DEF_FEATURE NAME "Glyph Composition Decomposition" TAG "ccmp"
- LOOKUP "DecomposeForColor"
-END_FEATURE
-DEF_FEATURE NAME "Initial Forms" TAG "init"
- LOOKUP "ltrInit"
-END_FEATURE
-DEF_FEATURE NAME "Mark Positioning" TAG "mark"
- LOOKUP "MarksAbove" LOOKUP "DaggerOnLam" LOOKUP "MarksBelow" LOOKUP "AlefMark2BelowAfterLam" LOOKUP "DigitToSign"
-END_FEATURE
-DEF_FEATURE NAME "Mark to Mark Positioning" TAG "mkmk"
- LOOKUP "MarksToMarkAbove" LOOKUP "MarksToMarkBelow" LOOKUP "DigitToDigit"
-END_FEATURE
-DEF_FEATURE NAME "Medial Forms" TAG "medi"
- LOOKUP "ltrMedi"
-END_FEATURE
-DEF_FEATURE NAME "Required Ligatures" TAG "rlig"
- LOOKUP "Ligatures\Part1" LOOKUP "Ligatures\Part2a" LOOKUP "Ligatures\Part2b" LOOKUP "ShaddaLigatures" LOOKUP "ComposeLowHamzaAbove" LOOKUP "HamzaLigatures"
-END_FEATURE
-DEF_FEATURE NAME "Stylistic Alternates" TAG "salt"
- LOOKUP "AyahAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Terminal Forms" TAG "fina"
- LOOKUP "ltrFina"
-END_FEATURE
-END_LANGSYS
-DEF_LANGSYS NAME "Urdu" TAG "URD "
-
-DEF_FEATURE NAME "Contextual Alternates" TAG "calt"
- LOOKUP "Sign\4digits" LOOKUP "Sign\3digits" LOOKUP "Sign\2digits" LOOKUP "Sign\digitsMedium" LOOKUP "Sign\digitsSmall" LOOKUP "DaggerAlefToLarge" LOOKUP "UrduAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Cursive Positioning" TAG "curs"
- LOOKUP "LamAlefConnection"
-END_FEATURE
-DEF_FEATURE NAME "Glyph Composition Decomposition" TAG "ccmp"
- LOOKUP "DecomposeForColor"
-END_FEATURE
-DEF_FEATURE NAME "Initial Forms" TAG "init"
- LOOKUP "ltrInit"
-END_FEATURE
-DEF_FEATURE NAME "Mark Positioning" TAG "mark"
- LOOKUP "MarksAbove" LOOKUP "DaggerOnLam" LOOKUP "MarksToMarkAbove" LOOKUP "MarksBelow" LOOKUP "DigitToSign"
-END_FEATURE
-DEF_FEATURE NAME "Mark to Mark Positioning" TAG "mkmk"
- LOOKUP "MarksToMarkAbove" LOOKUP "MarksToMarkBelow" LOOKUP "DigitToDigit"
-END_FEATURE
-DEF_FEATURE NAME "Medial Forms" TAG "medi"
- LOOKUP "ltrMedi"
-END_FEATURE
-DEF_FEATURE NAME "Required Ligatures" TAG "rlig"
- LOOKUP "Ligatures\Part1" LOOKUP "Ligatures\Part2a" LOOKUP "Ligatures\Part2b" LOOKUP "ShaddaLigatures" LOOKUP "ComposeLowHamzaAbove" LOOKUP "HamzaLigatures"
-END_FEATURE
-DEF_FEATURE NAME "Stylistic Alternates" TAG "salt"
- LOOKUP "AyahAlternates"
-END_FEATURE
-DEF_FEATURE NAME "Terminal Forms" TAG "fina"
- LOOKUP "ltrFina"
-END_FEATURE
-END_LANGSYS
-END_SCRIPT
-DEF_SCRIPT NAME "Latin" TAG "latn"
-
-DEF_LANGSYS NAME "Default" TAG "dflt"
-
-DEF_FEATURE NAME "Kerning" TAG "kern"
- LOOKUP "AdjustPairTest" LOOKUP "AdjustSingleTest"
 END_FEATURE
 END_LANGSYS
 END_SCRIPT
@@ -1454,15 +1340,6 @@ END_GROUP
 DEF_GROUP "TakesSmallDigits"
  ENUM GLYPH "absEndOfAyah.3" GLYPH "absEndOfAyah.alt.3" GLYPH "absEndOfAyah.altB.3" END_ENUM
 END_GROUP
-DEF_GROUP "TestGroup1"
- ENUM GLYPH "D" GLYPH "E" END_ENUM
-END_GROUP
-DEF_GROUP "TestGroup2"
- ENUM GLYPH "X" GLYPH "Y" END_ENUM
-END_GROUP
-DEF_GROUP "TestGroup3"
- ENUM GLYPH "Z" END_ENUM
-END_GROUP
 DEF_GROUP "classHamzaAbove"
  ENUM GLYPH "absHamzaAbove" END_ENUM
 END_GROUP
@@ -1473,19 +1350,19 @@ DEF_GROUP "classShaddaLigatureParts"
  ENUM GROUP "ShaddaMarks" GLYPH "absKasratan" GLYPH "absKasra" GLYPH "absShadda" END_ENUM
 END_GROUP
 DEF_GROUP "ltrDualLinkFina"
- ENUM GLYPH "absYehHamzaAboveFin" GLYPH "absYehFin" GLYPH "absYehFin.noDots" GLYPH "absHighHamzaYehFin" GLYPH "absFarsiYehFin" GLYPH "absYehSmallVFin" GLYPH "absEFin" GLYPH "absYehThreeDotsBelowFin" GLYPH "absAlefMaksuraFin" GLYPH "absBehNoDotsFin" GLYPH "absBehFin" GLYPH "absTehFin" GLYPH "absThehFin" GLYPH "absTtehFin" GLYPH "absTtehehFin" GLYPH "absBeehFin" GLYPH "absTehRingFin" GLYPH "absTehThreeDotsAboveDownwardsFin" GLYPH "absPehFin" GLYPH "absTehehFin" GLYPH "absBehehFin" GLYPH "absBehThreeDotsHorizBelowFin" GLYPH "absBehThreeDotsAboveDotBelowFin" GLYPH "absBehThreeDotsUpwardBelowFin" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowFin" GLYPH "absBehDotAboveTwoDotsBelowFin" GLYPH "absBehInvSmallVBelowFin" GLYPH "absBehSmallVAboveFin" GLYPH "absJeemFin" GLYPH "absHahFin" GLYPH "absKhahFin" GLYPH "absHahHamzaAboveFin" GLYPH "absHahTwoDotsVerticalAboveFin" GLYPH "absNyehFin" GLYPH "absDyehFin" GLYPH "absHahThreeDotsAboveFin" GLYPH "absTchehFin" GLYPH "absTchehehFin" GLYPH "absTchehDotAboveFin" GLYPH "absTchehRetro1Fin" GLYPH "absTchehRetro2Fin" GLYPH "absJeemRetro1Fin" GLYPH "absJeemRetro2Fin" GLYPH "absJeemRetro3Fin" GLYPH "absHahTwoDotsAboveFin" GLYPH "absHahThreeDotsUpwardBelowFin" GLYPH "absSeenFin" GLYPH "absSheenFin" GLYPH "absSeenDotBelowDotAboveFin" GLYPH "absSeenThreeDotsBelowFin" GLYPH "absSeenThreeDotsBelowThreeDotsAboveFin" GLYPH "absSheenDotBelowFin" GLYPH "absSheenRetro1Fin" GLYPH "absSheenRetro2Fin" GLYPH "absSeenFourDotsAboveFin" GLYPH "absSeenTwoVertAboveFin" GLYPH "absSadFin" GLYPH "absDadFin" GLYPH "absSadTwoDotsBelowFin" GLYPH "absSadThreeDotsAboveFin" GLYPH "absDadDotBelowFin" GLYPH "absTahFin" GLYPH "absZahFin" GLYPH "absTahThreeDotsAboveFin" GLYPH "absAinFin" GLYPH "absGhainFin" GLYPH "absAinThreeDotsAboveFin" GLYPH "absGhainDotBelowFin" GLYPH "absAinTwoDotsAboveFin" GLYPH "absAinThreeDotsDownAboveFin" GLYPH "absAinTwoDotsVertAboveFin" GLYPH "absFehFin" GLYPH "absDotlessFehFin" GLYPH "absFehDotMovedBelowFin" GLYPH "absFehDotBelowFin" GLYPH "absVehFin" GLYPH "absFehThreeDotsBelowFin" GLYPH "absPehehFin" GLYPH "absFehTwoDotsBelowFin" GLYPH "absFehThreeDotsUpwardBelowFin" GLYPH "absQafNoDotsFin" GLYPH "absQafFin" GLYPH "absQafDotAboveFin" GLYPH "absQafThreeDotsAboveFin" GLYPH "absKafFin" GLYPH "absKafDotAboveFin" GLYPH "absNgFin" GLYPH "absKafThreeDotsBelowFin" GLYPH "absKehehFin" GLYPH "absKafRingFin" GLYPH "absGafFin" GLYPH "absGafRingFin" GLYPH "absNgoehFin" GLYPH "absGafTwoDotsBelowFin" GLYPH "absGuehFin" GLYPH "absGafThreeDotsAboveFin" GLYPH "absKehehDotAboveFin" GLYPH "absKehehThreeDotsAboveFin" GLYPH "absKehehThreeDotsUpwardBelowFin" GLYPH "absSwashKafFin" GLYPH "absLamFin" GLYPH "absLamSmallVFin" GLYPH "absLamDotAboveFin" GLYPH "absLamThreeDotsAboveFin" GLYPH "absLamThreeDotsBelowFin" GLYPH "absLamRetroFin" GLYPH "absLamBarFin" GLYPH "absMeemFin" GLYPH "absMeemDotAboveFin" GLYPH "absMeemDotBelowFin" GLYPH "absNoonFin" GLYPH "absNoonDotBelowFin" GLYPH "absNoonGhunnaFin" GLYPH "absRnoonFin" GLYPH "absNoonRingFin" GLYPH "absNoonThreeDotsAboveFin" GLYPH "absNoonTwoDotsBelowFin" GLYPH "absNoonRetroFin" GLYPH "absNoonSmallVFin" GLYPH "absHehDoachashmeeFin" GLYPH "absHehHatFin" GLYPH "absHehFin" GLYPH "absHehGoalFin" END_ENUM
+ ENUM GLYPH "absYehHamzaAboveFin" GLYPH "absYehFin" GLYPH "absYehFin.noDots" GLYPH "absHighHamzaYehFin" GLYPH "absFarsiYehFin" GLYPH "absYehSmallVFin" GLYPH "absEFin" GLYPH "absYehThreeDotsBelowFin" GLYPH "absAlefMaksuraFin" GLYPH "absBehNoDotsFin" GLYPH "absBehFin" GLYPH "absTehFin" GLYPH "absThehFin" GLYPH "absTtehFin" GLYPH "absTtehehFin" GLYPH "absBeehFin" GLYPH "absTehRingFin" GLYPH "absTehThreeDotsAboveDownwardsFin" GLYPH "absPehFin" GLYPH "absTehehFin" GLYPH "absBehehFin" GLYPH "absBehThreeDotsHorizBelowFin" GLYPH "absBehThreeDotsAboveDotBelowFin" GLYPH "absBehThreeDotsUpwardBelowFin" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowFin" GLYPH "absBehDotAboveTwoDotsBelowFin" GLYPH "absBehInvSmallVBelowFin" GLYPH "absBehSmallVAboveFin" GLYPH "absJeemFin" GLYPH "absHahFin" GLYPH "absKhahFin" GLYPH "absHahHamzaAboveFin" GLYPH "absHahTwoDotsVerticalAboveFin" GLYPH "absNyehFin" GLYPH "absDyehFin" GLYPH "absHahThreeDotsAboveFin" GLYPH "absTchehFin" GLYPH "absTchehehFin" GLYPH "absTchehDotAboveFin" GLYPH "absTchehRetro1Fin" GLYPH "absJeemRetro2Fin" GLYPH "absHahTwoDotsAboveFin" GLYPH "absHahThreeDotsUpwardBelowFin" GLYPH "absSeenFin" GLYPH "absSheenFin" GLYPH "absSeenDotBelowDotAboveFin" GLYPH "absSeenThreeDotsBelowFin" GLYPH "absSeenThreeDotsBelowThreeDotsAboveFin" GLYPH "absSheenDotBelowFin" GLYPH "absSheenRetro1Fin" GLYPH "absSeenFourDotsAboveFin" GLYPH "absSeenTwoVertAboveFin" GLYPH "absSadFin" GLYPH "absDadFin" GLYPH "absSadTwoDotsBelowFin" GLYPH "absSadThreeDotsAboveFin" GLYPH "absDadDotBelowFin" GLYPH "absTahFin" GLYPH "absZahFin" GLYPH "absTahThreeDotsAboveFin" GLYPH "absAinFin" GLYPH "absGhainFin" GLYPH "absAinThreeDotsAboveFin" GLYPH "absGhainDotBelowFin" GLYPH "absAinTwoDotsAboveFin" GLYPH "absAinThreeDotsDownAboveFin" GLYPH "absAinTwoDotsVertAboveFin" GLYPH "absFehFin" GLYPH "absDotlessFehFin" GLYPH "absFehDotMovedBelowFin" GLYPH "absFehDotBelowFin" GLYPH "absVehFin" GLYPH "absFehThreeDotsBelowFin" GLYPH "absPehehFin" GLYPH "absFehTwoDotsBelowFin" GLYPH "absFehThreeDotsUpwardBelowFin" GLYPH "absQafNoDotsFin" GLYPH "absQafFin" GLYPH "absQafDotAboveFin" GLYPH "absQafThreeDotsAboveFin" GLYPH "absKafFin" GLYPH "absKafDotAboveFin" GLYPH "absNgFin" GLYPH "absKafThreeDotsBelowFin" GLYPH "absKehehFin" GLYPH "absKafRingFin" GLYPH "absGafFin" GLYPH "absGafRingFin" GLYPH "absNgoehFin" GLYPH "absGafTwoDotsBelowFin" GLYPH "absGuehFin" GLYPH "absGafThreeDotsAboveFin" GLYPH "absKehehDotAboveFin" GLYPH "absKehehThreeDotsAboveFin" GLYPH "absKehehThreeDotsUpwardBelowFin" GLYPH "absSwashKafFin" GLYPH "absLamFin" GLYPH "absLamSmallVFin" GLYPH "absLamDotAboveFin" GLYPH "absLamThreeDotsAboveFin" GLYPH "absLamThreeDotsBelowFin" GLYPH "absLamRetroFin" GLYPH "absLamBarFin" GLYPH "absMeemFin" GLYPH "absMeemDotAboveFin" GLYPH "absMeemDotBelowFin" GLYPH "absNoonFin" GLYPH "absNoonDotBelowFin" GLYPH "absNoonGhunnaFin" GLYPH "absRnoonFin" GLYPH "absNoonRingFin" GLYPH "absNoonThreeDotsAboveFin" GLYPH "absNoonTwoDotsBelowFin" GLYPH "absNoonRetroFin" GLYPH "absNoonSmallVFin" GLYPH "absHehDoachashmeeFin" GLYPH "absHehHatFin" GLYPH "absHehFin" GLYPH "absHehGoalFin" END_ENUM
 END_GROUP
 DEF_GROUP "ltrDualLinkInit"
- ENUM GLYPH "absYehHamzaAboveIni" GLYPH "absYehIni" GLYPH "absYehIni.noDots" GLYPH "absHighHamzaYehIni" GLYPH "absFarsiYehIni" GLYPH "absYehSmallVIni" GLYPH "absEIni" GLYPH "absYehThreeDotsBelowIni" GLYPH "absAlefMaksuraIni" GLYPH "absBehNoDotsIni" GLYPH "absBehIni" GLYPH "absTehIni" GLYPH "absThehIni" GLYPH "absTtehIni" GLYPH "absTtehehIni" GLYPH "absBeehIni" GLYPH "absTehRingIni" GLYPH "absTehThreeDotsAboveDownwardsIni" GLYPH "absPehIni" GLYPH "absTehehIni" GLYPH "absBehehIni" GLYPH "absBehThreeDotsHorizBelowIni" GLYPH "absBehThreeDotsAboveDotBelowIni" GLYPH "absBehThreeDotsUpwardBelowIni" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowIni" GLYPH "absBehDotAboveTwoDotsBelowIni" GLYPH "absBehInvSmallVBelowIni" GLYPH "absBehSmallVAboveIni" GLYPH "absJeemIni" GLYPH "absHahIni" GLYPH "absKhahIni" GLYPH "absHahHamzaAboveIni" GLYPH "absHahTwoDotsVerticalAboveIni" GLYPH "absNyehIni" GLYPH "absDyehIni" GLYPH "absHahThreeDotsAboveIni" GLYPH "absTchehIni" GLYPH "absTchehehIni" GLYPH "absTchehDotAboveIni" GLYPH "absTchehRetro1Ini" GLYPH "absTchehRetro2Ini" GLYPH "absJeemRetro1Ini" GLYPH "absJeemRetro2Ini" GLYPH "absJeemRetro3Ini" GLYPH "absHahTwoDotsAboveIni" GLYPH "absHahThreeDotsUpwardBelowIni" GLYPH "absSeenIni" GLYPH "absSheenIni" GLYPH "absSeenDotBelowDotAboveIni" GLYPH "absSeenThreeDotsBelowIni" GLYPH "absSeenThreeDotsBelowThreeDotsAboveIni" GLYPH "absSheenDotBelowIni" GLYPH "absSheenRetro1Ini" GLYPH "absSheenRetro2Ini" GLYPH "absSeenFourDotsAboveIni" GLYPH "absSeenTwoVertAboveIni" GLYPH "absSadIni" GLYPH "absDadIni" GLYPH "absSadTwoDotsBelowIni" GLYPH "absSadThreeDotsAboveIni" GLYPH "absDadDotBelowIni" GLYPH "absTahIni" GLYPH "absZahIni" GLYPH "absTahThreeDotsAboveIni" GLYPH "absAinIni" GLYPH "absGhainIni" GLYPH "absAinThreeDotsAboveIni" GLYPH "absGhainDotBelowIni" GLYPH "absAinTwoDotsAboveIni" GLYPH "absAinThreeDotsDownAboveIni" GLYPH "absAinTwoDotsVertAboveIni" GLYPH "absFehIni" GLYPH "absDotlessFehIni" GLYPH "absFehDotMovedBelowIni" GLYPH "absFehDotBelowIni" GLYPH "absVehIni" GLYPH "absFehThreeDotsBelowIni" GLYPH "absPehehIni" GLYPH "absFehTwoDotsBelowIni" GLYPH "absFehThreeDotsUpwardBelowIni" GLYPH "absQafNoDotsIni" GLYPH "absQafIni" GLYPH "absQafDotAboveIni" GLYPH "absQafThreeDotsAboveIni" GLYPH "absKafIni" GLYPH "absKafDotAboveIni" GLYPH "absNgIni" GLYPH "absKafThreeDotsBelowIni" GLYPH "absKehehIni" GLYPH "absKafRingIni" GLYPH "absGafIni" GLYPH "absGafRingIni" GLYPH "absNgoehIni" GLYPH "absGafTwoDotsBelowIni" GLYPH "absGuehIni" GLYPH "absGafThreeDotsAboveIni" GLYPH "absKehehDotAboveIni" GLYPH "absKehehThreeDotsAboveIni" GLYPH "absKehehThreeDotsUpwardBelowIni" GLYPH "absSwashKafIni" GLYPH "absLamIni" GLYPH "absLamSmallVIni" GLYPH "absLamDotAboveIni" GLYPH "absLamThreeDotsAboveIni" GLYPH "absLamThreeDotsBelowIni" GLYPH "absLamRetroIni" GLYPH "absLamBarIni" GLYPH "absMeemIni" GLYPH "absMeemDotAboveIni" GLYPH "absMeemDotBelowIni" GLYPH "absNoonIni" GLYPH "absNoonDotBelowIni" GLYPH "absNoonGhunnaIni" GLYPH "absRnoonIni" GLYPH "absNoonRingIni" GLYPH "absNoonThreeDotsAboveIni" GLYPH "absNoonTwoDotsBelowIni" GLYPH "absNoonRetroIni" GLYPH "absNoonSmallVIni" GLYPH "absHehDoachashmeeIni" GLYPH "absHehHatIni" GLYPH "absHehIni" GLYPH "absHehGoalIni" END_ENUM
+ ENUM GLYPH "absYehHamzaAboveIni" GLYPH "absYehIni" GLYPH "absYehIni.noDots" GLYPH "absHighHamzaYehIni" GLYPH "absFarsiYehIni" GLYPH "absYehSmallVIni" GLYPH "absEIni" GLYPH "absYehThreeDotsBelowIni" GLYPH "absAlefMaksuraIni" GLYPH "absBehNoDotsIni" GLYPH "absBehIni" GLYPH "absTehIni" GLYPH "absThehIni" GLYPH "absTtehIni" GLYPH "absTtehehIni" GLYPH "absBeehIni" GLYPH "absTehRingIni" GLYPH "absTehThreeDotsAboveDownwardsIni" GLYPH "absPehIni" GLYPH "absTehehIni" GLYPH "absBehehIni" GLYPH "absBehThreeDotsHorizBelowIni" GLYPH "absBehThreeDotsAboveDotBelowIni" GLYPH "absBehThreeDotsUpwardBelowIni" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowIni" GLYPH "absBehDotAboveTwoDotsBelowIni" GLYPH "absBehInvSmallVBelowIni" GLYPH "absBehSmallVAboveIni" GLYPH "absJeemIni" GLYPH "absHahIni" GLYPH "absKhahIni" GLYPH "absHahHamzaAboveIni" GLYPH "absHahTwoDotsVerticalAboveIni" GLYPH "absNyehIni" GLYPH "absDyehIni" GLYPH "absHahThreeDotsAboveIni" GLYPH "absTchehIni" GLYPH "absTchehehIni" GLYPH "absTchehDotAboveIni" GLYPH "absTchehRetro1Ini" GLYPH "absJeemRetro2Ini" GLYPH "absHahTwoDotsAboveIni" GLYPH "absHahThreeDotsUpwardBelowIni" GLYPH "absSeenIni" GLYPH "absSheenIni" GLYPH "absSeenDotBelowDotAboveIni" GLYPH "absSeenThreeDotsBelowIni" GLYPH "absSeenThreeDotsBelowThreeDotsAboveIni" GLYPH "absSheenDotBelowIni" GLYPH "absSheenRetro1Ini" GLYPH "absSeenFourDotsAboveIni" GLYPH "absSeenTwoVertAboveIni" GLYPH "absSadIni" GLYPH "absDadIni" GLYPH "absSadTwoDotsBelowIni" GLYPH "absSadThreeDotsAboveIni" GLYPH "absDadDotBelowIni" GLYPH "absTahIni" GLYPH "absZahIni" GLYPH "absTahThreeDotsAboveIni" GLYPH "absAinIni" GLYPH "absGhainIni" GLYPH "absAinThreeDotsAboveIni" GLYPH "absGhainDotBelowIni" GLYPH "absAinTwoDotsAboveIni" GLYPH "absAinThreeDotsDownAboveIni" GLYPH "absAinTwoDotsVertAboveIni" GLYPH "absFehIni" GLYPH "absDotlessFehIni" GLYPH "absFehDotMovedBelowIni" GLYPH "absFehDotBelowIni" GLYPH "absVehIni" GLYPH "absFehThreeDotsBelowIni" GLYPH "absPehehIni" GLYPH "absFehTwoDotsBelowIni" GLYPH "absFehThreeDotsUpwardBelowIni" GLYPH "absQafNoDotsIni" GLYPH "absQafIni" GLYPH "absQafDotAboveIni" GLYPH "absQafThreeDotsAboveIni" GLYPH "absKafIni" GLYPH "absKafDotAboveIni" GLYPH "absNgIni" GLYPH "absKafThreeDotsBelowIni" GLYPH "absKehehIni" GLYPH "absKafRingIni" GLYPH "absGafIni" GLYPH "absGafRingIni" GLYPH "absNgoehIni" GLYPH "absGafTwoDotsBelowIni" GLYPH "absGuehIni" GLYPH "absGafThreeDotsAboveIni" GLYPH "absKehehDotAboveIni" GLYPH "absKehehThreeDotsAboveIni" GLYPH "absKehehThreeDotsUpwardBelowIni" GLYPH "absSwashKafIni" GLYPH "absLamIni" GLYPH "absLamSmallVIni" GLYPH "absLamDotAboveIni" GLYPH "absLamThreeDotsAboveIni" GLYPH "absLamThreeDotsBelowIni" GLYPH "absLamRetroIni" GLYPH "absLamBarIni" GLYPH "absMeemIni" GLYPH "absMeemDotAboveIni" GLYPH "absMeemDotBelowIni" GLYPH "absNoonIni" GLYPH "absNoonDotBelowIni" GLYPH "absNoonGhunnaIni" GLYPH "absRnoonIni" GLYPH "absNoonRingIni" GLYPH "absNoonThreeDotsAboveIni" GLYPH "absNoonTwoDotsBelowIni" GLYPH "absNoonRetroIni" GLYPH "absNoonSmallVIni" GLYPH "absHehDoachashmeeIni" GLYPH "absHehHatIni" GLYPH "absHehIni" GLYPH "absHehGoalIni" END_ENUM
 END_GROUP
 DEF_GROUP "ltrDualLinkIsol"
- ENUM GLYPH "absYehHamzaAbove" GLYPH "absYeh" GLYPH "absYeh.noDots" GLYPH "absHighHamzaYeh" GLYPH "absFarsiYeh" GLYPH "absYehSmallV" GLYPH "absE" GLYPH "absYehThreeDotsBelow" GLYPH "absAlefMaksura" GLYPH "absBehNoDots" GLYPH "absBeh" GLYPH "absTeh" GLYPH "absTheh" GLYPH "absTteh" GLYPH "absTteheh" GLYPH "absBeeh" GLYPH "absTehRing" GLYPH "absTehThreeDotsAboveDownwards" GLYPH "absPeh" GLYPH "absTeheh" GLYPH "absBeheh" GLYPH "absBehThreeDotsHorizBelow" GLYPH "absBehThreeDotsAboveDotBelow" GLYPH "absBehThreeDotsUpwardBelow" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelow" GLYPH "absBehDotAboveTwoDotsBelow" GLYPH "absBehInvSmallVBelow" GLYPH "absBehSmallVAbove" GLYPH "absJeem" GLYPH "absHah" GLYPH "absKhah" GLYPH "absHahHamzaAbove" GLYPH "absHahTwoDotsVerticalAbove" GLYPH "absNyeh" GLYPH "absDyeh" GLYPH "absHahThreeDotsAbove" GLYPH "absTcheh" GLYPH "absTcheheh" GLYPH "absTchehDotAbove" GLYPH "absTchehRetro1" GLYPH "absTchehRetro2" GLYPH "absJeemRetro1" GLYPH "absJeemRetro2" GLYPH "absJeemRetro3" GLYPH "absHahTwoDotsAbove" GLYPH "absHahThreeDotsUpwardBelow" GLYPH "absSeen" GLYPH "absSheen" GLYPH "absSeenDotBelowDotAbove" GLYPH "absSeenThreeDotsBelow" GLYPH "absSeenThreeDotsBelowThreeDotsAbove" GLYPH "absSheenDotBelow" GLYPH "absSheenRetro1" GLYPH "absSheenRetro2" GLYPH "absSeenFourDotsAbove" GLYPH "absSeenTwoVertAbove" GLYPH "absSad" GLYPH "absDad" GLYPH "absSadTwoDotsBelow" GLYPH "absSadThreeDotsAbove" GLYPH "absDadDotBelow" GLYPH "absTah" GLYPH "absZah" GLYPH "absTahThreeDotsAbove" GLYPH "absAin" GLYPH "absGhain" GLYPH "absAinThreeDotsAbove" GLYPH "absGhainDotBelow" GLYPH "absAinTwoDotsAbove" GLYPH "absAinThreeDotsDownAbove" GLYPH "absAinTwoDotsVertAbove" GLYPH "absFeh" GLYPH "absDotlessFeh" GLYPH "absFehDotMovedBelow" GLYPH "absFehDotBelow" GLYPH "absVeh" GLYPH "absFehThreeDotsBelow" GLYPH "absPeheh" GLYPH "absFehTwoDotsBelow" GLYPH "absFehThreeDotsUpwardBelow" GLYPH "absQafNoDots" GLYPH "absQaf" GLYPH "absQafDotAbove" GLYPH "absQafThreeDotsAbove" GLYPH "absKaf" GLYPH "absKafDotAbove" GLYPH "absNg" GLYPH "absKafThreeDotsBelow" GLYPH "absKeheh" GLYPH "absKafRing" GLYPH "absGaf" GLYPH "absGafRing" GLYPH "absNgoeh" GLYPH "absGafTwoDotsBelow" GLYPH "absGueh" GLYPH "absGafThreeDotsAbove" GLYPH "absKehehDotAbove" GLYPH "absKehehThreeDotsAbove" GLYPH "absKehehThreeDotsUpwardBelow" GLYPH "absSwashKaf" GLYPH "absLam" GLYPH "absLamSmallV" GLYPH "absLamDotAbove" GLYPH "absLamThreeDotsAbove" GLYPH "absLamThreeDotsBelow" GLYPH "absLamRetro" GLYPH "absLamBar" GLYPH "absMeem" GLYPH "absMeemDotAbove" GLYPH "absMeemDotBelow" GLYPH "absNoon" GLYPH "absNoonDotBelow" GLYPH "absNoonGhunna" GLYPH "absRnoon" GLYPH "absNoonRing" GLYPH "absNoonThreeDotsAbove" GLYPH "absNoonTwoDotsBelow" GLYPH "absNoonRetro" GLYPH "absNoonSmallV" GLYPH "absHehDoachashmee" GLYPH "absHehHat" GLYPH "absHeh" GLYPH "absHehGoal" END_ENUM
+ ENUM GLYPH "absYehHamzaAbove" GLYPH "absYeh" GLYPH "absYeh.noDots" GLYPH "absHighHamzaYeh" GLYPH "absFarsiYeh" GLYPH "absYehSmallV" GLYPH "absE" GLYPH "absYehThreeDotsBelow" GLYPH "absAlefMaksura" GLYPH "absBehNoDots" GLYPH "absBeh" GLYPH "absTeh" GLYPH "absTheh" GLYPH "absTteh" GLYPH "absTteheh" GLYPH "absBeeh" GLYPH "absTehRing" GLYPH "absTehThreeDotsAboveDownwards" GLYPH "absPeh" GLYPH "absTeheh" GLYPH "absBeheh" GLYPH "absBehThreeDotsHorizBelow" GLYPH "absBehThreeDotsAboveDotBelow" GLYPH "absBehThreeDotsUpwardBelow" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelow" GLYPH "absBehDotAboveTwoDotsBelow" GLYPH "absBehInvSmallVBelow" GLYPH "absBehSmallVAbove" GLYPH "absJeem" GLYPH "absHah" GLYPH "absKhah" GLYPH "absHahHamzaAbove" GLYPH "absHahTwoDotsVerticalAbove" GLYPH "absNyeh" GLYPH "absDyeh" GLYPH "absHahThreeDotsAbove" GLYPH "absTcheh" GLYPH "absTcheheh" GLYPH "absTchehDotAbove" GLYPH "absTchehRetro1" GLYPH "absJeemRetro2" GLYPH "absHahTwoDotsAbove" GLYPH "absHahThreeDotsUpwardBelow" GLYPH "absSeen" GLYPH "absSheen" GLYPH "absSeenDotBelowDotAbove" GLYPH "absSeenThreeDotsBelow" GLYPH "absSeenThreeDotsBelowThreeDotsAbove" GLYPH "absSheenDotBelow" GLYPH "absSheenRetro1" GLYPH "absSeenFourDotsAbove" GLYPH "absSeenTwoVertAbove" GLYPH "absSad" GLYPH "absDad" GLYPH "absSadTwoDotsBelow" GLYPH "absSadThreeDotsAbove" GLYPH "absDadDotBelow" GLYPH "absTah" GLYPH "absZah" GLYPH "absTahThreeDotsAbove" GLYPH "absAin" GLYPH "absGhain" GLYPH "absAinThreeDotsAbove" GLYPH "absGhainDotBelow" GLYPH "absAinTwoDotsAbove" GLYPH "absAinThreeDotsDownAbove" GLYPH "absAinTwoDotsVertAbove" GLYPH "absFeh" GLYPH "absDotlessFeh" GLYPH "absFehDotMovedBelow" GLYPH "absFehDotBelow" GLYPH "absVeh" GLYPH "absFehThreeDotsBelow" GLYPH "absPeheh" GLYPH "absFehTwoDotsBelow" GLYPH "absFehThreeDotsUpwardBelow" GLYPH "absQafNoDots" GLYPH "absQaf" GLYPH "absQafDotAbove" GLYPH "absQafThreeDotsAbove" GLYPH "absKaf" GLYPH "absKafDotAbove" GLYPH "absNg" GLYPH "absKafThreeDotsBelow" GLYPH "absKeheh" GLYPH "absKafRing" GLYPH "absGaf" GLYPH "absGafRing" GLYPH "absNgoeh" GLYPH "absGafTwoDotsBelow" GLYPH "absGueh" GLYPH "absGafThreeDotsAbove" GLYPH "absKehehDotAbove" GLYPH "absKehehThreeDotsAbove" GLYPH "absKehehThreeDotsUpwardBelow" GLYPH "absSwashKaf" GLYPH "absLam" GLYPH "absLamSmallV" GLYPH "absLamDotAbove" GLYPH "absLamThreeDotsAbove" GLYPH "absLamThreeDotsBelow" GLYPH "absLamRetro" GLYPH "absLamBar" GLYPH "absMeem" GLYPH "absMeemDotAbove" GLYPH "absMeemDotBelow" GLYPH "absNoon" GLYPH "absNoonDotBelow" GLYPH "absNoonGhunna" GLYPH "absRnoon" GLYPH "absNoonRing" GLYPH "absNoonThreeDotsAbove" GLYPH "absNoonTwoDotsBelow" GLYPH "absNoonRetro" GLYPH "absNoonSmallV" GLYPH "absHehDoachashmee" GLYPH "absHehHat" GLYPH "absHeh" GLYPH "absHehGoal" END_ENUM
 END_GROUP
 DEF_GROUP "ltrDualLinkMedi"
- ENUM GLYPH "absYehHamzaAboveMed" GLYPH "absYehMed" GLYPH "absYehMed.noDots" GLYPH "absHighHamzaYehMed" GLYPH "absFarsiYehMed" GLYPH "absYehSmallVMed" GLYPH "absEMed" GLYPH "absYehThreeDotsBelowMed" GLYPH "absAlefMaksuraMed" GLYPH "absBehNoDotsMed" GLYPH "absBehMed" GLYPH "absTehMed" GLYPH "absThehMed" GLYPH "absTtehMed" GLYPH "absTtehehMed" GLYPH "absBeehMed" GLYPH "absTehRingMed" GLYPH "absTehThreeDotsAboveDownwardsMed" GLYPH "absPehMed" GLYPH "absTehehMed" GLYPH "absBehehMed" GLYPH "absBehThreeDotsHorizBelowMed" GLYPH "absBehThreeDotsAboveDotBelowMed" GLYPH "absBehThreeDotsUpwardBelowMed" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowMed" GLYPH "absBehDotAboveTwoDotsBelowMed" GLYPH "absBehInvSmallVBelowMed" GLYPH "absBehSmallVAboveMed" GLYPH "absJeemMed" GLYPH "absHahMed" GLYPH "absKhahMed" GLYPH "absHahHamzaAboveMed" GLYPH "absHahTwoDotsVerticalAboveMed" GLYPH "absNyehMed" GLYPH "absDyehMed" GLYPH "absHahThreeDotsAboveMed" GLYPH "absTchehMed" GLYPH "absTchehehMed" GLYPH "absTchehDotAboveMed" GLYPH "absTchehRetro1Med" GLYPH "absTchehRetro2Med" GLYPH "absJeemRetro1Med" GLYPH "absJeemRetro2Med" GLYPH "absJeemRetro3Med" GLYPH "absHahTwoDotsAboveMed" GLYPH "absHahThreeDotsUpwardBelowMed" GLYPH "absSeenMed" GLYPH "absSheenMed" GLYPH "absSeenDotBelowDotAboveMed" GLYPH "absSeenThreeDotsBelowMed" GLYPH "absSeenThreeDotsBelowThreeDotsAboveMed" GLYPH "absSheenDotBelowMed" GLYPH "absSheenRetro1Med" GLYPH "absSheenRetro2Med" GLYPH "absSeenFourDotsAboveMed" GLYPH "absSeenTwoVertAboveMed" GLYPH "absSadMed" GLYPH "absDadMed" GLYPH "absSadTwoDotsBelowMed" GLYPH "absSadThreeDotsAboveMed" GLYPH "absDadDotBelowMed" GLYPH "absTahMed" GLYPH "absZahMed" GLYPH "absTahThreeDotsAboveMed" GLYPH "absAinMed" GLYPH "absGhainMed" GLYPH "absAinThreeDotsAboveMed" GLYPH "absGhainDotBelowMed" GLYPH "absAinTwoDotsAboveMed" GLYPH "absAinThreeDotsDownAboveMed" GLYPH "absAinTwoDotsVertAboveMed" GLYPH "absFehMed" GLYPH "absDotlessFehMed" GLYPH "absFehDotMovedBelowMed" GLYPH "absFehDotBelowMed" GLYPH "absVehMed" GLYPH "absFehThreeDotsBelowMed" GLYPH "absPehehMed" GLYPH "absFehTwoDotsBelowMed" GLYPH "absFehThreeDotsUpwardBelowMed" GLYPH "absQafNoDotsMed" GLYPH "absQafMed" GLYPH "absQafDotAboveMed" GLYPH "absQafThreeDotsAboveMed" GLYPH "absKafMed" GLYPH "absKafDotAboveMed" GLYPH "absNgMed" GLYPH "absKafThreeDotsBelowMed" GLYPH "absKehehMed" GLYPH "absKafRingMed" GLYPH "absGafMed" GLYPH "absGafRingMed" GLYPH "absNgoehMed" GLYPH "absGafTwoDotsBelowMed" GLYPH "absGuehMed" GLYPH "absGafThreeDotsAboveMed" GLYPH "absKehehDotAboveMed" GLYPH "absKehehThreeDotsAboveMed" GLYPH "absKehehThreeDotsUpwardBelowMed" GLYPH "absSwashKafMed" GLYPH "absLamMed" GLYPH "absLamSmallVMed" GLYPH "absLamDotAboveMed" GLYPH "absLamThreeDotsAboveMed" GLYPH "absLamThreeDotsBelowMed" GLYPH "absLamRetroMed" GLYPH "absLamBarMed" GLYPH "absMeemMed" GLYPH "absMeemDotAboveMed" GLYPH "absMeemDotBelowMed" GLYPH "absNoonMed" GLYPH "absNoonDotBelowMed" GLYPH "absNoonGhunnaMed" GLYPH "absRnoonMed" GLYPH "absNoonRingMed" GLYPH "absNoonThreeDotsAboveMed" GLYPH "absNoonTwoDotsBelowMed" GLYPH "absNoonRetroMed" GLYPH "absNoonSmallVMed" GLYPH "absHehDoachashmeeMed" GLYPH "absHehHatMed" GLYPH "absHehMed" GLYPH "absHehGoalMed" END_ENUM
+ ENUM GLYPH "absYehHamzaAboveMed" GLYPH "absYehMed" GLYPH "absYehMed.noDots" GLYPH "absHighHamzaYehMed" GLYPH "absFarsiYehMed" GLYPH "absYehSmallVMed" GLYPH "absEMed" GLYPH "absYehThreeDotsBelowMed" GLYPH "absAlefMaksuraMed" GLYPH "absBehNoDotsMed" GLYPH "absBehMed" GLYPH "absTehMed" GLYPH "absThehMed" GLYPH "absTtehMed" GLYPH "absTtehehMed" GLYPH "absBeehMed" GLYPH "absTehRingMed" GLYPH "absTehThreeDotsAboveDownwardsMed" GLYPH "absPehMed" GLYPH "absTehehMed" GLYPH "absBehehMed" GLYPH "absBehThreeDotsHorizBelowMed" GLYPH "absBehThreeDotsAboveDotBelowMed" GLYPH "absBehThreeDotsUpwardBelowMed" GLYPH "absBehTwoDotsAboveThreeDotsUpwardBelowMed" GLYPH "absBehDotAboveTwoDotsBelowMed" GLYPH "absBehInvSmallVBelowMed" GLYPH "absBehSmallVAboveMed" GLYPH "absJeemMed" GLYPH "absHahMed" GLYPH "absKhahMed" GLYPH "absHahHamzaAboveMed" GLYPH "absHahTwoDotsVerticalAboveMed" GLYPH "absNyehMed" GLYPH "absDyehMed" GLYPH "absHahThreeDotsAboveMed" GLYPH "absTchehMed" GLYPH "absTchehehMed" GLYPH "absTchehDotAboveMed" GLYPH "absTchehRetro1Med" GLYPH "absJeemRetro2Med" GLYPH "absHahTwoDotsAboveMed" GLYPH "absHahThreeDotsUpwardBelowMed" GLYPH "absSeenMed" GLYPH "absSheenMed" GLYPH "absSeenDotBelowDotAboveMed" GLYPH "absSeenThreeDotsBelowMed" GLYPH "absSeenThreeDotsBelowThreeDotsAboveMed" GLYPH "absSheenDotBelowMed" GLYPH "absSheenRetro1Med" GLYPH "absSeenFourDotsAboveMed" GLYPH "absSeenTwoVertAboveMed" GLYPH "absSadMed" GLYPH "absDadMed" GLYPH "absSadTwoDotsBelowMed" GLYPH "absSadThreeDotsAboveMed" GLYPH "absDadDotBelowMed" GLYPH "absTahMed" GLYPH "absZahMed" GLYPH "absTahThreeDotsAboveMed" GLYPH "absAinMed" GLYPH "absGhainMed" GLYPH "absAinThreeDotsAboveMed" GLYPH "absGhainDotBelowMed" GLYPH "absAinTwoDotsAboveMed" GLYPH "absAinThreeDotsDownAboveMed" GLYPH "absAinTwoDotsVertAboveMed" GLYPH "absFehMed" GLYPH "absDotlessFehMed" GLYPH "absFehDotMovedBelowMed" GLYPH "absFehDotBelowMed" GLYPH "absVehMed" GLYPH "absFehThreeDotsBelowMed" GLYPH "absPehehMed" GLYPH "absFehTwoDotsBelowMed" GLYPH "absFehThreeDotsUpwardBelowMed" GLYPH "absQafNoDotsMed" GLYPH "absQafMed" GLYPH "absQafDotAboveMed" GLYPH "absQafThreeDotsAboveMed" GLYPH "absKafMed" GLYPH "absKafDotAboveMed" GLYPH "absNgMed" GLYPH "absKafThreeDotsBelowMed" GLYPH "absKehehMed" GLYPH "absKafRingMed" GLYPH "absGafMed" GLYPH "absGafRingMed" GLYPH "absNgoehMed" GLYPH "absGafTwoDotsBelowMed" GLYPH "absGuehMed" GLYPH "absGafThreeDotsAboveMed" GLYPH "absKehehDotAboveMed" GLYPH "absKehehThreeDotsAboveMed" GLYPH "absKehehThreeDotsUpwardBelowMed" GLYPH "absSwashKafMed" GLYPH "absLamMed" GLYPH "absLamSmallVMed" GLYPH "absLamDotAboveMed" GLYPH "absLamThreeDotsAboveMed" GLYPH "absLamThreeDotsBelowMed" GLYPH "absLamRetroMed" GLYPH "absLamBarMed" GLYPH "absMeemMed" GLYPH "absMeemDotAboveMed" GLYPH "absMeemDotBelowMed" GLYPH "absNoonMed" GLYPH "absNoonDotBelowMed" GLYPH "absNoonGhunnaMed" GLYPH "absRnoonMed" GLYPH "absNoonRingMed" GLYPH "absNoonThreeDotsAboveMed" GLYPH "absNoonTwoDotsBelowMed" GLYPH "absNoonRetroMed" GLYPH "absNoonSmallVMed" GLYPH "absHehDoachashmeeMed" GLYPH "absHehHatMed" GLYPH "absHehMed" GLYPH "absHehGoalMed" END_ENUM
 END_GROUP
 DEF_GROUP "ltrLargeDaggerAlef"
- ENUM GLYPH "absYeh" GLYPH "absHighHamzaYeh" GLYPH "absFarsiYeh" GLYPH "absE" GLYPH "absYehThreeDotsBelow" GLYPH "absYehTail" GLYPH "absAlefMaksura" GLYPH "absSeen" GLYPH "absSheen" GLYPH "absSeenDotBelowDotAbove" GLYPH "absSeenThreeDotsBelow" GLYPH "absSeenThreeDotsBelowThreeDotsAbove" GLYPH "absSheenDotBelow" GLYPH "absSheenRetro1" GLYPH "absSheenRetro2" GLYPH "absSeenFourDotsAbove" GLYPH "absSeenTwoVertAbove" GLYPH "absSad" GLYPH "absDad" GLYPH "absSadTwoDotsBelow" GLYPH "absSadThreeDotsAbove" GLYPH "absDadDotBelow" GLYPH "absYehFin" GLYPH "absHighHamzaYehFin" GLYPH "absFarsiYehFin" GLYPH "absEFin" GLYPH "absYehThreeDotsBelowFin" GLYPH "absYehTailFin" GLYPH "absAlefMaksuraFin" GLYPH "absSeenFin" GLYPH "absSheenFin" GLYPH "absSeenDotBelowDotAboveFin" GLYPH "absSeenThreeDotsBelowFin" GLYPH "absSeenThreeDotsBelowThreeDotsAboveFin" GLYPH "absSheenDotBelowFin" GLYPH "absSheenRetro1Fin" GLYPH "absSheenRetro2Fin" GLYPH "absSeenFourDotsAboveFin" GLYPH "absSeenTwoVertAboveFin" GLYPH "absSadFin" GLYPH "absDadFin" GLYPH "absSadTwoDotsBelowFin" GLYPH "absSadThreeDotsAboveFin" GLYPH "absDadDotBelowFin" END_ENUM
+ ENUM GLYPH "absYeh" GLYPH "absHighHamzaYeh" GLYPH "absFarsiYeh" GLYPH "absE" GLYPH "absYehThreeDotsBelow" GLYPH "absYehTail" GLYPH "absAlefMaksura" GLYPH "absSeen" GLYPH "absSheen" GLYPH "absSeenDotBelowDotAbove" GLYPH "absSeenThreeDotsBelow" GLYPH "absSeenThreeDotsBelowThreeDotsAbove" GLYPH "absSheenDotBelow" GLYPH "absSheenRetro1" GLYPH "absSeenFourDotsAbove" GLYPH "absSeenTwoVertAbove" GLYPH "absSad" GLYPH "absDad" GLYPH "absSadTwoDotsBelow" GLYPH "absSadThreeDotsAbove" GLYPH "absDadDotBelow" GLYPH "absYehFin" GLYPH "absHighHamzaYehFin" GLYPH "absFarsiYehFin" GLYPH "absEFin" GLYPH "absYehThreeDotsBelowFin" GLYPH "absYehTailFin" GLYPH "absAlefMaksuraFin" GLYPH "absSeenFin" GLYPH "absSheenFin" GLYPH "absSeenDotBelowDotAboveFin" GLYPH "absSeenThreeDotsBelowFin" GLYPH "absSeenThreeDotsBelowThreeDotsAboveFin" GLYPH "absSheenDotBelowFin" GLYPH "absSheenRetro1Fin" GLYPH "absSeenFourDotsAboveFin" GLYPH "absSeenTwoVertAboveFin" GLYPH "absSadFin" GLYPH "absDadFin" GLYPH "absSadTwoDotsBelowFin" GLYPH "absSadThreeDotsAboveFin" GLYPH "absDadDotBelowFin" END_ENUM
 END_GROUP
 DEF_GROUP "ltrLowHamzaBase"
  ENUM GLYPH "absWaw" GLYPH "absYeh" GLYPH "absHeh" GLYPH "absHehGoal" GLYPH "absWawFin" GLYPH "absYehFin" GLYPH "absHehFin" GLYPH "absHehGoalFin" GLYPH "absYehMed" GLYPH "absHehMed" GLYPH "absHehGoalMed" GLYPH "absYehIni" GLYPH "absHehIni" GLYPH "absHehGoalIni" END_ENUM
@@ -1497,10 +1374,10 @@ DEF_GROUP "ltrOther"
  ENUM GLYPH "circledash" GLYPH "absAe" GLYPH "absHamza" GLYPH "absTatweel" GLYPH "absHighHamza" GLYPH "absComma" GLYPH "absSemicolon" GLYPH "absQuestionMark" GLYPH "absFivePointedStar" GLYPH "absFullStop" GLYPH "absPlaceOfSajdah" END_ENUM
 END_GROUP
 DEF_GROUP "ltrRightLinkFina"
- ENUM GLYPH "absAlefMaddaAboveFin" GLYPH "absAlefHamzaAboveFin" GLYPH "absAlefHamzaBelowFin" GLYPH "absAlefFin" GLYPH "absAlefWavyHamzaAboveFin" GLYPH "absAlefWavyHamzaBelowFin" GLYPH "absHighHamzaAlefFin" GLYPH "absAlefWaslaFin" GLYPH "absWawHamzaAboveFin" GLYPH "absWawFin" GLYPH "absHighHamzaWawFin" GLYPH "absUHamzaAboveFin" GLYPH "absWawRingFin" GLYPH "absKirghizOeFin" GLYPH "absOeFin" GLYPH "absUFin" GLYPH "absYuFin" GLYPH "absKirghizYuFin" GLYPH "absWawTwoDotsAboveFin" GLYPH "absVeFin" GLYPH "absWawDotAboveFin" GLYPH "absWawDotBelowFin" GLYPH "absDalFin" GLYPH "absThalFin" GLYPH "absDdalFin" GLYPH "absDalRingFin" GLYPH "absDalDotBelowFin" GLYPH "absDalDotBelowSmallTahFin" GLYPH "absDahalFin" GLYPH "absDdahalFin" GLYPH "absDulFin" GLYPH "absDalThreeDotsAboveDownwardsFin" GLYPH "absDalFourDotsAboveFin" GLYPH "absDalHatFin" GLYPH "absDalTwoVertBelowSmallTahFin" GLYPH "absDalInvSmallVBelowFin" GLYPH "absRehFin" GLYPH "absZainFin" GLYPH "absRrehFin" GLYPH "absRehSmallVFin" GLYPH "absRehRingFin" GLYPH "absRehDotBelowFin" GLYPH "absRehSmallVBelowFin" GLYPH "absRehDotBelowDotAboveFin" GLYPH "absRehTwoDotsAboveFin" GLYPH "absJehFin" GLYPH "absRehFourDotsAboveFin" GLYPH "absRehTwoVertAboveFin" GLYPH "absRehHamzaAboveFin" GLYPH "absJehRetro1Fin" GLYPH "absJehRetro2Fin" GLYPH "absJehFin.dotHat" GLYPH "absRehHatFin" GLYPH "absRehBarFin" GLYPH "absYehBarreeFin" GLYPH "absYehBarreeHamzaAboveFin" GLYPH "absYehTailFin" GLYPH "absAeFin" GLYPH "absTehMarbutaFin" GLYPH "absHehYehAboveFin" GLYPH "absHehGoalHamzaAboveFin" GLYPH "absTehMarbutaGoalFin" END_ENUM
+ ENUM GLYPH "absAlefMaddaAboveFin" GLYPH "absAlefHamzaAboveFin" GLYPH "absAlefHamzaBelowFin" GLYPH "absAlefFin" GLYPH "absAlefWavyHamzaAboveFin" GLYPH "absAlefWavyHamzaBelowFin" GLYPH "absHighHamzaAlefFin" GLYPH "absAlefWaslaFin" GLYPH "absWawHamzaAboveFin" GLYPH "absWawFin" GLYPH "absHighHamzaWawFin" GLYPH "absUHamzaAboveFin" GLYPH "absWawRingFin" GLYPH "absKirghizOeFin" GLYPH "absOeFin" GLYPH "absUFin" GLYPH "absYuFin" GLYPH "absKirghizYuFin" GLYPH "absWawTwoDotsAboveFin" GLYPH "absVeFin" GLYPH "absWawDotAboveFin" GLYPH "absWawDotBelowFin" GLYPH "absDalFin" GLYPH "absThalFin" GLYPH "absDdalFin" GLYPH "absDalRingFin" GLYPH "absDalDotBelowFin" GLYPH "absDalDotBelowSmallTahFin" GLYPH "absDahalFin" GLYPH "absDdahalFin" GLYPH "absDulFin" GLYPH "absDalThreeDotsAboveDownwardsFin" GLYPH "absDalFourDotsAboveFin" GLYPH "absDalHatFin" GLYPH "absDalTwoVertBelowSmallTahFin" GLYPH "absDalInvSmallVBelowFin" GLYPH "absRehFin" GLYPH "absZainFin" GLYPH "absRrehFin" GLYPH "absRehSmallVFin" GLYPH "absRehRingFin" GLYPH "absRehDotBelowFin" GLYPH "absRehSmallVBelowFin" GLYPH "absRehDotBelowDotAboveFin" GLYPH "absRehTwoDotsAboveFin" GLYPH "absJehFin" GLYPH "absRehFourDotsAboveFin" GLYPH "absRehTwoVertAboveFin" GLYPH "absRehHamzaAboveFin" GLYPH "absJehRetro2Fin" GLYPH "absJehFin.dotHat" GLYPH "absRehHatFin" GLYPH "absRehBarFin" GLYPH "absYehBarreeFin" GLYPH "absYehBarreeHamzaAboveFin" GLYPH "absYehTailFin" GLYPH "absAeFin" GLYPH "absTehMarbutaFin" GLYPH "absHehYehAboveFin" GLYPH "absHehGoalHamzaAboveFin" GLYPH "absTehMarbutaGoalFin" END_ENUM
 END_GROUP
 DEF_GROUP "ltrRightLinkIsol"
- ENUM GLYPH "absAlefMaddaAbove" GLYPH "absAlefHamzaAbove" GLYPH "absAlefHamzaBelow" GLYPH "absAlef" GLYPH "absAlefWavyHamzaAbove" GLYPH "absAlefWavyHamzaBelow" GLYPH "absHighHamzaAlef" GLYPH "absAlefWasla" GLYPH "absWawHamzaAbove" GLYPH "absWaw" GLYPH "absHighHamzaWaw" GLYPH "absUHamzaAbove" GLYPH "absWawRing" GLYPH "absKirghizOe" GLYPH "absOe" GLYPH "absU" GLYPH "absYu" GLYPH "absKirghizYu" GLYPH "absWawTwoDotsAbove" GLYPH "absVe" GLYPH "absWawDotAbove" GLYPH "absWawDotBelow" GLYPH "absDal" GLYPH "absThal" GLYPH "absDdal" GLYPH "absDalRing" GLYPH "absDalDotBelow" GLYPH "absDalDotBelowSmallTah" GLYPH "absDahal" GLYPH "absDdahal" GLYPH "absDul" GLYPH "absDalThreeDotsAboveDownwards" GLYPH "absDalFourDotsAbove" GLYPH "absDalHat" GLYPH "absDalTwoVertBelowSmallTah" GLYPH "absDalInvSmallVBelow" GLYPH "absReh" GLYPH "absZain" GLYPH "absRreh" GLYPH "absRehSmallV" GLYPH "absRehRing" GLYPH "absRehDotBelow" GLYPH "absRehSmallVBelow" GLYPH "absRehDotBelowDotAbove" GLYPH "absRehTwoDotsAbove" GLYPH "absJeh" GLYPH "absRehFourDotsAbove" GLYPH "absRehTwoVertAbove" GLYPH "absRehHamzaAbove" GLYPH "absJehRetro1" GLYPH "absJehRetro2" GLYPH "absJeh.dotHat" GLYPH "absRehHat" GLYPH "absRehBar" GLYPH "absYehBarree" GLYPH "absYehBarreeHamzaAbove" GLYPH "absYehTail" GLYPH "absAe" GLYPH "absTehMarbuta" GLYPH "absHehYehAbove" GLYPH "absHehGoalHamzaAbove" GLYPH "absTehMarbutaGoal" END_ENUM
+ ENUM GLYPH "absAlefMaddaAbove" GLYPH "absAlefHamzaAbove" GLYPH "absAlefHamzaBelow" GLYPH "absAlef" GLYPH "absAlefWavyHamzaAbove" GLYPH "absAlefWavyHamzaBelow" GLYPH "absHighHamzaAlef" GLYPH "absAlefWasla" GLYPH "absWawHamzaAbove" GLYPH "absWaw" GLYPH "absHighHamzaWaw" GLYPH "absUHamzaAbove" GLYPH "absWawRing" GLYPH "absKirghizOe" GLYPH "absOe" GLYPH "absU" GLYPH "absYu" GLYPH "absKirghizYu" GLYPH "absWawTwoDotsAbove" GLYPH "absVe" GLYPH "absWawDotAbove" GLYPH "absWawDotBelow" GLYPH "absDal" GLYPH "absThal" GLYPH "absDdal" GLYPH "absDalRing" GLYPH "absDalDotBelow" GLYPH "absDalDotBelowSmallTah" GLYPH "absDahal" GLYPH "absDdahal" GLYPH "absDul" GLYPH "absDalThreeDotsAboveDownwards" GLYPH "absDalFourDotsAbove" GLYPH "absDalHat" GLYPH "absDalTwoVertBelowSmallTah" GLYPH "absDalInvSmallVBelow" GLYPH "absReh" GLYPH "absZain" GLYPH "absRreh" GLYPH "absRehSmallV" GLYPH "absRehRing" GLYPH "absRehDotBelow" GLYPH "absRehSmallVBelow" GLYPH "absRehDotBelowDotAbove" GLYPH "absRehTwoDotsAbove" GLYPH "absJeh" GLYPH "absRehFourDotsAbove" GLYPH "absRehTwoVertAbove" GLYPH "absRehHamzaAbove" GLYPH "absJehRetro2" GLYPH "absJeh.dotHat" GLYPH "absRehHat" GLYPH "absRehBar" GLYPH "absYehBarree" GLYPH "absYehBarreeHamzaAbove" GLYPH "absYehTail" GLYPH "absAe" GLYPH "absTehMarbuta" GLYPH "absHehYehAbove" GLYPH "absHehGoalHamzaAbove" GLYPH "absTehMarbutaGoal" END_ENUM
 END_GROUP
 DEF_LOOKUP "DecomposeForColor" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
 IN_CONTEXT
@@ -1543,36 +1420,6 @@ SUB GROUP "ltrDualLinkIsol"
 WITH GROUP "ltrDualLinkMedi"
 END_SUB
 END_SUBSTITUTION
-DEF_LOOKUP "Ligatures\Part1" PROCESS_BASE SKIP_MARKS DIRECTION RTL
-IN_CONTEXT
- RIGHT GROUP "AlefFin"
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GROUP "LamIni"
-WITH GROUP "LamIniBeforeAlef"
-END_SUB
-SUB GROUP "LamMed"
-WITH GROUP "LamMedBeforeAlef"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "Ligatures\Part2a" PROCESS_BASE SKIP_MARKS DIRECTION RTL
-IN_CONTEXT
- LEFT GROUP "LamIniBeforeAlef"
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GROUP "AlefFin"
-WITH GROUP "AlefFinAfterLamIni"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "Ligatures\Part2b" PROCESS_BASE SKIP_MARKS DIRECTION RTL
-IN_CONTEXT
- LEFT GROUP "LamMedBeforeAlef"
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GROUP "AlefFin"
-WITH GROUP "AlefFinAfterLamMed"
-END_SUB
-END_SUBSTITUTION
 DEF_LOOKUP "ShaddaLigatures" PROCESS_BASE PROCESS_MARKS "classShaddaLigatureParts" DIRECTION RTL
 IN_CONTEXT
 END_CONTEXT
@@ -1599,6 +1446,53 @@ WITH GLYPH "absShaddaKasra"
 END_SUB
 SUB GLYPH "absKasratan" GLYPH "absShadda"
 WITH GLYPH "absShaddaKasratan"
+END_SUB
+END_SUBSTITUTION
+DEF_LOOKUP "LamAlefLiga" PROCESS_BASE SKIP_MARKS DIRECTION RTL
+IN_CONTEXT
+END_CONTEXT
+AS_SUBSTITUTION
+SUB GLYPH "absLamIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamAlef"
+END_SUB
+SUB GLYPH "absLamMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamAlefFin"
+END_SUB
+SUB GLYPH "absLamSmallVIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamSmallVAlef"
+END_SUB
+SUB GLYPH "absLamSmallVMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamSmallVAlefFin"
+END_SUB
+SUB GLYPH "absLamDotAboveIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamDotAboveAlef"
+END_SUB
+SUB GLYPH "absLamDotAboveMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamDotAboveAlefFin"
+END_SUB
+SUB GLYPH "absLamThreeDotsAboveIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamThreeDotsAboveAlef"
+END_SUB
+SUB GLYPH "absLamThreeDotsAboveMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamThreeDotsAboveAlefFin"
+END_SUB
+SUB GLYPH "absLamThreeDotsBelowIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamThreeDotsBelowAlef"
+END_SUB
+SUB GLYPH "absLamThreeDotsBelowMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamThreeDotsBelowAlefFin"
+END_SUB
+SUB GLYPH "absLamRetroIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamRetroAlef"
+END_SUB
+SUB GLYPH "absLamRetroMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamRetroAlefFin"
+END_SUB
+SUB GLYPH "absLamBarIni" GLYPH "absAlefFin"
+WITH GLYPH "absLamBarAlef"
+END_SUB
+SUB GLYPH "absLamBarMed" GLYPH "absAlefFin"
+WITH GLYPH "absLamBarAlefFin"
 END_SUB
 END_SUBSTITUTION
 DEF_LOOKUP "ComposeLowHamzaAbove" PROCESS_BASE PROCESS_MARKS "classHamzaAbove" DIRECTION RTL
@@ -1707,97 +1601,20 @@ SUB GLYPH "absSuperscriptAlef"
 WITH GLYPH "absSuperscriptAlef.large"
 END_SUB
 END_SUBSTITUTION
-DEF_LOOKUP "SindhiAlternates" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
-IN_CONTEXT
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GLYPH "absMeem"
-WITH GLYPH "absMeem.sindhi"
-END_SUB
-SUB GLYPH "absMeemFin"
-WITH GLYPH "absMeemFin.sindhi"
-END_SUB
-SUB GLYPH "absHehMed"
-WITH GLYPH "absHehMed.knottedHigh"
-END_SUB
-SUB GLYPH "absHehFin"
-WITH GLYPH "absHehFin.knottedHigh"
-END_SUB
-SUB GLYPH "absHeh"
-WITH GLYPH "absHeh.knotted"
-END_SUB
-SUB GLYPH "absEasternSix"
-WITH GLYPH "absEasternSix.urdu"
-END_SUB
-SUB GLYPH "absEasternSeven"
-WITH GLYPH "absEasternSeven.urdu"
-END_SUB
-SUB GLYPH "absDammatan"
-WITH GLYPH "absDammatan.sixNine"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "KurdishAlternates" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR
-IN_CONTEXT
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GLYPH "absHehFin"
-WITH GLYPH "absHehFin.knottedHigh"
-END_SUB
-SUB GLYPH "absHeh"
-WITH GLYPH "absHeh.knotted"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "UrduAlternates" PROCESS_BASE SKIP_MARKS DIRECTION RTL
-IN_CONTEXT
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GLYPH "absEasternFour"
-WITH GLYPH "absEasternFour.urdu"
-END_SUB
-SUB GLYPH "absEasternSix"
-WITH GLYPH "absEasternSix.urdu"
-END_SUB
-SUB GLYPH "absEasternSeven"
-WITH GLYPH "absEasternSeven.urdu"
-END_SUB
-SUB GLYPH "absHehIni"
-WITH GLYPH "absHehIni.hooked"
-END_SUB
-SUB GLYPH "absHehMed"
-WITH GLYPH "absHehMed.hooked"
-END_SUB
-SUB GLYPH "absHehFin"
-WITH GLYPH "absHehFin.hooked"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "AyahAlternates" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
-IN_CONTEXT
-END_CONTEXT
-AS_SUBSTITUTION
-SUB GLYPH "absEndOfAyah"
-WITH GLYPH "absEndOfAyah.alt"
-END_SUB
-SUB GLYPH "absEndOfAyah"
-WITH GLYPH "absEndOfAyah.altB"
-END_SUB
-END_SUBSTITUTION
-DEF_LOOKUP "LamAlefConnection" PROCESS_BASE SKIP_MARKS DIRECTION RTL
+DEF_LOOKUP "LamAlefMarks" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
 IN_CONTEXT
 END_CONTEXT
 AS_POSITION
-ATTACH_CURSIVE
-EXIT  GROUP "LamIniBeforeAlef"
-EXIT  GROUP "LamMedBeforeAlef"
-ENTER  GROUP "AlefFinAfterLamIni"
-ENTER  GROUP "AlefFinAfterLamMed"
+ATTACH GROUP "LamAlef" GLYPH "u"
+TO GROUP "Mark1Above" AT ANCHOR "diaA" GROUP "Mark2Above" AT ANCHOR "diaA" GROUP "Mark1Below" AT ANCHOR "diaB" GROUP "Mark2Below" AT ANCHOR "diaB"
 END_ATTACH
 END_POSITION
-DEF_LOOKUP "MarksAbove" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
+DEF_LOOKUP "Marks" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
 IN_CONTEXT
 END_CONTEXT
 AS_POSITION
 ATTACH GROUP "ltrDualLinkIsol" GROUP "ltrDualLinkInit" GROUP "ltrDualLinkMedi" GROUP "ltrDualLinkFina" GROUP "ltrRightLinkIsol" GROUP "ltrRightLinkFina" GROUP "LamIniBeforeAlef" GROUP "LamMedBeforeAlef" GROUP "AlefFinAfterLamIni" GROUP "AlefFinAfterLamMed" GROUP "ltrOther"
-TO GROUP "Mark1Above" AT ANCHOR "diaA" GROUP "Mark2Above" AT ANCHOR "diaA"
+TO GROUP "Mark1Above" AT ANCHOR "diaA" GROUP "Mark2Above" AT ANCHOR "diaA" GROUP "Mark1Below" AT ANCHOR "diaB" GROUP "Mark2Below" AT ANCHOR "diaB"
 END_ATTACH
 END_POSITION
 DEF_LOOKUP "DaggerOnLam" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR
@@ -1814,24 +1631,6 @@ END_CONTEXT
 AS_POSITION
 ATTACH GROUP "Mark1Above"
 TO GROUP "Mark1Above" AT ANCHOR "diaA" GROUP "Mark2Above" AT ANCHOR "diaA"
-END_ATTACH
-END_POSITION
-DEF_LOOKUP "MarksBelow" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
-IN_CONTEXT
-END_CONTEXT
-AS_POSITION
-ATTACH GROUP "ltrDualLinkIsol" GROUP "ltrDualLinkInit" GROUP "ltrDualLinkMedi" GROUP "ltrDualLinkFina" GROUP "ltrRightLinkIsol" GROUP "ltrRightLinkFina" GROUP "LamIniBeforeAlef" GROUP "LamMedBeforeAlef" GROUP "AlefFinAfterLamIni" GROUP "AlefFinAfterLamMed" GROUP "ltrOther"
-TO GROUP "Mark1Below" AT ANCHOR "diaB" GROUP "Mark2Below" AT ANCHOR "diaB"
-END_ATTACH
-END_POSITION
-DEF_LOOKUP "AlefMark2BelowAfterLam" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
-IN_CONTEXT
- LEFT GROUP "MarksBelow"
- LEFT GROUP "AllAlefFinAfterLam"
-END_CONTEXT
-AS_POSITION
-ATTACH GROUP "AllAlefFinAfterLam"
-TO GROUP "MarksBelow" AT ANCHOR "dia2B"
 END_ATTACH
 END_POSITION
 DEF_LOOKUP "MarksToMarkBelow" PROCESS_BASE PROCESS_MARKS ALL DIRECTION RTL
@@ -1857,28 +1656,6 @@ AS_POSITION
 ATTACH GROUP "DigitsAnySmall" GROUP "DigitsAnyMedium"
 TO GROUP "DigitsAnySmall" AT ANCHOR "digit" GROUP "DigitsAnyMedium" AT ANCHOR "digit"
 END_ATTACH
-END_POSITION
-DEF_LOOKUP "AdjustPairTest" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR
-IN_CONTEXT
-END_CONTEXT
-AS_POSITION
-ADJUST_PAIR
- FIRST  GLYPH "A" FIRST  GLYPH "W" FIRST  GROUP "TestGroup2"
- SECOND  GLYPH "W" SECOND  GLYPH "A" SECOND  GROUP "TestGroup3"
- 1 1 BY POS END_POS POS DX -200 END_POS
- 2 2 BY POS END_POS POS DX -200 END_POS
- 3 3 BY POS END_POS POS DY 200 END_POS
-
-END_ADJUST
-END_POSITION
-DEF_LOOKUP "AdjustSingleTest" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR
-IN_CONTEXT
- LEFT GLYPH "A"
- RIGHT GLYPH "C"
-END_CONTEXT
-AS_POSITION
-ADJUST_SINGLE GLYPH "B" BY POS DY 200 END_POS GROUP "TestGroup1" BY POS DY -200 END_POS
-END_ADJUST
 END_POSITION
 DEF_ANCHOR "diaA" ON 252 GLYPH circledash COMPONENT 1 LOCKED AT  POS DX 520 DY 1080 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 252 GLYPH circledash COMPONENT 1 LOCKED AT  POS DX 520 DY -120 END_POS END_ANCHOR
@@ -1914,7 +1691,7 @@ DEF_ANCHOR "alef" ON 266 GLYPH absWawRing COMPONENT 1 LOCKED AT  POS DX 133 DY 6
 DEF_ANCHOR "diaA" ON 266 GLYPH absWawRing COMPONENT 1 LOCKED AT  POS DX 363 DY 691 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 266 GLYPH absWawRing COMPONENT 1 LOCKED AT  POS DX 250 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 267 GLYPH absKirghizOe COMPONENT 1 LOCKED AT  POS DX 133 DY 615 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 267 GLYPH absKirghizOe COMPONENT 1 LOCKED AT  POS DX 359 DY 691 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 267 GLYPH absKirghizOe COMPONENT 1 LOCKED AT  POS DX 363 DY 691 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 267 GLYPH absKirghizOe COMPONENT 1 LOCKED AT  POS DX 250 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 268 GLYPH absOe COMPONENT 1 LOCKED AT  POS DX 125 DY 941 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 268 GLYPH absOe COMPONENT 1 LOCKED AT  POS DX 355 DY 1035 END_POS END_ANCHOR
@@ -1938,7 +1715,7 @@ DEF_ANCHOR "alef" ON 274 GLYPH absWawDotAbove COMPONENT 1 LOCKED AT  POS DX 121 
 DEF_ANCHOR "diaA" ON 274 GLYPH absWawDotAbove COMPONENT 1 LOCKED AT  POS DX 359 DY 1035 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 274 GLYPH absWawDotAbove COMPONENT 1 LOCKED AT  POS DX 250 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 275 GLYPH absWawDotBelow COMPONENT 1 LOCKED AT  POS DX 133 DY 615 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 275 GLYPH absWawDotBelow COMPONENT 1 LOCKED AT  POS DX 359 DY 687 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 275 GLYPH absWawDotBelow COMPONENT 1 LOCKED AT  POS DX 363 DY 691 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 275 GLYPH absWawDotBelow COMPONENT 1 LOCKED AT  POS DX 338 DY -795 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 276 GLYPH absDal COMPONENT 1 LOCKED AT  POS DX 121 DY 800 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 276 GLYPH absDal COMPONENT 1 LOCKED AT  POS DX 266 DY 859 END_POS END_ANCHOR
@@ -1950,10 +1727,10 @@ DEF_ANCHOR "alef" ON 278 GLYPH absDdal COMPONENT 1 LOCKED AT  POS DX 88 DY 977 E
 DEF_ANCHOR "diaA" ON 278 GLYPH absDdal COMPONENT 1 LOCKED AT  POS DX 234 DY 1363 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 278 GLYPH absDdal COMPONENT 1 LOCKED AT  POS DX 250 DY -180 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 279 GLYPH absDalRing COMPONENT 1 LOCKED AT  POS DX 121 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 279 GLYPH absDalRing COMPONENT 1 LOCKED AT  POS DX 262 DY 848 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 279 GLYPH absDalRing COMPONENT 1 LOCKED AT  POS DX 266 DY 859 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 279 GLYPH absDalRing COMPONENT 1 LOCKED AT  POS DX 250 DY -400 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 280 GLYPH absDalDotBelow COMPONENT 1 LOCKED AT  POS DX 121 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 280 GLYPH absDalDotBelow COMPONENT 1 LOCKED AT  POS DX 262 DY 852 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 280 GLYPH absDalDotBelow COMPONENT 1 LOCKED AT  POS DX 266 DY 859 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 280 GLYPH absDalDotBelow COMPONENT 1 LOCKED AT  POS DX 250 DY -450 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 281 GLYPH absDalDotBelowSmallTah COMPONENT 1 LOCKED AT  POS DX 88 DY 989 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 281 GLYPH absDalDotBelowSmallTah COMPONENT 1 LOCKED AT  POS DX 234 DY 1379 END_POS END_ANCHOR
@@ -1962,7 +1739,7 @@ DEF_ANCHOR "alef" ON 282 GLYPH absDahal COMPONENT 1 LOCKED AT  POS DX 121 DY 104
 DEF_ANCHOR "diaA" ON 282 GLYPH absDahal COMPONENT 1 LOCKED AT  POS DX 258 DY 1176 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 282 GLYPH absDahal COMPONENT 1 LOCKED AT  POS DX 250 DY -180 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 283 GLYPH absDdahal COMPONENT 1 LOCKED AT  POS DX 121 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 283 GLYPH absDdahal COMPONENT 1 LOCKED AT  POS DX 258 DY 855 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 283 GLYPH absDdahal COMPONENT 1 LOCKED AT  POS DX 266 DY 859 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 283 GLYPH absDdahal COMPONENT 1 LOCKED AT  POS DX 250 DY -450 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 284 GLYPH absDul COMPONENT 1 LOCKED AT  POS DX 113 DY 1082 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 284 GLYPH absDul COMPONENT 1 LOCKED AT  POS DX 258 DY 1211 END_POS END_ANCHOR
@@ -1980,7 +1757,7 @@ DEF_ANCHOR "alef" ON 288 GLYPH absDalTwoVertBelowSmallTah COMPONENT 1 LOCKED AT 
 DEF_ANCHOR "diaA" ON 288 GLYPH absDalTwoVertBelowSmallTah COMPONENT 1 LOCKED AT  POS DX 234 DY 1348 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 288 GLYPH absDalTwoVertBelowSmallTah COMPONENT 1 LOCKED AT  POS DX 261 DY -564 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 289 GLYPH absDalInvSmallVBelow COMPONENT 1 LOCKED AT  POS DX 121 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 289 GLYPH absDalInvSmallVBelow COMPONENT 1 LOCKED AT  POS DX 256 DY 863 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 289 GLYPH absDalInvSmallVBelow COMPONENT 1 LOCKED AT  POS DX 266 DY 859 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 289 GLYPH absDalInvSmallVBelow COMPONENT 1 LOCKED AT  POS DX 261 DY -500 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 290 GLYPH absReh COMPONENT 1 LOCKED AT  POS DX 117 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 290 GLYPH absReh COMPONENT 1 LOCKED AT  POS DX 224 DY 750 END_POS END_ANCHOR
@@ -2021,9 +1798,6 @@ DEF_ANCHOR "diaB" ON 301 GLYPH absRehTwoVertAbove COMPONENT 1 LOCKED AT  POS DX 
 DEF_ANCHOR "alef" ON 302 GLYPH absRehHamzaAbove COMPONENT 1 LOCKED AT  POS DX 121 DY 796 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 302 GLYPH absRehHamzaAbove COMPONENT 1 LOCKED AT  POS DX 280 DY 960 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 302 GLYPH absRehHamzaAbove COMPONENT 1 LOCKED AT  POS DX 150 DY -530 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 303 GLYPH absJehRetro1 COMPONENT 1 LOCKED AT  POS DX 121 DY 945 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 303 GLYPH absJehRetro1 COMPONENT 1 LOCKED AT  POS DX 231 DY 1320 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 303 GLYPH absJehRetro1 COMPONENT 1 LOCKED AT  POS DX 150 DY -530 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 304 GLYPH absJehRetro2 COMPONENT 1 LOCKED AT  POS DX 113 DY 1130 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 304 GLYPH absJehRetro2 COMPONENT 1 LOCKED AT  POS DX 192 DY 1487 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 304 GLYPH absJehRetro2 COMPONENT 1 LOCKED AT  POS DX 150 DY -530 END_POS END_ANCHOR
@@ -2042,23 +1816,23 @@ DEF_ANCHOR "diaA" ON 309 GLYPH absYehBarreeHamzaAbove COMPONENT 1 LOCKED AT  POS
 DEF_ANCHOR "diaB" ON 309 GLYPH absYehBarreeHamzaAbove COMPONENT 1 LOCKED AT  POS DX 500 DY -400 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 310 GLYPH absYehHamzaAbove COMPONENT 1 LOCKED AT  POS DX 359 DY 1008 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 310 GLYPH absYehHamzaAbove COMPONENT 1 LOCKED AT  POS DX 450 DY -400 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 311 GLYPH absYeh COMPONENT 1 LOCKED AT  POS DX 325 DY 709 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 311 GLYPH absYeh COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 311 GLYPH absYeh COMPONENT 1 LOCKED AT  POS DX 342 DY -620 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 312 GLYPH absYeh.noDots COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 312 GLYPH absYeh.noDots COMPONENT 1 LOCKED AT  POS DX 453 DY -406 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 313 GLYPH absHighHamzaYeh COMPONENT 1 LOCKED AT  POS DX 179 DY 692 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 313 GLYPH absHighHamzaYeh COMPONENT 1 LOCKED AT  POS DX 450 DY -400 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 314 GLYPH absFarsiYeh COMPONENT 1 LOCKED AT  POS DX 325 DY 706 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 314 GLYPH absFarsiYeh COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 314 GLYPH absFarsiYeh COMPONENT 1 LOCKED AT  POS DX 450 DY -400 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 315 GLYPH absYehSmallV COMPONENT 1 LOCKED AT  POS DX 402 DY 1030 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 315 GLYPH absYehSmallV COMPONENT 1 LOCKED AT  POS DX 450 DY -400 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 316 GLYPH absE COMPONENT 1 LOCKED AT  POS DX 420 DY 705 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 316 GLYPH absE COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 316 GLYPH absE COMPONENT 1 LOCKED AT  POS DX 385 DY -731 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 317 GLYPH absYehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 420 DY 705 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 317 GLYPH absYehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 317 GLYPH absYehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 385 DY -782 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 318 GLYPH absYehTail COMPONENT 1 LOCKED AT  POS DX 389 DY 739 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 318 GLYPH absYehTail COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 318 GLYPH absYehTail COMPONENT 1 LOCKED AT  POS DX 400 DY -400 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 319 GLYPH absAlefMaksura COMPONENT 1 LOCKED AT  POS DX 495 DY 675 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 319 GLYPH absAlefMaksura COMPONENT 1 LOCKED AT  POS DX 329 DY 705 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 319 GLYPH absAlefMaksura COMPONENT 1 LOCKED AT  POS DX 400 DY -400 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 320 GLYPH absBehNoDots COMPONENT 1 LOCKED AT  POS DX 298 DY 583 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 320 GLYPH absBehNoDots COMPONENT 1 LOCKED AT  POS DX 660 DY 585 END_POS END_ANCHOR
@@ -2119,7 +1893,7 @@ DEF_ANCHOR "diaA" ON 338 GLYPH absBehSmallVAbove COMPONENT 1 LOCKED AT  POS DX 6
 DEF_ANCHOR "diaB" ON 338 GLYPH absBehSmallVAbove COMPONENT 1 LOCKED AT  POS DX 651 DY -310 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 339 GLYPH absJeem COMPONENT 1 LOCKED AT  POS DX 201 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 339 GLYPH absJeem COMPONENT 1 LOCKED AT  POS DX 400 DY 750 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 339 GLYPH absJeem COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 339 GLYPH absJeem COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 340 GLYPH absHah COMPONENT 1 LOCKED AT  POS DX 201 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 340 GLYPH absHah COMPONENT 1 LOCKED AT  POS DX 400 DY 750 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 340 GLYPH absHah COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
@@ -2153,18 +1927,9 @@ DEF_ANCHOR "diaB" ON 349 GLYPH absTchehDotAbove COMPONENT 1 LOCKED AT  POS DX 40
 DEF_ANCHOR "alef" ON 350 GLYPH absTchehRetro1 COMPONENT 1 LOCKED AT  POS DX 197 DY 788 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 350 GLYPH absTchehRetro1 COMPONENT 1 LOCKED AT  POS DX 393 DY 1192 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 350 GLYPH absTchehRetro1 COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 351 GLYPH absTchehRetro2 COMPONENT 1 LOCKED AT  POS DX 201 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 351 GLYPH absTchehRetro2 COMPONENT 1 LOCKED AT  POS DX 480 DY 660 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 351 GLYPH absTchehRetro2 COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 352 GLYPH absJeemRetro1 COMPONENT 1 LOCKED AT  POS DX 201 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 352 GLYPH absJeemRetro1 COMPONENT 1 LOCKED AT  POS DX 480 DY 660 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 352 GLYPH absJeemRetro1 COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 353 GLYPH absJeemRetro2 COMPONENT 1 LOCKED AT  POS DX 205 DY 788 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 353 GLYPH absJeemRetro2 COMPONENT 1 LOCKED AT  POS DX 402 DY 1196 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 353 GLYPH absJeemRetro2 COMPONENT 1 LOCKED AT  POS DX 207 DY 823 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 353 GLYPH absJeemRetro2 COMPONENT 1 LOCKED AT  POS DX 411 DY 1120 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 353 GLYPH absJeemRetro2 COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 354 GLYPH absJeemRetro3 COMPONENT 1 LOCKED AT  POS DX 201 DY 780 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 354 GLYPH absJeemRetro3 COMPONENT 1 LOCKED AT  POS DX 402 DY 1192 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 354 GLYPH absJeemRetro3 COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 355 GLYPH absHahTwoDotsAbove COMPONENT 1 LOCKED AT  POS DX 201 DY 800 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 355 GLYPH absHahTwoDotsAbove COMPONENT 1 LOCKED AT  POS DX 436 DY 970 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 355 GLYPH absHahTwoDotsAbove COMPONENT 1 LOCKED AT  POS DX 400 DY -825 END_POS END_ANCHOR
@@ -2185,11 +1950,9 @@ DEF_ANCHOR "diaA" ON 362 GLYPH absSheenDotBelow COMPONENT 1 LOCKED AT  POS DX 36
 DEF_ANCHOR "diaB" ON 362 GLYPH absSheenDotBelow COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 363 GLYPH absSheenRetro1 COMPONENT 1 LOCKED AT  POS DX 325 DY 996 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 363 GLYPH absSheenRetro1 COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 364 GLYPH absSheenRetro2 COMPONENT 1 LOCKED AT  POS DX 312 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 364 GLYPH absSheenRetro2 COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 365 GLYPH absSeenFourDotsAbove COMPONENT 1 LOCKED AT  POS DX 316 DY 611 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 365 GLYPH absSeenFourDotsAbove COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 366 GLYPH absSeenTwoVertAbove COMPONENT 1 LOCKED AT  POS DX 316 DY 632 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 366 GLYPH absSeenTwoVertAbove COMPONENT 1 LOCKED AT  POS DX 311 DY 607 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 366 GLYPH absSeenTwoVertAbove COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 367 GLYPH absSad COMPONENT 1 LOCKED AT  POS DX 397 DY 496 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 367 GLYPH absSad COMPONENT 1 LOCKED AT  POS DX 300 DY -600 END_POS END_ANCHOR
@@ -2208,7 +1971,7 @@ DEF_ANCHOR "alef" ON 373 GLYPH absZah COMPONENT 1 LOCKED AT  POS DX 201 DY 684 E
 DEF_ANCHOR "diaA" ON 373 GLYPH absZah COMPONENT 1 LOCKED AT  POS DX 389 DY 1231 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 373 GLYPH absZah COMPONENT 1 LOCKED AT  POS DX 500 DY -180 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 374 GLYPH absTahThreeDotsAbove COMPONENT 1 LOCKED AT  POS DX 201 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 374 GLYPH absTahThreeDotsAbove COMPONENT 1 LOCKED AT  POS DX 389 DY 1235 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 374 GLYPH absTahThreeDotsAbove COMPONENT 1 LOCKED AT  POS DX 389 DY 1231 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 374 GLYPH absTahThreeDotsAbove COMPONENT 1 LOCKED AT  POS DX 500 DY -180 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 375 GLYPH absAin COMPONENT 1 LOCKED AT  POS DX 270 DY 900 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 375 GLYPH absAin COMPONENT 1 LOCKED AT  POS DX 300 DY -840 END_POS END_ANCHOR
@@ -2237,13 +2000,13 @@ DEF_ANCHOR "alef" ON 385 GLYPH absFehDotBelow COMPONENT 1 LOCKED AT  POS DX 342 
 DEF_ANCHOR "diaA" ON 385 GLYPH absFehDotBelow COMPONENT 1 LOCKED AT  POS DX 479 DY 921 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 385 GLYPH absFehDotBelow COMPONENT 1 LOCKED AT  POS DX 602 DY -209 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 386 GLYPH absVeh COMPONENT 1 LOCKED AT  POS DX 342 DY 740 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 386 GLYPH absVeh COMPONENT 1 LOCKED AT  POS DX 480 DY 900 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 386 GLYPH absVeh COMPONENT 1 LOCKED AT  POS DX 481 DY 925 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 386 GLYPH absVeh COMPONENT 1 LOCKED AT  POS DX 600 DY -210 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 387 GLYPH absFehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 342 DY 740 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 387 GLYPH absFehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 480 DY 900 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 387 GLYPH absFehThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 581 DY -329 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 388 GLYPH absPeheh COMPONENT 1 LOCKED AT  POS DX 342 DY 740 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 388 GLYPH absPeheh COMPONENT 1 LOCKED AT  POS DX 480 DY 900 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 388 GLYPH absPeheh COMPONENT 1 LOCKED AT  POS DX 474 DY 961 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 388 GLYPH absPeheh COMPONENT 1 LOCKED AT  POS DX 600 DY -210 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 389 GLYPH absFehTwoDotsBelow COMPONENT 1 LOCKED AT  POS DX 342 DY 740 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 389 GLYPH absFehTwoDotsBelow COMPONENT 1 LOCKED AT  POS DX 480 DY 900 END_POS END_ANCHOR
@@ -2263,10 +2026,10 @@ DEF_ANCHOR "alef" ON 395 GLYPH absKaf COMPONENT 1 LOCKED AT  POS DX 161 DY 961 E
 DEF_ANCHOR "diaA" ON 395 GLYPH absKaf COMPONENT 1 LOCKED AT  POS DX 315 DY 1155 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 395 GLYPH absKaf COMPONENT 1 LOCKED AT  POS DX 400 DY -210 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 396 GLYPH absKafDotAbove COMPONENT 1 LOCKED AT  POS DX 161 DY 961 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 396 GLYPH absKafDotAbove COMPONENT 1 LOCKED AT  POS DX 303 DY 1141 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 396 GLYPH absKafDotAbove COMPONENT 1 LOCKED AT  POS DX 323 DY 1273 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 396 GLYPH absKafDotAbove COMPONENT 1 LOCKED AT  POS DX 400 DY -210 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 397 GLYPH absNg COMPONENT 1 LOCKED AT  POS DX 161 DY 961 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 397 GLYPH absNg COMPONENT 1 LOCKED AT  POS DX 256 DY 1372 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 397 GLYPH absNg COMPONENT 1 LOCKED AT  POS DX 276 DY 1461 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 397 GLYPH absNg COMPONENT 1 LOCKED AT  POS DX 400 DY -210 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 398 GLYPH absKafThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 161 DY 961 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 398 GLYPH absKafThreeDotsBelow COMPONENT 1 LOCKED AT  POS DX 315 DY 1100 END_POS END_ANCHOR
@@ -2383,62 +2146,6 @@ DEF_ANCHOR "diaA" ON 443 GLYPH absSignSindhiPostpositionMen COMPONENT 1 LOCKED A
 DEF_ANCHOR "diaB" ON 443 GLYPH absSignSindhiPostpositionMen COMPONENT 1 LOCKED AT  POS DX 512 DY -547 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 444 GLYPH absTatweel COMPONENT 1 LOCKED AT  POS DX 150 DY 790 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 444 GLYPH absTatweel COMPONENT 1 LOCKED AT  POS DX 111 DY -188 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 667 DY 1594 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 658 DY 1560 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 615 DY 1722 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 628 DY -555 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DX 256 DY -145 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 628 DY -555 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DX 256 DY -145 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 480 DY 1455 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 585 DY 1786 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 540 DY 930 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 452 GLYPH absAlefMaddaAboveFin COMPONENT 1 LOCKED AT  POS DX 100 DY 1395 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 452 GLYPH absAlefMaddaAboveFin COMPONENT 1 LOCKED AT  POS DX 179 DY -179 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 453 GLYPH absAlefHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 90 DY 1445 END_POS END_ANCHOR
@@ -2577,9 +2284,6 @@ DEF_ANCHOR "diaB" ON 499 GLYPH absRehTwoVertAboveFin COMPONENT 1 LOCKED AT  POS 
 DEF_ANCHOR "alef" ON 500 GLYPH absRehHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 97 DY 507 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 500 GLYPH absRehHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 239 DY 859 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 500 GLYPH absRehHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 200 DY -540 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 501 GLYPH absJehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 109 DY 780 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 501 GLYPH absJehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 218 DY 1171 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 501 GLYPH absJehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 200 DY -540 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 502 GLYPH absJehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 101 DY 981 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 502 GLYPH absJehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 179 DY 1346 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 502 GLYPH absJehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 200 DY -540 END_POS END_ANCHOR
@@ -2592,8 +2296,10 @@ DEF_ANCHOR "diaB" ON 504 GLYPH absRehHatFin COMPONENT 1 LOCKED AT  POS DX 200 DY
 DEF_ANCHOR "alef" ON 505 GLYPH absRehBarFin COMPONENT 1 LOCKED AT  POS DX 101 DY 450 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 505 GLYPH absRehBarFin COMPONENT 1 LOCKED AT  POS DX 225 DY 600 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 505 GLYPH absRehBarFin COMPONENT 1 LOCKED AT  POS DX 200 DY -540 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 506 GLYPH absYehBarreeFin COMPONENT 1 LOCKED AT  POS DX 216 DY 24 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 506 GLYPH absYehBarreeFin COMPONENT 1 LOCKED AT  POS DX 375 DY 220 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 506 GLYPH absYehBarreeFin COMPONENT 1 LOCKED AT  POS DX 500 DY -850 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 507 GLYPH absYehBarreeHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 216 DY 24 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 507 GLYPH absYehBarreeHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 410 DY 500 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 507 GLYPH absYehBarreeHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 500 DY -850 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 508 GLYPH absYehHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 385 DY 530 END_POS END_ANCHOR
@@ -2709,18 +2415,9 @@ DEF_ANCHOR "diaB" ON 547 GLYPH absTchehDotAboveFin COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "alef" ON 548 GLYPH absTchehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 548 GLYPH absTchehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 402 DY 1171 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 548 GLYPH absTchehRetro1Fin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 549 GLYPH absTchehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 549 GLYPH absTchehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 480 DY 660 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 549 GLYPH absTchehRetro2Fin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 550 GLYPH absJeemRetro1Fin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 550 GLYPH absJeemRetro1Fin COMPONENT 1 LOCKED AT  POS DX 480 DY 660 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 550 GLYPH absJeemRetro1Fin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 551 GLYPH absJeemRetro2Fin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 551 GLYPH absJeemRetro2Fin COMPONENT 1 LOCKED AT  POS DX 397 DY 1166 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 551 GLYPH absJeemRetro2Fin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 552 GLYPH absJeemRetro3Fin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 552 GLYPH absJeemRetro3Fin COMPONENT 1 LOCKED AT  POS DX 397 DY 1171 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 552 GLYPH absJeemRetro3Fin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 553 GLYPH absHahTwoDotsAboveFin COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 553 GLYPH absHahTwoDotsAboveFin COMPONENT 1 LOCKED AT  POS DX 406 DY 906 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 553 GLYPH absHahTwoDotsAboveFin COMPONENT 1 LOCKED AT  POS DX 400 DY -840 END_POS END_ANCHOR
@@ -2741,8 +2438,6 @@ DEF_ANCHOR "diaA" ON 560 GLYPH absSheenDotBelowFin COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "diaB" ON 560 GLYPH absSheenDotBelowFin COMPONENT 1 LOCKED AT  POS DX 338 DY -607 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 561 GLYPH absSheenRetro1Fin COMPONENT 1 LOCKED AT  POS DX 375 DY 975 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 561 GLYPH absSheenRetro1Fin COMPONENT 1 LOCKED AT  POS DX 350 DY -600 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 562 GLYPH absSheenRetro2Fin COMPONENT 1 LOCKED AT  POS DX 405 DY 855 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 562 GLYPH absSheenRetro2Fin COMPONENT 1 LOCKED AT  POS DX 350 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 563 GLYPH absSeenFourDotsAboveFin COMPONENT 1 LOCKED AT  POS DX 376 DY 564 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 563 GLYPH absSeenFourDotsAboveFin COMPONENT 1 LOCKED AT  POS DX 350 DY -600 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 564 GLYPH absSeenTwoVertAboveFin COMPONENT 1 LOCKED AT  POS DX 363 DY 568 END_POS END_ANCHOR
@@ -2819,10 +2514,10 @@ DEF_ANCHOR "alef" ON 593 GLYPH absKafFin COMPONENT 1 LOCKED AT  POS DX 261 DY 80
 DEF_ANCHOR "diaA" ON 593 GLYPH absKafFin COMPONENT 1 LOCKED AT  POS DX 466 DY 1034 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 593 GLYPH absKafFin COMPONENT 1 LOCKED AT  POS DX 600 DY -300 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 594 GLYPH absKafDotAboveFin COMPONENT 1 LOCKED AT  POS DX 261 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 594 GLYPH absKafDotAboveFin COMPONENT 1 LOCKED AT  POS DX 466 DY 1115 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 594 GLYPH absKafDotAboveFin COMPONENT 1 LOCKED AT  POS DX 478 DY 1140 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 594 GLYPH absKafDotAboveFin COMPONENT 1 LOCKED AT  POS DX 600 DY -300 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 595 GLYPH absNgFin COMPONENT 1 LOCKED AT  POS DX 261 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 595 GLYPH absNgFin COMPONENT 1 LOCKED AT  POS DX 466 DY 1282 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 595 GLYPH absNgFin COMPONENT 1 LOCKED AT  POS DX 415 DY 1269 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 595 GLYPH absNgFin COMPONENT 1 LOCKED AT  POS DX 600 DY -300 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 596 GLYPH absKafThreeDotsBelowFin COMPONENT 1 LOCKED AT  POS DX 261 DY 800 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 596 GLYPH absKafThreeDotsBelowFin COMPONENT 1 LOCKED AT  POS DX 466 DY 1034 END_POS END_ANCHOR
@@ -2942,62 +2637,6 @@ DEF_ANCHOR "diaA" ON 639 GLYPH absHehGoalHamzaAboveFin COMPONENT 1 LOCKED AT  PO
 DEF_ANCHOR "diaB" ON 639 GLYPH absHehGoalHamzaAboveFin COMPONENT 1 LOCKED AT  POS DX 200 DY -250 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 640 GLYPH absTehMarbutaGoalFin COMPONENT 1 LOCKED AT  POS DX 192 DY 790 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 640 GLYPH absTehMarbutaGoalFin COMPONENT 1 LOCKED AT  POS DX 200 DY -250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 705 DY 1448 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 940 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 679 DY 1376 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 43 DY 940 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 654 DY 1530 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 936 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 731 DY -564 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DX 320 DY -171 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DX 43 DY 940 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 726 DY -564 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DX 320 DY -171 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 480 DY 1350 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 624 DY 1654 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 940 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 570 DY 795 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DX 350 DY -135 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DX 51 DY 940 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 648 GLYPH absYehHamzaAboveMed COMPONENT 1 LOCKED AT  POS DX 60 DY 800 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 648 GLYPH absYehHamzaAboveMed COMPONENT 1 LOCKED AT  POS DX 200 DY 900 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 648 GLYPH absYehHamzaAboveMed COMPONENT 1 LOCKED AT  POS DX 153 DY -249 END_POS END_ANCHOR
@@ -3118,20 +2757,11 @@ DEF_ANCHOR "diaB" ON 686 GLYPH absTchehDotAboveMed COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "alef" ON 687 GLYPH absTchehRetro1Med COMPONENT 1 LOCKED AT  POS DX 153 DY 844 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 687 GLYPH absTchehRetro1Med COMPONENT 1 LOCKED AT  POS DX 406 DY 1239 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 687 GLYPH absTchehRetro1Med COMPONENT 1 LOCKED AT  POS DX 461 DY -590 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 688 GLYPH absTchehRetro2Med COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 688 GLYPH absTchehRetro2Med COMPONENT 1 LOCKED AT  POS DX 400 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 688 GLYPH absTchehRetro2Med COMPONENT 1 LOCKED AT  POS DX 466 DY -859 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 689 GLYPH absJeemRetro1Med COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 689 GLYPH absJeemRetro1Med COMPONENT 1 LOCKED AT  POS DX 400 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 689 GLYPH absJeemRetro1Med COMPONENT 1 LOCKED AT  POS DX 470 DY -679 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 690 GLYPH absJeemRetro2Med COMPONENT 1 LOCKED AT  POS DX 157 DY 861 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 690 GLYPH absJeemRetro2Med COMPONENT 1 LOCKED AT  POS DX 414 DY 1239 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 690 GLYPH absJeemRetro2Med COMPONENT 1 LOCKED AT  POS DX 155 DY 847 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 690 GLYPH absJeemRetro2Med COMPONENT 1 LOCKED AT  POS DX 419 DY 1192 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 690 GLYPH absJeemRetro2Med COMPONENT 1 LOCKED AT  POS DX 474 DY -397 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 691 GLYPH absJeemRetro3Med COMPONENT 1 LOCKED AT  POS DX 149 DY 852 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 691 GLYPH absJeemRetro3Med COMPONENT 1 LOCKED AT  POS DX 355 DY 1265 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 691 GLYPH absJeemRetro3Med COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 692 GLYPH absHahTwoDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 692 GLYPH absHahTwoDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 400 DY 750 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 692 GLYPH absHahTwoDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 419 DY 887 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 692 GLYPH absHahTwoDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 693 GLYPH absHahThreeDotsUpwardBelowMed COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 693 GLYPH absHahThreeDotsUpwardBelowMed COMPONENT 1 LOCKED AT  POS DX 400 DY 750 END_POS END_ANCHOR
@@ -3157,9 +2787,6 @@ DEF_ANCHOR "diaB" ON 699 GLYPH absSheenDotBelowMed COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "alef" ON 700 GLYPH absSheenRetro1Med COMPONENT 1 LOCKED AT  POS DX 161 DY 1033 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 700 GLYPH absSheenRetro1Med COMPONENT 1 LOCKED AT  POS DX 367 DY 1410 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 700 GLYPH absSheenRetro1Med COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 701 GLYPH absSheenRetro2Med COMPONENT 1 LOCKED AT  POS DX 153 DY 816 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 701 GLYPH absSheenRetro2Med COMPONENT 1 LOCKED AT  POS DX 376 DY 1222 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 701 GLYPH absSheenRetro2Med COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 702 GLYPH absSeenFourDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 149 DY 667 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 702 GLYPH absSeenFourDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 430 DY 980 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 702 GLYPH absSeenFourDotsAboveMed COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
@@ -3488,18 +3115,9 @@ DEF_ANCHOR "diaB" ON 813 GLYPH absTchehDotAboveIni COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "alef" ON 814 GLYPH absTchehRetro1Ini COMPONENT 1 LOCKED AT  POS DX 145 DY 848 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 814 GLYPH absTchehRetro1Ini COMPONENT 1 LOCKED AT  POS DX 355 DY 1265 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 814 GLYPH absTchehRetro1Ini COMPONENT 1 LOCKED AT  POS DX 432 DY -555 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 815 GLYPH absTchehRetro2Ini COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 815 GLYPH absTchehRetro2Ini COMPONENT 1 LOCKED AT  POS DX 400 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 815 GLYPH absTchehRetro2Ini COMPONENT 1 LOCKED AT  POS DX 423 DY -859 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 816 GLYPH absJeemRetro1Ini COMPONENT 1 LOCKED AT  POS DX 149 DY 684 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 816 GLYPH absJeemRetro1Ini COMPONENT 1 LOCKED AT  POS DX 400 DY 800 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 816 GLYPH absJeemRetro1Ini COMPONENT 1 LOCKED AT  POS DX 402 DY -692 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 817 GLYPH absJeemRetro2Ini COMPONENT 1 LOCKED AT  POS DX 149 DY 836 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 817 GLYPH absJeemRetro2Ini COMPONENT 1 LOCKED AT  POS DX 355 DY 1265 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 817 GLYPH absJeemRetro2Ini COMPONENT 1 LOCKED AT  POS DX 423 DY -376 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 818 GLYPH absJeemRetro3Ini COMPONENT 1 LOCKED AT  POS DX 153 DY 844 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 818 GLYPH absJeemRetro3Ini COMPONENT 1 LOCKED AT  POS DX 355 DY 1265 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 818 GLYPH absJeemRetro3Ini COMPONENT 1 LOCKED AT  POS DX 450 DY -150 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 819 GLYPH absHahTwoDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 141 DY 780 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 819 GLYPH absHahTwoDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 410 DY 949 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 819 GLYPH absHahTwoDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 450 DY -150 END_POS END_ANCHOR
@@ -3527,9 +3145,6 @@ DEF_ANCHOR "diaB" ON 826 GLYPH absSheenDotBelowIni COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "alef" ON 827 GLYPH absSheenRetro1Ini COMPONENT 1 LOCKED AT  POS DX 145 DY 1126 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 827 GLYPH absSheenRetro1Ini COMPONENT 1 LOCKED AT  POS DX 355 DY 1490 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 827 GLYPH absSheenRetro1Ini COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 828 GLYPH absSheenRetro2Ini COMPONENT 1 LOCKED AT  POS DX 145 DY 917 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 828 GLYPH absSheenRetro2Ini COMPONENT 1 LOCKED AT  POS DX 355 DY 1265 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 828 GLYPH absSheenRetro2Ini COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
 DEF_ANCHOR "alef" ON 829 GLYPH absSeenFourDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 149 DY 772 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 829 GLYPH absSeenFourDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 402 DY 983 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 829 GLYPH absSeenFourDotsAboveIni COMPONENT 1 LOCKED AT  POS DX 449 DY -201 END_POS END_ANCHOR
@@ -3732,14 +3347,12 @@ DEF_ANCHOR "MARK_diaA" ON 904 GLYPH absFathatan COMPONENT 1 LOCKED AT  POS DX 12
 DEF_ANCHOR "diaA" ON 904 GLYPH absFathatan COMPONENT 1 LOCKED AT  POS DX 90 DY 1425 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 905 GLYPH absDammatan COMPONENT 1 LOCKED AT  POS DX 180 DY 1005 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 905 GLYPH absDammatan COMPONENT 1 LOCKED AT  POS DX 90 DY 1455 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 906 GLYPH absKasratan COMPONENT 1 LOCKED AT  POS DX 141 DY -560 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 906 GLYPH absKasratan COMPONENT 1 LOCKED AT  POS DX 141 DY -560 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 906 GLYPH absKasratan COMPONENT 1 LOCKED AT  POS DX 165 DY -975 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 907 GLYPH absFatha COMPONENT 1 LOCKED AT  POS DX 120 DY 1020 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 907 GLYPH absFatha COMPONENT 1 LOCKED AT  POS DX 90 DY 1290 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 908 GLYPH absDamma COMPONENT 1 LOCKED AT  POS DX 150 DY 1020 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 908 GLYPH absDamma COMPONENT 1 LOCKED AT  POS DX 105 DY 1515 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 909 GLYPH absKasra COMPONENT 1 LOCKED AT  POS DX 145 DY -560 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 909 GLYPH absKasra COMPONENT 1 LOCKED AT  POS DX 145 DY -560 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 909 GLYPH absKasra COMPONENT 1 LOCKED AT  POS DX 165 DY -810 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 910 GLYPH absShadda COMPONENT 1 LOCKED AT  POS DX 195 DY 960 END_POS END_ANCHOR
@@ -3750,10 +3363,8 @@ DEF_ANCHOR "MARK_diaA" ON 912 GLYPH absMaddahAbove COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "diaA" ON 912 GLYPH absMaddahAbove COMPONENT 1 LOCKED AT  POS DX 90 DY 1305 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 913 GLYPH absHamzaAbove COMPONENT 1 LOCKED AT  POS DX 120 DY 1020 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 913 GLYPH absHamzaAbove COMPONENT 1 LOCKED AT  POS DX 60 DY 1410 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 914 GLYPH absHamzaBelow COMPONENT 1 LOCKED AT  POS DX 105 DY -120 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 914 GLYPH absHamzaBelow COMPONENT 1 LOCKED AT  POS DX 105 DY -120 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 914 GLYPH absHamzaBelow COMPONENT 1 LOCKED AT  POS DX 135 DY -450 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 915 GLYPH absSubscriptAlef COMPONENT 1 LOCKED AT  POS DX 92 DY -18 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 915 GLYPH absSubscriptAlef COMPONENT 1 LOCKED AT  POS DX 92 DY -18 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 915 GLYPH absSubscriptAlef COMPONENT 1 LOCKED AT  POS DX 92 DY -591 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 916 GLYPH absUltaPesh COMPONENT 1 LOCKED AT  POS DX 120 DY 930 END_POS END_ANCHOR
@@ -3766,7 +3377,6 @@ DEF_ANCHOR "MARK_diaA" ON 919 GLYPH absVowelSmallV COMPONENT 1 LOCKED AT  POS DX
 DEF_ANCHOR "diaA" ON 919 GLYPH absVowelSmallV COMPONENT 1 LOCKED AT  POS DX 197 DY 1275 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 920 GLYPH absVowelInvSmallV COMPONENT 1 LOCKED AT  POS DX 207 DY 949 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 920 GLYPH absVowelInvSmallV COMPONENT 1 LOCKED AT  POS DX 209 DY 1271 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 921 GLYPH absVowelDotBelow COMPONENT 1 LOCKED AT  POS DX 164 DY 203 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 921 GLYPH absVowelDotBelow COMPONENT 1 LOCKED AT  POS DX 164 DY 203 END_POS END_ANCHOR
 DEF_ANCHOR "diaB" ON 921 GLYPH absVowelDotBelow COMPONENT 1 LOCKED AT  POS DX 164 DY -211 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 922 GLYPH absReversedDamma COMPONENT 1 LOCKED AT  POS DX 150 DY 1020 END_POS END_ANCHOR
@@ -3790,16 +3400,13 @@ DEF_ANCHOR "MARK_diaA" ON 934 GLYPH absSmallHighUprightRectangularZero COMPONENT
 DEF_ANCHOR "MARK_diaA" ON 935 GLYPH absSmallHighDotlessHeadOfKhah COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 935 GLYPH absSmallHighDotlessHeadOfKhah COMPONENT 1 LOCKED AT  POS DX -15 DY 1270 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 936 GLYPH absSmallHighMeemIsolatedForm COMPONENT 1 LOCKED AT  POS DX -15 DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 937 GLYPH absSmallLowSeen COMPONENT 1 LOCKED AT  POS DX 100 DY -150 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 937 GLYPH absSmallLowSeen COMPONENT 1 LOCKED AT  POS DY -150 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 938 GLYPH absSmallHighMadda COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 939 GLYPH absSmallHighYeh COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 940 GLYPH absSmallHighNoon COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 941 GLYPH absEmptyCentreLowStop COMPONENT 1 LOCKED AT  POS DY -150 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 941 GLYPH absEmptyCentreLowStop COMPONENT 1 LOCKED AT  POS DY -200 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 942 GLYPH absEmptyCentreHighStop COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 943 GLYPH absRoundedHighStopFilledCentre COMPONENT 1 LOCKED AT  POS DX -15 DY 915 END_POS END_ANCHOR
-DEF_ANCHOR "MARK_dia2B" ON 944 GLYPH absSmallLowMeem COMPONENT 1 LOCKED AT  POS DY -150 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaB" ON 944 GLYPH absSmallLowMeem COMPONENT 1 LOCKED AT  POS DY -280 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 945 GLYPH absNumberSign COMPONENT 1 LOCKED AT  POS DX 425 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 946 GLYPH absYearSign COMPONENT 1 LOCKED AT  POS DX 1275 END_POS END_ANCHOR
@@ -3990,8 +3597,180 @@ DEF_ANCHOR "MARK_diaA" ON 1114 GLYPH absSukun.downOpen COMPONENT 1 LOCKED AT  PO
 DEF_ANCHOR "diaA" ON 1114 GLYPH absSukun.downOpen COMPONENT 1 LOCKED AT  POS DX 160 DY 1320 END_POS END_ANCHOR
 DEF_ANCHOR "MARK_diaA" ON 1115 GLYPH absDammatan.sixNine COMPONENT 1 LOCKED AT  POS DX 150 DY 1020 END_POS END_ANCHOR
 DEF_ANCHOR "diaA" ON 1115 GLYPH absDammatan.sixNine COMPONENT 1 LOCKED AT  POS DY 1540 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1116 GLYPH absAutoKashida COMPONENT 1 LOCKED AT  POS DX 150 DY 790 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1116 GLYPH absAutoKashida COMPONENT 1 LOCKED AT  POS DX 111 DY -188 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 445 GLYPH absLamAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 445 GLYPH absLamAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 667 DY 1594 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 446 GLYPH absLamSmallVAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 446 GLYPH absLamSmallVAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 658 DY 1560 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 447 GLYPH absLamDotAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 447 GLYPH absLamDotAboveAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 615 DY 1722 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 448 GLYPH absLamThreeDotsAboveAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 600 DY 825 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 1 LOCKED AT  POS DX 628 DY -555 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 449 GLYPH absLamThreeDotsBelowAlef COMPONENT 2 LOCKED AT  POS DX 256 DY -145 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 480 DY 1455 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 585 DY 1786 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 450 GLYPH absLamRetroAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 450 GLYPH absLamRetroAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 540 DY 930 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 714 DY 1278 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 451 GLYPH absLamBarAlef COMPONENT 1 LOCKED AT  POS DX 600 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 451 GLYPH absLamBarAlef COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 641 GLYPH absLamAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 641 GLYPH absLamAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 705 DY 1448 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 940 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 642 GLYPH absLamSmallVAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 679 DY 1376 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 43 DY 940 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 643 GLYPH absLamDotAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 654 DY 1530 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 936 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 644 GLYPH absLamThreeDotsAboveAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 600 DY 700 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DX 43 DY 940 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 1 LOCKED AT  POS DX 726 DY -564 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 645 GLYPH absLamThreeDotsBelowAlefFin COMPONENT 2 LOCKED AT  POS DX 320 DY -171 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 480 DY 1350 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 624 DY 1654 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DX 47 DY 940 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 646 GLYPH absLamRetroAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 646 GLYPH absLamRetroAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 570 DY 795 END_POS END_ANCHOR
+DEF_ANCHOR "alef" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 720 DY 1035 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DX 51 DY 940 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 647 GLYPH absLamBarAlefFin COMPONENT 1 LOCKED AT  POS DX 750 DY -100 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 647 GLYPH absLamBarAlefFin COMPONENT 2 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 1153 GLYPH absEndOfAyah.2 COMPONENT 1 LOCKED AT  POS DX 245 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 1154 GLYPH absEndOfAyah.3 COMPONENT 1 LOCKED AT  POS DX 206 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 1155 GLYPH absEndOfAyah.alt.2 COMPONENT 1 LOCKED AT  POS DX 245 END_POS END_ANCHOR
@@ -4006,142 +3785,12 @@ DEF_ANCHOR "digit" ON 1163 GLYPH absYearSign.4 COMPONENT 1 LOCKED AT  POS DX 600
 DEF_ANCHOR "digit" ON 1164 GLYPH absFootnoteSign.2 COMPONENT 1 LOCKED AT  POS DX 475 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 1165 GLYPH absPageSign.2 COMPONENT 1 LOCKED AT  POS DX 75 END_POS END_ANCHOR
 DEF_ANCHOR "digit" ON 1166 GLYPH absPageSign.3 COMPONENT 1 LOCKED AT  POS DX 75 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1167 GLYPH absLamIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 154 DY 1569 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1168 GLYPH absLamSmallVIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 1540 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1169 GLYPH absLamDotAboveIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 125 DY 1700 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1170 GLYPH absLamThreeDotsAboveIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY 825 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS DX 121 DY -568 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1171 GLYPH absLamThreeDotsBelowIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX -55 DY 1514 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX 73 DY 1862 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1172 GLYPH absLamRetroIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 66 DY 931 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 179 DY 1278 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS DX 65 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1173 GLYPH absLamBarIni.preAlef COMPONENT 1 LOCKED AT  POS END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX -26 DY 1437 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1459 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1174 GLYPH absAlefMaddaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX -128 DY 1500 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1600 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1175 GLYPH absAlefHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 455 DY -462 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 455 DY -462 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1176 GLYPH absAlefHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1177 GLYPH absAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX -136 DY 1423 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1600 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1178 GLYPH absAlefWavyHamzaAboveFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1155 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 462 DY -484 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1218 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 462 DY -484 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1179 GLYPH absAlefWavyHamzaBelowFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX -40 DY 1300 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 18 DY 1551 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1180 GLYPH absHighHamzaAlefFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DX -100 DY 1400 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 200 DY -136 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DY 1500 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1181 GLYPH absAlefWaslaFin.postLamIni COMPONENT 1 LOCKED AT  POS DX 535 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1182 GLYPH absLamMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 235 DY 1400 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1183 GLYPH absLamSmallVMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 216 DY 1349 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1184 GLYPH absLamDotAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 18 DY 1239 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 183 DY 1532 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1185 GLYPH absLamThreeDotsAboveMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 700 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 253 DY -572 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1186 GLYPH absLamThreeDotsBelowMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 15 DY 1360 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 143 DY 1661 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1187 GLYPH absLamRetroMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 100 DY 821 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 220 DY 1035 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 250 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "exit" ON 1188 GLYPH absLamBarMed.preAlef COMPONENT 1 LOCKED AT  POS DX 150 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX -84 DY 1166 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 33 DY 1173 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1189 GLYPH absAlefMaddaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX -100 DY 1280 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1335 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1190 GLYPH absAlefHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 455 DY -484 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 455 DY -484 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1191 GLYPH absAlefHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1192 GLYPH absAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX -100 DY 1200 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 26 DY 1316 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1193 GLYPH absAlefWavyHamzaAboveFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DY 1020 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 480 DY -521 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 47 DY 949 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 480 DY -521 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1194 GLYPH absAlefWavyHamzaBelowFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX -40 DY 1200 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 33 DY 1236 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1195 GLYPH absHighHamzaAlefFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
-DEF_ANCHOR "alef" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX -84 DY 1159 END_POS END_ANCHOR
-DEF_ANCHOR "dia2B" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 300 DY -154 END_POS END_ANCHOR
-DEF_ANCHOR "diaA" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 37 DY 1243 END_POS END_ANCHOR
-DEF_ANCHOR "diaB" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 420 DY -100 END_POS END_ANCHOR
-DEF_ANCHOR "entry" ON 1196 GLYPH absAlefWaslaFin.postLamMed COMPONENT 1 LOCKED AT  POS DX 650 DY 250 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 89 GLYPH u COMPONENT 1 AT  POS DX 720 DY 975 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 89 GLYPH u COMPONENT 2 AT  POS DX 360 DY 945 END_POS END_ANCHOR
+DEF_ANCHOR "diaA" ON 89 GLYPH u COMPONENT 3 AT  POS DX 45 DY 915 END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 89 GLYPH u COMPONENT 1 AT  POS END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 89 GLYPH u COMPONENT 2 AT  POS END_POS END_ANCHOR
+DEF_ANCHOR "diaB" ON 89 GLYPH u COMPONENT 3 AT  POS END_POS END_ANCHOR
 GRID_PPEM 20
 PRESENTATION_PPEM 72
 PPOSITIONING_PPEM 144

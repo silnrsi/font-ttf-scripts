@@ -29,7 +29,7 @@ elsif (defined $font->{'font'}{'TSIV'})
 { $volt_text = $font->{'font'}{'TSIV'}->read->{' dat'}; }
 else
 { die "No VOLT table in the font, nothing to do"; }
-$name = $font->{'font'}{'name'}->read->find_name(2);
+$name = $font->{'font'}{'name'}->read->find_name(4);
 $upem = $font->{'font'}{'head'}{'unitsPerEm'};
 $font->{'font'}{'post'}->read;
 $res = $font->parse_volt($volt_text);
@@ -51,9 +51,15 @@ for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
         {
             $n = $p;
             $n =~ s/^MARK_/_/o;
-            print "    <point type='$n'>\n";
-            print "        <location x='$glyph->{'anchors'}{$p}{'pos'}{'x'}[0]' y='$glyph->{'anchors'}{$p}{'pos'}{'y'}[0]'/>\n";
-            print "    </point>\n";
+            $numcomp = $#{$glyph->{'anchors'}{$p}};
+            for $c (0 .. $numcomp)
+            {    
+                next unless defined $glyph->{'anchors'}{$p}[$c];
+                $n =~ s/\d*$/$c+1/e if $numcomp > 0;
+                print "    <point type='$n'>\n";
+                printf "        <location x='%d' y='%d'/>\n", $glyph->{'anchors'}{$p}[$c]{'pos'}{'x'}[0], $glyph->{'anchors'}{$p}[$c]{'pos'}{'y'}[0];
+                print "    </point>\n";
+            }
         }
         print "    <property name='VOLT_type' value='$glyph->{'type'}'/>\n" if ($glyph->{'type'});
         print "</glyph>\n";

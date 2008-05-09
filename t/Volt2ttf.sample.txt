@@ -7,6 +7,7 @@ Single Adjust: XZX 	(Z should be raised)
 Pair adjust: AW	(A‌W should be kerned)
 Cursive attach: بلا لا	(not sure how to test)
 Mark to base: بَ اَ  	(Mark should be positioned)
+Mark to ligature: لَاُ لِا لاِ لِاِ	
 Mark to mark:  بَۙ اَۙ	(Both marks should be positioned)
 Chained context:  ABABCBC ADADCDC  (middle B should be raised; middle D lowered)
 

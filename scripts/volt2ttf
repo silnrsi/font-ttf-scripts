@@ -531,9 +531,9 @@ sub add_gpos_lookup
                     'ACTION_TYPE' => 'e',
                     'COVERAGE' => $cover};
             foreach $g (@{$self->or_context_glyphs(@{$s->{'enters'}})})
-            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[0] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'entry'}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[0] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'entry'}[0]); }
             foreach $g (@{$self->or_context_glyphs(@{$s->{'exits'}})})
-            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'exit'}); }
+            { $sub->{'RULES'}[$cover->add($g)][0]{'ACTION'}[1] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{'exit'}[0]); }
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
             $contlength = 2;
         }
@@ -541,24 +541,38 @@ sub add_gpos_lookup
         {
             my ($basec) = Font::TTF::Coverage->new(1);
             my ($markc) = Font::TTF::Coverage->new(1);
-            my ($acount, %anchors, @marks, @rules, $ismark);
+            my ($acount, %anchors, @marks, @rules, $type);
             foreach $c (@{$s->{'to'}})
             {
                 $anchors{$c->[1]} = $acount++ unless (defined $anchors{$c->[1]});
                 foreach $g (@{$self->scon_glyphs($c->[0])})
-                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'anchors'}{"MARK_$c->[1]"})]; }
+                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'anchors'}{"MARK_$c->[1]"}[0])]; }
             }
             foreach $g (sort {$a <=> $b} @{$self->or_context_glyphs(@{$s->{'context'}})})
             {
                 my ($i) = $basec->add($g);
-                $ismark = ($dat->{'glyphs'}[$g]{'type'} eq 'MARK') ? 2 : 1 unless ($ismark);
+                my $thistype = 
+                    ($dat->{'glyphs'}[$g]{'type'} eq 'MARK') ? 6 :      # mark-to-mark
+                    ($dat->{'glyphs'}[$g]{'type'} eq 'LIGATURE') ? 5 :  # mark-to-ligature
+                    4;                                                  # mark-to-base
+                if ($type)
+                { die "Mix of base character types in lookup $l->{'id'} at glyph $dat->{'glyphs'}[$g]{'name'}\n" if $type != $thistype; }
+                else
+                { $type = $thistype; }
+                    
                 foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
                 {
                     if (defined $dat->{'glyphs'}[$g]{'anchors'}{$k})
-                    { $rules[$i][0]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}); }
+                    { 
+                        for my $comp (0 .. $#{$dat->{'glyphs'}[$g]{'anchors'}{$k}})
+                        { 
+                            if (defined $dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp])
+                            { $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp]); }
+                        }
+                    }
                 }
             }
-            $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = $ismark == 2 ? '6' : '4';
+            $font->{'GPOS'}{'LOOKUP'}[$index]{'TYPE'} = $type;
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, {
                     'FORMAT' => 1,
                     'COVERAGE' => $basec,
@@ -630,7 +644,7 @@ sub context_glyphs
 Takes a context list and returns a flattened array of glyph ids, duplicates removed
 and sorted in order of appearance in the context list. (If a glyph appears multiple
 times, the earliest one is kept).  [This is very un-VOLTish since order within a group
-doesn't matter. Need to investigate. -bh]
+does not matter. Need to investigate. -bh]
 
 =end comment
 

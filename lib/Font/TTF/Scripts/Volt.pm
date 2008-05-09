@@ -38,12 +38,12 @@ Similar to the glyphs array from AP but adds a few Volt specific sub values
 
 =item uni
 
-An optional array of Unicode values (as decimal integers). Note that, unlike the AP structure
-returned, this is an array, not a scalar.
+A possibly empty array of Unicode scalar values (as decimal integers). 
 
 =item type
 
-MARK, BASE, etc.
+MARK, BASE (in VOLT UI this is the SIMPLE type), LIGATURE or COMPONENT. 
+This element will not be defined if the VOLT type is UNASSIGNED.
 
 =item component_num
 
@@ -55,7 +55,8 @@ Volt name in the source
 
 =item anchors
 
-An optional hash by anchor name that contains a sub hash with the following elements:
+An optional hash by anchor name that contains an array of anchor definitions, one anchor for each ligature component 
+(non-ligature glyphs have a single element in the array). Each anchor definition is a hash including: 
 
 =over 4
 
@@ -66,10 +67,6 @@ A C<pos> type containing the actual position of the anchor point
 =item locked
 
 Contains LOCKED if the anchor point is locked
-
-=item component
-
-Contains the component number for a ligature or 1 normally.
 
 =back
 
@@ -320,6 +317,28 @@ $VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
 # $VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
 # *read_font = \&Font::TTF::Scripts::AP::read_font;
 
+=head2 $ap = Font::TTF::Scripts::Volt->read_font ($ttf_file, $ap_file, %opts)
+
+Additional options available to this function include
+
+=over 4
+
+=item -point2anchor
+
+Reference to a function that parses an Attachment Point name and returns a list considting of
+a Volt anchor name and component number. The components should be numbered starting
+from 1. Special conditions that may be returned:
+
+If the return value is undef, or if the anchor name is undef, then this attachment point is ignored.
+
+If the returned component number is undef, 1 will be assumed.
+
+If C<-point2anchor> is not provided, a default function (see below) is used.
+
+=back
+
+=cut
+
 sub read_font
 {
     my ($self) = Font::TTF::Scripts::AP::read_font(@_);
@@ -553,20 +572,22 @@ sub out_volt_lookups
 sub out_volt_anchors
 {
     my ($self) = @_;
-    my ($res, $glyph, $k, $i);
+    my ($res, $glyph, $k, $i, $c);
     
     foreach $glyph (@{$self->{'glyphs'}})
     {
         $k = $glyph->{'name'};
         foreach $i (sort keys %{$glyph->{'anchors'}})
         {
-            $glyph->{'anchors'}{$i}{'component'} ||= 1;
-            $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT $glyph->{'anchors'}{$i}{'component'} " .
-                ($glyph->{'anchors'}{$i}{'locked'} ? 'LOCKED ' : '') .
-                "AT POS " .
-                ($glyph->{'anchors'}{$i}{'pos'}{'x'}[0] ? "DX $glyph->{'anchors'}{$i}{'pos'}{'x'}[0] " : '') .
-                ($glyph->{'anchors'}{$i}{'pos'}{'y'}[0] ? "DY $glyph->{'anchors'}{$i}{'pos'}{'y'}[0] " : '') .
-                "END_POS END_ANCHOR\n";
+            foreach $c (0 .. $#{$glyph->{'anchors'}{$i}})
+            {
+                $res .= "DEF_ANCHOR \"$i\" ON $glyph->{'gnum'} GLYPH $k COMPONENT " . ($c+1) . ' ' .
+                    ($glyph->{'anchors'}{$i}[$c]{'locked'} ? 'LOCKED ' : '') .
+                    "AT POS " .
+                    ($glyph->{'anchors'}{$i}[$c]{'pos'}{'x'}[0] ? "DX $glyph->{'anchors'}{$i}[$c]{'pos'}{'x'}[0] " : '') .
+                    ($glyph->{'anchors'}{$i}[$c]{'pos'}{'y'}[0] ? "DY $glyph->{'anchors'}{$i}[$c]{'pos'}{'y'}[0] " : '') .
+                    "END_POS END_ANCHOR\n";
+            }
         }
     }
     $res;
@@ -644,20 +665,15 @@ sub out_pos
     $res .= " END_POS";
     $res;
 }
+
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
 
     if (defined $glyph->{'props'}{'VOLT_id'})
     { return $glyph->{'props'}{'VOLT_id'}; }
-    else
-    { 
-        $gname =~ s{/.*$}{}o;
-        $gname =~ s/[;\-\"\'&$\#\/]//og;
-    }
-    if ($gname eq '.notdef')
-    { $gname = "glyph$glyph->{'gnum'}"; }
-    $gname;
+    $gname =~ s/[;\-\"\'&$\#]//og;    # Some characters unacceptable to VOLT
+    $self->SUPER::make_name($gname, $uni, $glyph);
 }
 
 sub make_point
@@ -686,7 +702,7 @@ $volt_grammar = <<'EOG';
 
     glyph : 'DEF_GLYPH' <commit> qid 'ID' num glyph_unicode(?) glyph_type(?) glyph_component(?) 'END_GLYPH'
             { 
-                $dat{'glyphs'}[$item[5]] = {'uni' => $item[6][0], 'type' => $item[7][0], 'name' => $item[3], 'component_num' => $item[8][0], 'gnum' => $item[5]};
+                $dat{'glyphs'}[$item[5]] = {'uni' => $item[6], 'type' => $item[7], 'name' => $item[3], 'component_num' => $item[8][0], 'gnum' => $item[5]};
                 $dat{'glyph_names'}{$item[3]} = $item[5];
                 1;
             }
@@ -780,7 +796,7 @@ $volt_grammar = <<'EOG';
             { $return = [$item[1], $item[3]]; }
 
     anchor : 'DEF_ANCHOR' <commit> qid 'ON' num 'GLYPH' gid 'COMPONENT' num anchor_locked(?) 'AT' pos 'END_ANCHOR'
-            { $dat{'glyphs'}[$item[5]]{'anchors'}{$item[3]} = {'pos' => $item[-2], 'component' => $item[9], 'locked' => $item[10][0]}; 1; }
+            { $dat{'glyphs'}[$item[5]]{'anchors'}{$item[3]}[$item[9]-1] = {'pos' => $item[-2], 'locked' => $item[10][0]}; 1; }
     
     anchor_locked : 'LOCKED'
 
@@ -912,8 +928,8 @@ sub parse_volt
                 'component_num' => $comp,
                 'type' => $type};
         if ($uni_list)
-        { $res->{'glyphs'}[$gnum]{'uni'} = [map {s/^U+//oi; hex($_);} split(/\s*,\s*/, $uni_list)]; }
-        else
+        { $res->{'glyphs'}[$gnum]{'uni'} = [map {s/^U\+//oi; hex($_)} split(/\s*,\s*/, $uni_list)]; }
+        elsif ($uni)
         { $res->{'glyphs'}[$gnum]{'uni'} = [$uni]; }
         $res->{'glyph_names'}{$name} = $gnum;
     }
@@ -1176,7 +1192,7 @@ sub parse_volt
     }
 
 #    anchor : 'DEF_ANCHOR' <commit> qid 'ON' num 'GLYPH' gid 'COMPONENT' num anchor_locked(?) 'AT' pos 'END_ANCHOR'
-#            { $dat{'glyphs'}[$item[5]]{'anchors'}{$item[3]} = {'pos' => $item[-2], 'component' => $item[9], 'locked' => $item[10][0]}; 1; }
+#            { $dat{'glyphs'}[$item[5]]{'anchors'}{$item[3]}[$item[9]] = {'pos' => $item[-2], 'locked' => $item[10][0]}; 1; }
 #    
 #    anchor_locked : 'LOCKED'
     while ($str =~ m/\GDEF_ANCHOR\s+"([^"]+)"\s+ON\s+(\d+)\s+GLYPH\s+(?:(?:"([^"]+)")|(\S+))\s+COMPONENT\s+(\d+)\s+(?:(LOCKED)\s+)?AT\s+/ogc)
@@ -1188,7 +1204,7 @@ sub parse_volt
         { die "Expected POS in ANCHOR $name on $gname, found: " . substr($str, pos($str), 20); }
         unless ($str =~ m/\GEND_ANCHOR\s+/ogc)
         { die "Expected END_ANCHOR in ANCHOR $name on $gname, found: " . substr($str, pos($str), 20); }
-        $res->{'glyphs'}[$gnum]{'anchors'}{$name} = {'pos' => $pos, 'component' => $comp, 'locked' => $locked};
+        $res->{'glyphs'}[$gnum]{'anchors'}{$name}[$comp-1] = {'pos' => $pos, 'locked' => $locked};
     }
 
 #    info : i_grid(?) i_pres(?) i_ppos(?) i_cmap(s?)
@@ -1387,7 +1403,7 @@ sub align_glyphs
                 {
                     print STDERR "Can't find alignment for glyph $s->[1]\n";
                     $self->{'error'} = 1;
-                }
+            }
             }
     # make it a deletion (i.e. in old but not in new)
         }
@@ -1415,7 +1431,7 @@ sub align_glyphs
 sub merge_volt
 {
     my ($self, $data, $map) = @_;
-    my ($g, $k);
+    my ($g, $k, $c);
 
     $self->{'map'} = $map;
     foreach (qw(groups lookups scripts info))
@@ -1426,26 +1442,29 @@ sub merge_volt
         my ($n) = $self->{'glyphs'}[$map->[$g->{'gnum'}]];
         next unless defined $n;
 
-        foreach (qw(component_num type name))
-        { $n->{$_} ||= $g->{$_}; }
+        foreach (qw(component_num type name uni))
+        { $n->{$_} ||= $g->{$_} if defined $g->{$_}; }
         
         foreach $k (keys %{$g->{'anchors'}})
         {
-            my ($p) = $g->{'anchors'}{$k};
-            my ($np) = $n->{'anchors'}{$k};
-
-            if (defined $np)
+            foreach $c (0 .. $#{$g->{'anchors'}{$k}})
             {
-                foreach (qw(component locked pos))
-                { $np->{$_} ||= $p->{$_}; }
-                if ($np->{'pos'})
+                my ($p) = $g->{'anchors'}{$k}[$c];
+                my ($np) = $n->{'anchors'}{$k}[$c];
+    
+                if (defined $np)
                 {
-                    $np->{'pos'}{'x'} = $np->{'x'};
-                    $np->{'pos'}{'y'} = $np->{'y'};
+                    foreach (qw(locked pos))
+                    { $np->{$_} ||= $p->{$_}; }
+                    if ($np->{'pos'})
+                    {
+                        $np->{'pos'}{'x'} = $np->{'x'};
+                        $np->{'pos'}{'y'} = $np->{'y'};
+                    }
                 }
+                else
+                { $n->{'anchors'}{$k}[$c] = $p; }
             }
-            else
-            { $n->{'anchors'}{$k} = $p; }
         }
     }
 
@@ -1628,20 +1647,44 @@ Convert all attachment points in $fv into Volt C<anchors>
 sub make_anchors
 {
     my ($self) = @_;
-    my ($g, $p, $k);
+    my ($g, $p);
 
+    my $filter = &{defined $self->{'opts'}{'-point2anchor'} ? $self->{'opts'}{'-point2anchor'} : \&point2anchor};
+    
     foreach $g (@{$self->{'glyphs'}})
     {
         if (defined $g->{'points'})
-        {
+        {    
             foreach $p (keys %{$g->{'points'}})
             {
-                $k = ($p =~ m/^_/o) ? "MARK$p" : $p;
-                $g->{'anchors'}{$k}{'pos'}{'x'}[0] = $g->{'points'}{$p}{'x'};
-                $g->{'anchors'}{$k}{'pos'}{'y'}[0] = $g->{'points'}{$p}{'y'};
+                my ($name, $comp) = &{$filter}($p);
+                next unless $name;
+                $comp ||= 1;
+                $g->{'anchors'}{$name}[$comp]{'pos'}{'x'}[0] = $g->{'points'}{$p}{'x'};
+                $g->{'anchors'}{$name}[$comp]{'pos'}{'y'}[0] = $g->{'points'}{$p}{'y'};
             }
         }
     }
+}
+
+=head2 point2anchor
+
+This function, used if C<-point2anchor> option isn't provided, peels off any digits at the 
+end of the supplied Attachment Point name and uses them for the component. Anchor names
+starting with "_" are altered to start with "MARK_" instead.
+
+NB: This function is not an object method, and it can be overridden by setting the C<-point2anchor>
+option of C<read_font>.
+
+=cut
+
+sub point2anchor
+{
+    my $name = shift;
+    $name =~ /^(.*?)(\d*)$/o;
+    return undef unless $1;
+    $name = ($1 =~ m/^_/o) ? "MARK$1" : $1;
+    return ($name, $2);
 }
 
 1;
