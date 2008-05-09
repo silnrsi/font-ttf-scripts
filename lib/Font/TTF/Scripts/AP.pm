@@ -32,7 +32,7 @@ An array of references to glyph data structures, indexed by glyphID. Stucture el
 
 =item uni
 
-Unicode scalar value, if any, as specified in the APDB. (decimal integer)
+Array of Unicode scalar values (decimal integers), if any, that map from cmap to this glyph. 
 
 =item gnum
 
@@ -98,6 +98,10 @@ comma separated list of bounding box coordinates, i.e., C<x1, y1, x2, y2>
 =item uni
 
 Unicode scalar value, if any, of the component. (decimal integer)
+
+=item line
+
+Line number in APDB where this component is defined.
 
 =back
 
@@ -345,7 +349,7 @@ sub read_font
 
         } elsif ($tag eq 'compound')
         {
-            my $component = {%attrs};
+            my $component = {%attrs, line => $xml->current_line};
             $component->{'uni'} = [hex($attrs{'UID'})] if defined $attrs{'UID'};
             push @{$cur_glyph->{'components'}}, $component;
         } elsif ($tag eq 'point')
@@ -633,7 +637,7 @@ sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
     $gname =~ s{/.*$}{}o;           # strip alternates
-    $gname = sprintf("u%04x", $uni) if ($gname eq '.notdef');
+    $gname = defined $uni ? sprintf("u%04x", $uni->[0]) : "glyph$glyph->{'gnum'}" if $gname eq '.notdef';
     $gname;
 }
 
