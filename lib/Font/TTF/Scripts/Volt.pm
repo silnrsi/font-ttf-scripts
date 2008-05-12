@@ -384,13 +384,21 @@ sub out_volt_glyphs
             elsif (scalar @{$g->{'uni'}} == 1)
             { $res .= " UNICODE $g->{'uni'}[0]"; }
         }
+
+        # Notes about glyph type calculation:
+        # 1) If the AP database entry for a specific glyph contains a type
+        #    property then this has priority. Note that there are two sources 
+        #    for this property in the AP: The xml could include the <property> 
+        #    element, or the property could be set to MARK because of an 
+        #    attachment point whose name starts with '_'.
+        # 2) Any type information obtained from merge_volt takes next
+        #    priority.
+        # 3) Finally, if there are any anchors at all, we guess BASE or LIGATURE
+        #    as determined by the number of components.
         
-        # if (defined $g->{'props'}{'type'})
-        # { $type = $g->{'props'}{'type'} || $g->{'type'}; }
-        # elsif (defined $g->{'anchors'})
-        # { $type = $g->{'type'} || 'BASE'; }        
-        $type = $g->{'props'}{'type'} || $g->{'type'};
-        $type ||= 'BASE' if defined $g->{'anchors'};
+        $type = $g->{'props'}{'type'} 
+             || $g->{'type'}
+             || ($g->{'component_num'} > 1 ? 'LIGATURE' : 'BASE') if defined $g->{'anchors'};
         
         $res .= " TYPE $type" if ($type);
         $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});
