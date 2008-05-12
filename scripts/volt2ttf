@@ -50,6 +50,8 @@ if ($opts{'d'} || $DEBUG)
     print Dumper($if->{'voltdat'});
 }
 
+die $if->{'WARNINGS'} if $if->{'cWARNINGS'};
+
 package Font::TTF::Scripts::Volt;
 
 use Font::TTF::Coverage;
@@ -556,7 +558,7 @@ sub add_gpos_lookup
                     ($dat->{'glyphs'}[$g]{'type'} eq 'LIGATURE') ? 5 :  # mark-to-ligature
                     4;                                                  # mark-to-base
                 if ($type)
-                { die "Mix of base character types in lookup $l->{'id'} at glyph $dat->{'glyphs'}[$g]{'name'}\n" if $type != $thistype; }
+                { $self->error("Mix of base character types in lookup $l->{'id'} at glyph $dat->{'glyphs'}[$g]{'name'}\n") if $type != $thistype; }
                 else
                 { $type = $thistype; }
                     
