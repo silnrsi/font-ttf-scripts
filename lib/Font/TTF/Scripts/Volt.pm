@@ -1649,7 +1649,7 @@ sub make_anchors
     my ($self) = @_;
     my ($g, $p);
 
-    my $filter = &{defined $self->{'opts'}{'-point2anchor'} ? $self->{'opts'}{'-point2anchor'} : \&point2anchor};
+    my $filter = defined $self->{'opts'}{'-point2anchor'} ? $self->{'opts'}{'-point2anchor'} : \&point2anchor;
     
     foreach $g (@{$self->{'glyphs'}})
     {
