@@ -282,7 +282,7 @@ sub read_font
                 }
                 else
                 {	
-                	$self->error($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") ;
+                	$self->APerror($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") ;
                 }
                 $cur_glyph->{'uni'} = [$uni];
                 # delete $attrs{'UID'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
@@ -299,24 +299,24 @@ sub read_font
                 }
 				if (defined $pg)
 				{
-                	$self->error($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
+                	$self->APerror($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
 	                        if (defined $ug && $pg != $ug);
 	                $cur_glyph->{'gnum'} ||= $pg;
 	            }
                 else
                 {
-                	$self->error($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") ;
+                	$self->APerror($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") ;
                 }
                 # delete $attrs{'PSName'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
             if (defined $attrs{'GID'})
             {
                 $ig = $attrs{'GID'};
-                $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of Unicode ID: $attrs{'UID'}")
+                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of Unicode ID: $attrs{'UID'}")
                         if (defined $ug && $ug != $ig);
-                $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
+                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
                         if (defined $pg && $pg != $ig);
-                $self->error($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} is >= number of glyphs in font ($numg)")
+                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} is >= number of glyphs in font ($numg)")
                         if ($ig < 0 || $ig >= $numg);
                 $cur_glyph->{'gnum'} ||= $ig;
                 # delete $attrs{'GID'}; # Added in MH's version; v0.04: now believed un-needed and un-wanted.
@@ -336,7 +336,7 @@ sub read_font
             }
             elsif ($opts{'-knownemptyglyphs'})
             {
-                $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+                $self->APerror($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
             }
 
             # MH's code includes the following two lines, but these are redundant with 
@@ -366,12 +366,12 @@ sub read_font
             my ($cont) = $attrs{'num'};
             my ($g) = $cur_glyph->{'glyph'} || return;
 
-            $self->error($xml, $cur_glyph, $cur_pt, "Specified contour of $cont different from calculated contour of $cur_pt->{'cont'}")
+            $self->APerror($xml, $cur_glyph, $cur_pt, "Specified contour of $cont different from calculated contour of $cur_pt->{'cont'}")
                     if (defined $cur_pt->{'cont'} && $cur_pt->{'cont'} != $attrs{'num'});
 
             if (($cont == 0 && $g->{'endPoints'}[0] != 0)
                 || ($cont > 0 && $g->{'endPoints'}[$cont-1] + 1 != $g->{'endPoints'}[$cont]))
-            { $self->error($xml, $cur_glyph, $cur_pt, "Contour $cont not a single point path"); }
+            { $self->APerror($xml, $cur_glyph, $cur_pt, "Contour $cont not a single point path"); }
             else
             { $cur_pt->{'cont'} = $cont; }
 
@@ -384,7 +384,7 @@ sub read_font
             my ($g) = $cur_glyph->{'glyph'};
             my ($cont, $i);
 
-            $self->error($xml, $cur_glyph, $cur_pt, "Specified location of ($x, $y) different from calculated location ($cur_pt->{'x'}, $cur_pt->{'y'})")
+            $self->APerror($xml, $cur_glyph, $cur_pt, "Specified location of ($x, $y) different from calculated location ($cur_pt->{'x'}, $cur_pt->{'y'})")
                     if (defined $cur_pt->{'x'} && ($cur_pt->{'x'} != $x || $cur_pt->{'y'} != $y));
 
             if ($g)
@@ -400,15 +400,15 @@ sub read_font
                     }
                 }
                 if ($g->{'x'}[$i] != $x || $g->{'y'}[$i] != $y)
-                { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
+                { $self->APerror($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
                 if (($cont == 0 && $g->{'endPoints'}[0] != 0)
                     || $g->{'endPoints'}[$cont-1] + 1 != $g->{'endPoints'}[$cont])
-                { $self->error($xml, $cur_glyph, $cur_pt, "Calculated contour $cont not a single point path") if ($opts{'-strictap'}); }
+                { $self->APerror($xml, $cur_glyph, $cur_pt, "Calculated contour $cont not a single point path") if ($opts{'-strictap'}); }
                 else
                 { $cur_pt->{'cont'} = $cont; }
             }
             else
-            { $self->error($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
+            { $self->APerror($xml, $cur_glyph, $cur_pt, "No glyph point at specified location ($x, $y)") if ($opts{'-strictap'}); }
 
             $cur_pt->{'x'} = $x unless defined $cur_pt->{'x'};
             $cur_pt->{'y'} = $y unless defined $cur_pt->{'y'};
@@ -452,7 +452,7 @@ sub read_font
         }
         elsif ($opts{'-knownemptyglyphs'})
         {
-            $self->error($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+            $self->APerror($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
         }
     }
     $self;
@@ -691,7 +691,7 @@ sub split_lig
     ($ext, $base, @res);
 }
 
-sub error
+sub APerror
 {
     my $self = shift;
     my ($xml, $cur_glyph, $cur_pt, $str) = @_;
@@ -714,7 +714,14 @@ sub error
 
     $msg .=  " at line " . $xml->current_line if ($xml);
     $msg .= ".\n";
+    $self->error($msg);
+}
 
+
+sub error
+{
+    my $self = shift;
+    my $msg = join(' ', @_);
     if (defined $self->{'-errorfh'})
     { print {$self->{'-errorfh'}} $msg; }
     else
