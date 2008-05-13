@@ -385,6 +385,19 @@ sub out_volt_glyphs
             { $res .= " UNICODE $g->{'uni'}[0]"; }
         }
 
+        $type = glyph_type($g);
+        
+        $res .= " TYPE $type" if ($type);
+        $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});
+        $res .= " END_GLYPH\n";
+    }
+    $res;
+}
+
+sub glyph_type
+{
+    my ($g) = @_;
+
         # Notes about glyph type calculation:
         # 1) If the AP database entry for a specific glyph contains a type
         #    property then this has priority. Note that there are two sources 
@@ -395,18 +408,11 @@ sub out_volt_glyphs
         #    priority.
         # 3) Finally, if there are any anchors at all, we guess BASE or LIGATURE
         #    as determined by the number of components.
-        
-        $type = $g->{'props'}{'type'} 
-             || $g->{'type'}
-             || ($g->{'component_num'} > 1 ? 'LIGATURE' : 'BASE') if defined $g->{'anchors'};
-        
-        $res .= " TYPE $type" if ($type);
-        $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});
-        $res .= " END_GLYPH\n";
-    }
-    $res;
-}
+    return $g->{'props'}{'type'} 
+         || $g->{'type'}
+         || (defined $g->{'anchors'} ? ($g->{'component_num'} > 1 ? 'LIGATURE' : 'BASE') : undef);
 
+}
 
 sub out_volt_classes
 {
@@ -1588,17 +1594,21 @@ sub make_lookups
     {
         next if ($c =~ m/^_/o);
         next unless (defined $self->{'lists'}{"_$c"});
-        if ($opts->{'-force'})
-        { $self->{'lookups'} = [grep {$_->{'id'} ne "base_$c"} @{$self->{'lookups'}}]; }
-        else
-        { next if (grep {$_->{'id'} eq "base_$c"} @{$self->{'lookups'}}); }
         next if (defined $opts->{'-notmark'} && $opts->{'-notmark'} =~ m/\b_$c\b/);
 
-        my ($l) = {'id' => "base_$c", 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
+        foreach my $t (qw(base mark ligature))
+        {
+            my ($name) = sprintf("cTakes%sDia_%s", $c, $t);
+            if ($opts->{'-force'})
+            { $self->{'lookups'} = [grep {$_->{'id'} ne "base_${c}_$t"} @{$self->{'lookups'}}]; }
+            else
+            { next if (grep {$_->{'id'} eq "base_${c}_$t"} @{$self->{'lookups'}}); }
+            my ($l) = {'id' => "base_${c}_$t", 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
                      'all' => 'ALL', 'dir' => 'LTR', 'contexts' => [],
-                      'lookup' => ['pos', [{'type' => 'ATTACH', 'context' => [['GROUP', "cTakes${c}Dia"]],
+                      'lookup' => ['pos', [{'type' => 'ATTACH', 'context' => [['GROUP', $name]],
                                 'to' => [[['GROUP', "c${c}Dia"], $c]]}]]};
-        push(@{$self->{'lookups'}}, $l);
+            push(@{$self->{'lookups'}}, $l) if (defined $self->{'groups'}{$name});
+        }
 
 #        $res .= "DEF_LOOKUP \"base_$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
 #        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_POSITION\n";
@@ -1628,13 +1638,23 @@ sub make_groups
         my ($name) = $l;
 
         if ($name !~ m/^_(.*)$/o)
-        { $name = "Takes$name"; }
+        {
+            $name = "Takes$name";
+            foreach my $t (qw(BASE MARK LIGATURE))
+            {
+                my (@group) = map {['GLYPH', $_]} grep {glyph_type($self->{'glyphs'}[$_]) eq $t} @{$lists->{$l}};
+                push (@group, map{['GLYPH', $_]} grep {glyph_type($self->{'glyphs'}[$_]) eq ''} @{$lists->{$l}}) if ($t eq 'BASE');
+                my ($gname) = sprintf("c%sDia_%s", $name, lc($t));
+                $self->{'groups'}{$gname} = [@group] if (scalar @group);
+            }
+        }
         else
-        { $name =~ s/^_//o; }
-        $self->{'groups'}{"c${name}Dia"} = [map {['GLYPH', $_]} @{$lists->{$l}}];
+        {
+            $name =~ s/^_//o;
+            $self->{'groups'}{"c${name}Dia"} = [map {['GLYPH', $_]} @{$lists->{$l}}];
+        }
     }
     
-
     foreach $l (sort keys %{$classes})
     {
         $self->{'groups'}{"c$l"} = [map {['GLYPH', $_]} @{$classes->{$l}}];
