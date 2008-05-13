@@ -1687,7 +1687,6 @@ sub make_anchors
             {
                 my ($name, $comp) = &{$filter}($p);
                 next unless $name;
-                $comp ||= 1;
                 $g->{'anchors'}{$name}[$comp]{'pos'}{'x'}[0] = $g->{'points'}{$p}{'x'};
                 $g->{'anchors'}{$name}[$comp]{'pos'}{'y'}[0] = $g->{'points'}{$p}{'y'};
             }
@@ -1709,10 +1708,12 @@ option of C<read_font>.
 sub point2anchor
 {
     my $name = shift;
-    $name =~ /^(.*?)(\d*)$/o;
-    return undef unless $1;
-    $name = ($1 =~ m/^_/o) ? "MARK$1" : $1;
-    return ($name, $2);
+    my ($num);
+
+    if ($name =~ s/(\d+)$//o)
+    { $num = $1; }
+    $name =~ s/^_/MARK_/o;
+    return ($name, $num);
 }
 
 1;
