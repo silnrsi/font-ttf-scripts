@@ -155,6 +155,10 @@ Contains a group name or ALL according to what is to be processed
 
 Contains LTR or RTL
 
+=item comment
+
+Comment, if any, associated with the lookup; string value but can be multi-line.
+
 =item contexts
 
 Contains an array of contexts as per IN_CONTEXT. Each element of the array is itself
@@ -339,6 +343,13 @@ If C<-point2anchor> is not provided, a default function (see below) is used.
 
 =cut
 
+# Lookup comments have 5 chars that, in VOLT source, must be escaped with a '\':
+my %unescapes = ('n' => "\n", 't' => "\t", 'q' => '"', "\\" => "\\", '0' => "\0" );
+my $unescape = qr/[ntq\\0]/o;
+my %toescapes = (map {$unescapes{$_} => "\\$_" } keys %unescapes);
+my $toescape = qr/[\n\t"\\\0]/;     # "
+
+
 sub read_font
 {
     my ($self) = Font::TTF::Scripts::AP::read_font(@_);
@@ -487,6 +498,12 @@ sub out_volt_lookups
             { $res .= " $l->{$q}" if ($l->{$q}); }
         }
         $res .= "\n";
+        if ($l->{'comment'})
+        {
+            my $comment = $l->{'comment'};
+            $comment =~ s/($toescape)/$toescapes{$1}/oge;
+            print "COMMENTS \"$comment\"\n";
+        }
         if (scalar @{$l->{'contexts'}})
         {
             foreach $q (@{$l->{'contexts'}})
@@ -747,15 +764,23 @@ $volt_grammar = <<'EOG';
     enum : 'ENUM' context(s?) 'END_ENUM'
             { $return = [@{$item[2]}]; }
 
-    lookup : 'DEF_LOOKUP' <commit> qid lk_procbase(?) lk_procmarks(?) lk_all(?) lk_direction(?) lk_context(s) lk_content
+    lookup : 'DEF_LOOKUP' <commit> qid lk_procbase(?) lk_procmarks(?) lk_all(?) lk_direction(?) lk_comment(?) lk_context(s) lk_content
             { push (@{$dat{'lookups'}}, { 'id' => $item[3],
                                           'base' => $item[4][0],
                                           'marks' => $item[5][0],
                                           'all' => $item[6][0],
                                           'dir' => $item[7][0],
-                                          'contexts' => [@{$item[8]}],
-                                          'lookup' => $item[9] }); }
+                                          'comment' => $item[8],
+                                          'contexts' => [@{$item[9]}],
+                                          'lookup' => $item[10] }); }
 
+    lk_comment : /COMMENTS/ qid
+            { 
+                my $comment = $item[-1];
+                $comment =~ s/\\($unescape)/$unescapes{$1}/oge;
+                $return = $comment; 
+            }
+            
     lk_context : /EXCEPT_CONTEXT|IN_CONTEXT/ lk_context_lt(s?) 'END_CONTEXT'
             { $return = [$item[1], @{$item[2]}]; }
 
@@ -1029,6 +1054,14 @@ sub parse_volt
                 'marks' => $3,
                 'all' => $4 || $5,
                 'dir' => $6});
+
+#    lk_comment : 'COMMENTS' qid
+        while ($str =~ m/\GCOMMENTS\s+"([^"]+)"\s+/ogc)     # " 
+        {
+            my ($comment) = $1;
+            $comment =~ s/\\($unescape)/$unescapes{$1}/oge;
+            $res->{'lookups'}[-1]{'comment'} = $comment;
+        }
 
 #    lk_context : /EXCEPT_CONTEXT|IN_CONTEXT/ lk_context_lt(s?) 'END_CONTEXT'
 #            { $return = [$item[1], @{$item[3]}]; }
