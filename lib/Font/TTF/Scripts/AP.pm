@@ -274,6 +274,7 @@ sub read_font
 
             if (defined $attrs{'UID'})
             {
+                $attrs{'UID'} =~ s/^U\+//o;      # Not supposed to contain "U+", but some do
                 my ($uni) = hex($attrs{'UID'});
                 $ug = $self->{'cmap'}{$uni};
                 if (defined $ug)
@@ -350,7 +351,11 @@ sub read_font
         } elsif ($tag eq 'compound')
         {
             my $component = {%attrs, line => $xml->current_line};
-            $component->{'uni'} = [hex($attrs{'UID'})] if defined $attrs{'UID'};
+            if (defined $attrs{'UID'})
+            {
+                $attrs{'UID'} =~ s/^U\+//o;      # Not supposed to contain "U+", but some do
+                $component->{'uni'} = [hex($attrs{'UID'})] ;
+            }
             push @{$cur_glyph->{'components'}}, $component;
         } elsif ($tag eq 'point')
         {
