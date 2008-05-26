@@ -15,7 +15,7 @@ if ($^O eq 'MSWin32')
 }
 
 @scripts = grep {-f && !m/\./o && !m/~$/o } glob("scripts/*");
-@scripts = grep {!m|/add|oi} @scripts unless ($^O eq 'MSWin32');
+@scripts = grep {!m|/add[^_]|oi} @scripts unless ($^O eq 'MSWin32');
 
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");
 

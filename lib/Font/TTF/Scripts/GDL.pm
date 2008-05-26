@@ -234,7 +234,7 @@ sub make_name
     {
         my (@nums) = $gname =~ m/([0-9A-Fa-f]{4})/og;
         $gname =~ s/[0-9A-Fa-f]{4}//og;
-        $gname = 'g_' . join('_', @nums) . $gname;
+        $gname = 'g' . join('_', map {lc($_)} @nums) . $gname;
     }
     else
     {
