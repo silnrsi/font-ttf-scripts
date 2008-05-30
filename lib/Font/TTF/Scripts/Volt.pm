@@ -282,14 +282,14 @@ The second array element is a string holding the name of the group being referen
 
 =item RANGE
 
-The second two array elements are the first and last glyph id for the range. Ranges
+The second and third array elements are the first and last glyph id for the range. Ranges
 are particularly difficult to work with when merging different glyph arrays so should
 be avoided
 
 =item ENUM
 
-An enum is a way of embedding a list of contexts within a context. The remaining
-elements in the array are C<context_item>s
+An enum is a way of embedding a list of contexts within a context. The second
+array element is an array of C<context_item>s
 
 =back
 
@@ -1308,7 +1308,7 @@ sub parse_enum
         { push (@res, ['RANGE', $dat->{'glyph_names'}{$1 || $2}, $dat->{'glyph_names'}{$3 || $4}]); }
         elsif ($$str =~ m/\GENUM\s+/ogc)
         {
-            push (@res, ['ENUM', [parse_enum($$str, $dat)]]);
+            push (@res, ['ENUM', [parse_enum($str, $dat)]]);
             unless ($$str =~ m/\GEND_ENUM\s+/ogc)
             { die "Expected END_ENUM, found: " . substr($$str, pos($$str), 20); }
         }
