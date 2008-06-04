@@ -18,7 +18,7 @@ $VERSION = 0.01;    # MJPH      11-OCT-2007     First release
 
 unless ($CHAIN_CALL)
 {
-    getopts('a:d:ht:', \%opts);
+    getopts('a:d:hit:x:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -97,7 +97,7 @@ sub main
     $font->{'GSUB'}{'Version'} = 1;
     $font->{'GPOS'} = Font::TTF::GPOS->new(PARENT => $font, read => 1) unless (defined $font->{'GPOS'});
     $font->{'GPOS'}{'Version'} = 1;
-    $fv->features_ttf;
+    $fv->features_ttf(%opts);
     foreach my $t (qw(GSUB GPOS))
     {
         $font->{$t}{'FEATURES'}{'FEAT_TAGS'} = [sort {$fv->{'featmap'}{$a} cmp $fv->{'featmap'}{$b}} @{$font->{$t}{'FEATURES'}{'FEAT_TAGS'}}];
@@ -107,11 +107,51 @@ sub main
     $fv->add_gdef();
 #    $font->{'OS/2'}->read->{'maxLookups'} = $fv->{'maxcontext'};
 #    print STDERR "maxcontext=$fv->{'maxcontext'}\n";
+    return unless ($opts{'x'});
+    
+    my ($xfh) = IO::File->new("> $opts{'x'}") || die "Can't open $opts{'x'} for writing";
+    my (%feattags, %multis);
+    $xfh->print("<?xml version='1.0' encoding='UTF-8'?>\n");
+    $xfh->print("<aliases>\n");
+    foreach my $t(qw(GSUB GPOS))
+    {
+        foreach my $f (@{$font->{$t}{'FEATURES'}{'FEAT_TAGS'}})
+        {
+            my ($val) = $fv->{'featmap'}{$f};
+            if (defined $feattags{$val})
+            {
+                if ($feattags{$val} eq "")
+                { $feattags{$val} = "0"; }
+                else
+                { $feattags{$val}++; }
+                $val = "$val _$feattags{$val}";
+            }
+            else
+            { $feattags{$val} = ""; }
+            $xfh->print("    <alias name='$f' value='$val'/>\n");
+        }
+    }
+    foreach my $l (@{$fv->{'voltdat'}{'lookups'}})
+    {
+        my ($id) = $l->{'id'};
+        next unless ($id);
+        my ($multi);
+        if ($id =~ s/\\.*$//o)
+        {
+            if ($multis{$id})
+            { next; }
+            else
+            { $multis{$id} = 1; }
+        }
+        $xfh->print("    <alias name='$id' value='$l->{' index'}'/>\n");
+    }
+    $xfh->print("</aliases>\n");
+    $xfh->close;
 }
 
 sub features_ttf
 {
-    my ($self) = @_;
+    my ($self, %opts) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
     my (%multis);
@@ -122,17 +162,25 @@ sub features_ttf
     # So first time through this we create a hash to map lookup names to lookup:
     $dat->{'lookuptags'} = {map {$_->{'id'} => $_} @{$dat->{'lookups'}}} unless (defined $dat->{'lookuptags'});
     
-    # There can be unused lookups in the VOLT source, i.e., lookups which aren't tied to a feature.
-    # Mark the needed lookups by setting ' include' on the lookup.
-    foreach $t (sort keys %{$dat->{'scripts'}}) # For each script name in VOLT source (in alpha order)
+    if ($opts{'i'})
     {
-        my ($s) = $dat->{'scripts'}{$t};
-        foreach $l (@{$s->{'langs'}})    # For each VOLT lang within this script
+        foreach (@{$dat->{'lookups'}})
+        { $_->{' include'} = 1; }
+    }
+    else
+    {
+        # There can be unused lookups in the VOLT source, i.e., lookups which aren't tied to a feature.
+        # Mark the needed lookups by setting ' include' on the lookup.
+        foreach $t (sort keys %{$dat->{'scripts'}}) # For each script name in VOLT source (in alpha order)
         {
-            foreach $ft (sort keys %{$l->{'features'}}) # For each VOLT feature tag within this lang
+            my ($s) = $dat->{'scripts'}{$t};
+            foreach $l (@{$s->{'langs'}})    # For each VOLT lang within this script
             {
-                foreach $k (@{$l->{'features'}{$ft}{'lookups'}}) # For each VOLT lookup name within this feature
-                { $dat->{'lookuptags'}{$k}{' include'} = 1; }
+                foreach $ft (sort keys %{$l->{'features'}}) # For each VOLT feature tag within this lang
+                {
+                    foreach $k (@{$l->{'features'}{$ft}{'lookups'}}) # For each VOLT lookup name within this feature
+                    { $dat->{'lookuptags'}{$k}{' include'} = 1; }
+                }
             }
         }
     }
@@ -764,8 +812,10 @@ Compiles volt source into OT tables in the font.
 =head1 OPTIONS
 
   -a file     Attachment point database
+  -i          Include all lookups even those not referenced by a used feature
   -t file     Volt source as text file to use instead of what is in the font
   -h          Help
+  -x file     Generate TypeTuner aliases .xml file
     
 =head1 DESCRIPTION
 
