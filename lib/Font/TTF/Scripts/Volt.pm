@@ -168,8 +168,7 @@ elements are arrays that consist of two elements: A string LEFT or RIGHT and a C
 
 =item lookup
 
-An array of subactions within the lookup. Each element of this array is itself
-an array with a first element giving the lookup type: C<sub> or C<pos> and the second
+A two-element array, the first element giving the lookup type: C<sub> or C<pos> and the second
 element being the content of the lookup.
 
 For a C<sub> lookup the second element is an array each element of which is a substitution
