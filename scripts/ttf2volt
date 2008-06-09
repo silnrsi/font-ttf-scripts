@@ -6,7 +6,7 @@ use Getopt::Std;
 use Data::Dumper;
    
 use Font::TTF::Font;
-use Font::TTF::Tags qw( %ttnames readtagsfile);
+use Font::TTF::OTTags qw( %ttnames readtagsfile);
 
 our ($opt_a, $opt_d, $opt_g, $opt_l, $opt_t, $opt_s, $opt_v, $VERSION);
 

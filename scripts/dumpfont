@@ -3,7 +3,7 @@
 use strict;
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
-use Font::TTF::Dump;
+use Font::TTF::Dumper;
 use Pod::Usage;
 use Getopt::Std;
 
@@ -47,11 +47,11 @@ foreach (@tags)
     if (length($_) == 4 and exists $f->{$_})
     {
         $f->{$_}->read;
-        print Font::TTF::Dump::Dumper(\$f->{$_}, $_);
+        print Font::TTF::Dumper::Dumper(\$f->{$_}, $_);
     }
     elsif ($_ eq 'AP')
     {
-        print Font::TTF::Dump::Dumper($ap, "AP");
+        print Font::TTF::Dumper::Dumper($ap, "AP");
     }
     else
     {
