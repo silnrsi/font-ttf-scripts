@@ -19,7 +19,7 @@ if ($^O eq 'MSWin32')
 
 @theselibs = grep {-f } glob("lib/Font/Scripts/*");
 
-$perlbin = $Config{'bin'};
+$perlbin = $Config{'sitebin'};
 $fhi = IO::File->new("< FontUtils.isb") || die "Can't find FontUtils.isb";
 $fho = IO::File->new("> FontUtils.iss") || die "Can't find FontUtils.iss";
 
@@ -47,7 +47,6 @@ WriteMakefile (
 			'Algorithm::Diff' => 0,
 			'Font::TTF' => 0.44,
 			'Text::PDF::File' => 0,
-			'Parse::RecDescent' => 1.51
 			},
         @extras
     );
