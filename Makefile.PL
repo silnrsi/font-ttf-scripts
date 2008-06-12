@@ -47,6 +47,7 @@ WriteMakefile (
 			'Algorithm::Diff' => 0,
 			'Font::TTF' => 0.44,
 			'Text::PDF::File' => 0,
+            'XML::Parser' => 0
 			},
         @extras
     );
