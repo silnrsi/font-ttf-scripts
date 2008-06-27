@@ -21,7 +21,7 @@ our $VERSION = 0.01;    # BH      2007-11-04     First release
 
 our $CHAIN_CALL;
 
-my (@exports, @imports, @deletes, $textmode);
+my (@exports, @imports, @deletes, $textmode, $list);
 
 my $f;
 
@@ -34,6 +34,7 @@ unless ($CHAIN_CALL)
         'import=s' =>  \@imports,
         'delete|remove=s' => \@deletes,
         'text'  =>      \$textmode,
+        'list'  =>      \$list,
         'help|?'   =>   \$help) or pod2usage(2);
         
     pod2usage( -verbose => 2, -noperldoc => 1) if $help;
@@ -59,6 +60,12 @@ unless ($CHAIN_CALL)
 
 my %importeddata;
 
+if ($list)
+{
+    map {print "$_\n"} (sort grep {length($_) == 4} keys %{$f})
+}
+
+
 for (@imports)
 {
     # Parse the tag=fname value, making up a suitable name if needed.
@@ -70,7 +77,7 @@ for (@imports)
         next;
     }
     $fname = "$ARGV[0].$tag.dat" unless $fname;
-    $fname =~ s/[\\\/:*?"<>|]//oig;      # Characters disallowed in filenames
+    $fname =~ s/[\\\/:*?"<>|]//oig;      # "Characters disallowed in filenames
     
     # Pad and trim table tag
     $tag = sprintf('%-4.4s', $tag);
@@ -97,7 +104,7 @@ for (@exports)
     }
 
     $fname = "$ARGV[0].$tag.dat" unless $fname;
-    $fname =~ s/[\\\/:*?"<>|]//oig;      # Characters disallowed in filenames
+    $fname =~ s/[\\\/:*?"<>|]//oig;      # "Characters disallowed in filenames
     
     # Pad and trim table tag
     $tag = sprintf('%-4.4s', $tag);
@@ -188,6 +195,7 @@ then writes the modified font to outfile.ttf if provided.
   -import tag          Name of table to import from default datafile
   -import "tag=fname"  Name of table to import and optional datafile name
   -delete tag[,tag...] List of tables to remove from font
+  -list                Write a list of table tags from infile.ttf to STDOUT
   -text                Use text mode i/o for datafiles 
   -help                Help
 
