@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<font coverage="4000000000000000001">
+
+<names>
+    <string num="name">Testing</string>
+    <string num="5">Version 1.0</string>
+    <string num="6">Testing <name num="2"/></string>
+    <string num="9">Victor Gaultney</string>
+    <string num="11">http://scripts.sil.org</string>
+    <string num="13">Released under the Open Font License.</string>
+    <string num="14">http://scripts.sil.org/OFL</string>
+</names>
+
+<glyphs>
+<glyph UID="0020" PSName="space"><base UID="0020"/></glyph>
+<glyph UID="0021" PSName="exclam"><base UID="0021"/></glyph>
+<glyph UID="0022" PSName="quotedbl"><base UID="0022"/></glyph>
+<glyph UID="0023" PSName="numbersign"><base UID="0023"/></glyph>
+<glyph UID="0024" PSName="dollar"><base UID="0024"/></glyph>
+<glyph UID="0025" PSName="percent"><base UID="0025"/></glyph>
+<glyph UID="0026" PSName="ampersand"><base UID="0026"/></glyph>
+<glyph UID="0027" PSName="quotesingle"><base UID="0027"/></glyph>
+<glyph UID="0028" PSName="parenleft"><base UID="0028"/></glyph>
+<glyph UID="0029" PSName="parenright"><base UID="0029"/></glyph>
+<glyph UID="002A" PSName="asterisk"><base UID="002A"/></glyph>
+<glyph UID="002B" PSName="plus"><base UID="002B"/></glyph>
+<glyph UID="002C" PSName="comma"><base UID="002C"/></glyph>
+<glyph UID="002D" PSName="hyphen"><base UID="002D"/></glyph>
+<glyph UID="002E" PSName="period"><base UID="002E"/></glyph>
+<glyph UID="002F" PSName="slash"><base UID="002F"/></glyph>
+<glyph UID="0030" PSName="zero"><base UID="0030"/></glyph>
+<glyph UID="0031" PSName="one"><base UID="0031"/></glyph>
+<glyph UID="0032" PSName="two"><base UID="0032"/></glyph>
+<glyph UID="0033" PSName="three"><base UID="0033"/></glyph>
+<glyph UID="0034" PSName="four"><base UID="0034"/></glyph>
+<glyph UID="0035" PSName="five"><base UID="0035"/></glyph>
+<glyph UID="0036" PSName="six"><base UID="0036"/></glyph>
+<glyph UID="0037" PSName="seven"><base UID="0037"/></glyph>
+<glyph UID="0038" PSName="eight"><base UID="0038"/></glyph>
+<glyph UID="0039" PSName="nine"><base UID="0039"/></glyph>
+<glyph UID="003A" PSName="colon"><base UID="003A"/></glyph>
+<glyph UID="003B" PSName="semicolon"><base UID="003B"/></glyph>
+<glyph UID="003C" PSName="less"><base UID="003C"/></glyph>
+<glyph UID="003D" PSName="equal"><base UID="003D"/></glyph>
+<glyph UID="003E" PSName="greater"><base UID="003E"/></glyph>
+<glyph UID="003F" PSName="question"><base UID="003F"/></glyph>
+<glyph UID="0040" PSName="at"><base UID="0040"/></glyph>
+<glyph UID="0041" PSName="A"><base UID="0041"/></glyph>
+<glyph UID="0042" PSName="B"><base UID="0042"/></glyph>
+<glyph UID="0043" PSName="C"><base UID="0043"/></glyph>
+<glyph UID="0044" PSName="D"><base UID="0044"/></glyph>
+<glyph UID="0045" PSName="E"><base UID="0045"/></glyph>
+<glyph UID="0046" PSName="F"><base UID="0046"/></glyph>
+<glyph UID="0047" PSName="G"><base UID="0047"/></glyph>
+<glyph UID="0048" PSName="H"><base UID="0048"/></glyph>
+<glyph UID="0049" PSName="I"><base UID="0049"/></glyph>
+<glyph UID="004A" PSName="J"><base UID="004A"/></glyph>
+<glyph UID="004B" PSName="K"><base UID="004B"/></glyph>
+<glyph UID="004C" PSName="L"><base UID="004C"/></glyph>
+<glyph UID="004D" PSName="M"><base UID="004D"/></glyph>
+<glyph UID="004E" PSName="N"><base UID="004E"/></glyph>
+<glyph UID="004F" PSName="O"><base UID="004F"/></glyph>
+<glyph UID="0050" PSName="P"><base UID="0050"/></glyph>
+<glyph UID="0051" PSName="Q"><base UID="0051"/></glyph>
+<glyph UID="0052" PSName="R"><base UID="0052"/></glyph>
+<glyph UID="0053" PSName="S"><base UID="0053"/></glyph>
+<glyph UID="0054" PSName="T"><base UID="0054"/></glyph>
+<glyph UID="0055" PSName="U"><base UID="0055"/></glyph>
+<glyph UID="0056" PSName="V"><base UID="0056"/></glyph>
+<glyph UID="0057" PSName="W"><base UID="0057"/></glyph>
+<glyph UID="0058" PSName="X"><base UID="0058"/></glyph>
+<glyph UID="0059" PSName="Y"><base UID="0059"/></glyph>
+<glyph UID="005A" PSName="Z"><base UID="005A"/></glyph>
+<glyph UID="005B" PSName="bracketleft"><base UID="005B"/></glyph>
+<glyph UID="005C" PSName="backslash"><base UID="005C"/></glyph>
+<glyph UID="005D" PSName="bracketright"><base UID="005D"/></glyph>
+<glyph UID="005E" PSName="asciicircum"><base UID="005E"/></glyph>
+<glyph UID="005F" PSName="underscore"><base UID="005F"/></glyph>
+<glyph UID="0060" PSName="grave"><base UID="0060"/></glyph>
+<glyph UID="0061" PSName="a"><base UID="0061"/></glyph>
+<glyph UID="0062" PSName="b"><base UID="0062"/></glyph>
+<glyph UID="0063" PSName="c"><base UID="0063"/></glyph>
+<glyph UID="0064" PSName="d"><base UID="0064"/></glyph>
+<glyph UID="0065" PSName="e"><base UID="0065"/></glyph>
+<glyph UID="0066" PSName="f"><base UID="0066"/></glyph>
+<glyph UID="0067" PSName="g"><base UID="0067"/></glyph>
+<glyph UID="0068" PSName="h"><base UID="0068"/></glyph>
+<glyph UID="0069" PSName="i"><base UID="0069"/></glyph>
+<glyph UID="006A" PSName="j"><base UID="006A"/></glyph>
+<glyph UID="006B" PSName="k"><base UID="006B"/></glyph>
+<glyph UID="006C" PSName="l"><base UID="006C"/></glyph>
+<glyph UID="006D" PSName="m"><base UID="006D"/></glyph>
+<glyph UID="006E" PSName="n"><base UID="006E"/></glyph>
+<glyph UID="006F" PSName="o"><base UID="006F"/></glyph>
+<glyph UID="0070" PSName="p"><base UID="0070"/></glyph>
+<glyph UID="0071" PSName="q"><base UID="0071"/></glyph>
+<glyph UID="0072" PSName="r"><base UID="0072"/></glyph>
+<glyph UID="0073" PSName="s"><base UID="0073"/></glyph>
+<glyph UID="0074" PSName="t"><base UID="0074"/></glyph>
+<glyph UID="0075" PSName="u"><base UID="0075"/></glyph>
+<glyph UID="0076" PSName="v"><base UID="0076"/></glyph>
+<glyph UID="0077" PSName="w"><base UID="0077"/></glyph>
+<glyph UID="0078" PSName="x"><base UID="0078"/></glyph>
+<glyph UID="0079" PSName="y"><base UID="0079"/></glyph>
+<glyph UID="007A" PSName="z"><base UID="007A"/></glyph>
+<glyph UID="007B" PSName="braceleft"><base UID="007B"/></glyph>
+<glyph UID="007C" PSName="bar"><base UID="007C"/></glyph>
+<glyph UID="007D" PSName="braceright"><base UID="007D"/></glyph>
+<glyph UID="007E" PSName="asciitilde"><base UID="007E"/></glyph>
+
+<!-- and now for something a little more interesting -->
+
+<glyph UID="00C0">
+    <base UID="0041">
+        <attach UID="0060">
+            <shift y="300"/>
+        </attach>
+    </base>
+</glyph>
+<glyph UID="00E0">
+    <base UID="0061">
+        <attach UID="0060"/>
+    </base>
+</glyph>
+
+</glyphs>
+</font>
+

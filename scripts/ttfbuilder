@@ -59,7 +59,7 @@ unless ($CHAIN_CALL)
     $if = Font::TTF::Font->open($ARGV[0]) || die "Can't read font $ARGV[0]";
 }
 
-$of = Font::TTF::Scripts::TTFBuilder::main($if, \%opts);
+$of = Font::TTF::Scripts::TTFBuilder::main($if, \%opts, [$if], [$opts{'x'}]);
 
 unless ($CHAIN_CALL)
 { $of->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?"; }
@@ -75,11 +75,11 @@ use XML::Parser::Expat;
 
 sub main
 {
-    my ($if, $opts) = @_;
+    my ($if, $opts, $fonts, $iaps) = @_;
     my (@xml_dat, $oc, $gcount, @glyphs);
     my ($uidmax, $bc, $done_cpyrt, $fissymbol);
     my ($gid, $pname, $i, $currtext, $cur_str, $i);
-    my ($opt_a, $opt_c, $opt_d, $opt_x, $opt_z) = @{$opts}{qw(a c d x z)};
+    my ($opt_a, $opt_c, $opt_d, $opt_z) = @{$opts}{qw(a c d z)};
 
     my (%name_nums) = map {$_ => $i++} (qw(copyright family subfamily fontid fullname version psname
         trademark vendor designer description vendor_url designer_url license license_url reserved 
@@ -94,56 +94,56 @@ sub main
         $of->{$t}{' PARENT'} = $of;
     }
 
-    my $c = $if->{'cmap'}->read->find_ms;
-    my $ifissymbol = $if->{'cmap'}->ms_enc;
+    my $ifissymbol = $if->{'cmap'}->read->ms_enc;
     $ifissymbol = 1 if (defined $ifissymbol && $ifissymbol == 0);
 
-    $if->{'hmtx'}->read;
     my $fname = $if->{'name'}->find_name(4);
 
-    if (defined $opt_x)
+    if (scalar @$iaps)
     {
+        my ($fnum, $currcmap, $currif, $fname);
+
         my $xml = XML::Parser::Expat->new();
         $xml->setHandlers('Start' => sub {
             my ($xml, $tag, %attrs) = @_;
     
             if ($tag eq 'glyph')
             {
-                $gid = $c->{'val'}{hex($attrs{'UID'})}
-                    || $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}
+                $gid = $currcmap->{'val'}{hex($attrs{'UID'})}
+                    || $currif->{'post'}{'STRINGS'}{$attrs{'PSName'}}
                     || $attrs{'GID'};
                 if (!defined $gid && ($attrs{'PSName'} || $attrs{'UID'}))
-                { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $opt_x"); }
+                { return $xml->xpcarp("No glyph called: $attrs{'PSName'}, Unicode: $attrs{'UID'} in $fname"); }
                 unless ($opt_d & 64)
                 {
-                    my ($ugid) = $c->{'val'}{hex($attrs{'UID'})};
+                    my ($ugid) = $currcmap->{'val'}{hex($attrs{'UID'})};
                     my ($ggid) = $attrs{'GID'};
-                    my ($pgid) = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}};
-                    $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, but GID is $ggid in $opt_x")
+                    my ($pgid) = $currif->{'post'}{'STRINGS'}{$attrs{'PSName'}};
+                    $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, but GID is $ggid in $fname")
                             if ($ugid && $ggid && $ugid != $ggid);
-                    $xml->xpcarp("PSName of $attrs{'PSName'} maps to $pgid, but GID is $ggid in $opt_x")
+                    $xml->xpcarp("PSName of $attrs{'PSName'} maps to $pgid, but GID is $ggid in $fname")
                             if ($pgid && $ggid && $pgid != $pgid);
-                    $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, while PSName of $attrs{'PSName'} maps to $pgid in $opt_x")
+                    $xml->xpcarp("UID of $attrs{'UID'} maps to $ugid, while PSName of $attrs{'PSName'} maps to $pgid in $fname")
                             if ($pgid && $ugid && !$ggid && $ugid != $pgid);
                 }
-                $xml_dat[$gid]{'ps'} = $attrs{'PSName'};
-                $xml_dat[$gid]{'UID'} = $attrs{'UID'};
+                $xml_dat[$fnum][$gid]{'ps'} = $attrs{'PSName'};
+                $xml_dat[$fnum][$gid]{'UID'} = $attrs{'UID'};
             } elsif ($tag eq 'point')
             {
                 $pname = $attrs{'type'};
             } elsif ($tag eq 'contour')
             {
-                $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
+                $xml_dat[$fnum][$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
             } elsif ($tag eq 'location')
             {
-                $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
+                $xml_dat[$fnum][$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
             } elsif ($tag eq 'font')
             {
 #                $fontname = $attrs{'name'};
 #                $fontupem = $attrs{'upem'};
             } elsif ($tag eq 'property')
             {
-                $xml_dat[$gid]{'properties'}{$attrs{'name'}} = $attrs{'value'};
+                $xml_dat[$fnum][$gid]{'properties'}{$attrs{'name'}} = $attrs{'value'};
             } elsif ($tag eq 'note')
             {
                 $currtext = '';
@@ -152,13 +152,13 @@ sub main
             my ($xml, $tag) = @_;
     
             if ($tag eq 'point')
-            { $xml->xpcarp("Attachment point must have location or contour in $opt_x")
-                unless (defined $xml_dat[$gid]{'points'}{$pname}{'cont'}
-                        || defined $xml_dat[$gid]{'points'}{$pname}{'loc'}); }
+            { $xml->xpcarp("Attachment point must have location or contour in $fname")
+                unless (defined $xml_dat[$fnum][$gid]{'points'}{$pname}{'cont'}
+                        || defined $xml_dat[$fnum][$gid]{'points'}{$pname}{'loc'}); }
             elsif ($tag eq 'note')
             {
                 $currtext =~ s/\s*(.*?)\s*$//o;
-                $xml_dat[$gid]{'notes'} = $currtext;
+                $xml_dat[$fnum][$gid]{'notes'} = $currtext;
                 $currtext = '';
             }
         }, 'Char' => sub {
@@ -167,7 +167,14 @@ sub main
             $currtext .= $str;
         });
     
-        $xml->parsefile($opt_x) || die "Can't read $opt_x";
+        for ($fnum = 0; $fnum < scalar @$iaps; $fnum++)
+        {
+            $currif = $fonts->[$fnum];
+            $currcmap = $fonts->[$fnum]{'cmap'}->read->find_ms;
+            $fname = $iaps->[$fnum];
+            next unless ($fname);
+            $xml->parsefile($fname) || die "Can't read $fname";
+        }
     }
 
     $if->{'loca'}->read;
@@ -184,6 +191,7 @@ sub main
             my ($bbox);
     
             $aglyph = {
+                'font' => $if,
                 'GID' => $i,
                 'PSName' => $if->{'post'}{'VAL'}[$i]};
     
@@ -217,6 +225,15 @@ sub main
         $gcount = 2;
     }
 
+    $i = 0;
+    foreach my $f (@$fonts)
+    {
+        foreach (qw(cmap hmtx loca head))
+        { $f->{$_}->read; }
+        $f->{'scale'} = 1. * $if->{'head'}{'unitsPerEm'} / $f->{'head'}{'unitsPerEm'};
+        $f->{'number'} = $i++;
+    }
+
     my $xml = XML::Parser::Expat->new();
     $xml->setHandlers('Start' => sub {
         my ($xml, $tag, %attrs) = @_;
@@ -233,15 +250,20 @@ sub main
         elsif ($tag eq 'base' || $tag eq 'attach')
         {
             my ($gid, $aglyph, $p, %noaps);
+            my ($fnum) = $attrs{'font'} || "0";
+            my ($cif) = $fonts->[$fnum];
+            my ($ccmap) = $cif->{'cmap'}->find_ms;
             
-            unless (($attrs{'PSName'} && ($gid = $if->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
-                    || ($attrs{'UID'} && ($gid = $c->{'val'}{hex($attrs{'UID'})}))
+            unless (($attrs{'PSName'} && ($gid = $cif->{'post'}{'STRINGS'}{$attrs{'PSName'}}))
+                    || ($attrs{'UID'} && ($gid = $ccmap->{'val'}{hex($attrs{'UID'})}))
                     || ($gid = $attrs{'GID'}) || defined $attrs{'GID'} || ($opt_d & 128) == 128)
-            { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+" . ($attrs{UID} ? $attrs{UID} : "0000") . " for $tag in $opt_c"); }
+            { $xml->xpcarp("Can't find glyph $attrs{PSName}/U+" . ($attrs{UID} ? $attrs{UID} : "0000") . " for $tag in $curbase->{'PSName'} in $opt_c"); }
     
             $aglyph = {
+                'fnum' => $fnum,
+                'font' => $cif,
                 'gid' => $gid,
-                'glyph' => $if->{'loca'}{'glyphs'}[$gid],
+                'glyph' => $cif->{'loca'}{'glyphs'}[$gid],
                 'parent' => $curbase,
                 'PSName' => $attrs{'PSName'},
                 'UID' => $attrs{'UID'}
@@ -251,60 +273,61 @@ sub main
             unless ($attrs{'noaps'} == 1)
             {
                 my %noaps = map {$_ => 1} split(' ', $attrs{'noaps'});
-                foreach $p (keys %{$xml_dat[$gid]{'points'}})
+                foreach $p (keys %{$xml_dat[$fnum][$gid]{'points'}})
                 {
                     next if $noaps{$p};
-                    my ($p1) = $xml_dat[$gid]{'points'}{$p};
+                    my ($p1) = $xml_dat[$fnum][$gid]{'points'}{$p};
                     $aglyph->{'points'}{$p}{'base'} = $aglyph;
                     $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
                     $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
                 }
             }
-            $aglyph->{'properties'} = {%{$xml_dat[$gid]{'properties'}}} if defined $xml_dat[$gid]{'properties'};
-            $aglyph->{'notes'} = $xml_dat[$gid]{'notes'} if defined $xml_dat[$gid]{'notes'};
+            $aglyph->{'properties'} = {%{$xml_dat[$fnum][$gid]{'properties'}}} if defined $xml_dat[$fnum][$gid]{'properties'};
+            $aglyph->{'notes'} = $xml_dat[$fnum][$gid]{'notes'} if defined $xml_dat[$fnum][$gid]{'notes'};
     
             if ($tag eq 'attach')                            # position attachment
             {
                 my ($atx, $aty, $withx, $withy, $pt);
+                my ($currif) = $curbase->{'font'};
                 if (defined $attrs{'at'})
                 {
-                    $pt = $xml_dat[$curbase->{'gid'}]{'points'}{$attrs{'at'}};
+                    $pt = $xml_dat[$curbase->{'fnum'}][$curbase->{'gid'}]{'points'}{$attrs{'at'}};
                     if (!defined $pt)
                     { $xml->xpcarp("Undefined attachment point $attrs{'at'} on glyph $xml_dat[$curbase->{'gid'}]{'ps'} in $opt_c"); }
                     elsif (!defined $pt->{'loc'})
                     {
                         if (defined $pt->{'cont'})
                         { 
-                            $xml->xpcarp("glyph $xml_dat[$curbase->{'gid'}]{'ps'} has no outline in $opt_c") 
+                            $xml->xpcarp("glyph $xml_dat[$curbase->{'fnum'}][$curbase->{'gid'}]{'ps'} has no outline in $opt_c") 
                                 unless ($curbase->{'glyph'});
-                            $pt->{'loc'} = lookup_pt($curbase->{'glyph'}, $pt->{'cont'}); 
+                            $pt->{'loc'} = lookup_pt($curbase->{'glyph'}, $pt->{'cont'}, $curbase->{'font'}{'scale'}); 
                         }
                         else
-                        { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$curbase->{'gid'}]{'ps'} in $opt_c"); }
+                        { $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$curbase->{'fnum'}][$curbase->{'gid'}]{'ps'} in $opt_c"); }
                     }
                     ($atx, $aty) = @{$pt->{'loc'}};
                     delete $curbase->{'points'}{$attrs{'at'}};      # used it so delete it
                 } else                                              # no attachment point, default centre the glyphs in x
                 {
-                    $atx = $if->{'hmtx'}{'advance'}[$curbase->{'gid'}] / 2;
+                    $atx = $curbase->{'font'}{'hmtx'}{'advance'}[$curbase->{'gid'}] / 2 * $curbase->{'font'}{'scale'};
                     $aty = 0;
                 }
 
                 if (defined $attrs{'with'})
                 {
-                    $pt = $xml_dat[$aglyph->{'gid'}]{'points'}{$attrs{'with'}};
+                    $pt = $xml_dat[$fnum][$aglyph->{'gid'}]{'points'}{$attrs{'with'}};
                     if (!defined $pt)
                     {
-                        $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c");
+                        $xml->xpcarp("Undefined attachment point $attrs{'with'} on glyph $xml_dat[$fnum][$aglyph->{'gid'}]{'ps'} in $opt_c");
                         $pt->{'loc'} = [0, 0];
                     }
                     elsif (!defined $pt->{'loc'})
                     {
                         if (defined $pt->{'cont'})
-                        { $pt->{'loc'} = lookup_pt($aglyph->{'glyph'}, $pt->{'cont'}); }
+                        { $pt->{'loc'} = lookup_pt($aglyph->{'glyph'}, $pt->{'cont'}, $currif->{'scale'}); }
                         else
                         {
-                            $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$aglyph->{'gid'}]{'ps'} in $opt_c");
+                            $xml->xpcarp("Unlocatable attachment point $attrs{'at'} on glyph $xml_dat[$fnum][$aglyph->{'gid'}]{'ps'} in $opt_c");
                             $pt->{'loc'} = [0, 0];
                         }
                     }
@@ -313,7 +336,7 @@ sub main
                             if (defined $curbase->{'glyph'} && (!ref $curbase->{'glyph'}{'endpoints'} || $curbase->{'glyph'}{'numPoints'} != scalar @{$curbase->{'glyph'}{'endPoints'}}));
                 } else
                 {
-                    $withx = $if->{'hmtx'}{'advance'}[$aglyph->{'gid'}] / 2;
+                    $withx = $currif->{'hmtx'}{'advance'}[$aglyph->{'gid'}] / 2 * $currif->{'scale'};
                     $withy = 0;
                 }
     
@@ -385,7 +408,7 @@ sub main
 
         if ($tag eq 'base' || $tag eq 'attach')
         {
-            $curbase->{'adv'} = $if->{'hmtx'}{'advance'}[$curbase->{'gid'}]
+            $curbase->{'adv'} = $curbase->{'font'}{'hmtx'}{'advance'}[$curbase->{'gid'}] * $curbase->{'font'}{'scale'}
                 unless (defined $curbase->{'adv'});
             $xml->{' curbase'} = $curbase->{'parent'};
             $curbase = $xml->{' curbase'};
@@ -408,7 +431,7 @@ sub main
             $i = 0;
             foreach $g (@{$curbase->{'glyphs'}})
             {
-                $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph
+                $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph, create flattened glyph_list
                 $adv = $g->{'adv'};			# + $g->{'offset'}[0]
                 $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
                 push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
@@ -517,52 +540,54 @@ sub main
             next if defined $glyphs[$i];
     
             $g = $if->{'loca'}{'glyphs'}[$i];
+            $glyphs[$i] = {
+                'fnum' => 0,
+                'font' => $if,
+                'GID' => $i,
+                'PSName' => $names[$i]};
             if ($g)
             {
                 $g->read;
-                $bbox = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
-    
-                $glyphs[$i] = {
-                    'GID' => $i,
-                    'glyph_list' => [{
-                        'glyph' => $g,
-                        'GID' => $i}],
-                    'bbox' => $bbox,
-                    'PSName' => $names[$i]};
-            } else
-            {
-                $glyphs[$i] = {
-                    'GID' => $i,
-                    'PSName' => $names[$i]};
+                $glyphs[$i]{'bbox'} = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
+                $glyphs[$i]{'glyph_list'} = [{
+                    'glyph' => $g,
+                    'GID' => $i}],
             }
             $of->{'hmtx'}{'advance'}[$i] = $if->{'hmtx'}{'advance'}[$i];
         }
     
         # resolve reference bases - use possible bases here
-        for ($i = 0; $i < $if->{'maxp'}{'numGlyphs'}; $i++)
+        foreach my $f (@$fonts)
         {
-            my ($g) = $if->{'loca'}{'glyphs'}[$i];
-            my ($bbox);
-        
-            next unless ($g && $g->{'required'} == -1);
-            $g->read;
-            if (defined $g->{'required1'})
+            my ($s) = $f->{'scale'};
+            
+            for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
             {
-                $g->{'required'} = $g->{'required1'};
-                next;
+                my ($g) = $f->{'loca'}{'glyphs'}[$i];
+                my ($bbox);
+ 
+                next unless ($g && $g->{'required'} == -1);
+                $g->read;
+                if (defined $g->{'required1'})
+                {
+                    $g->{'required'} = $g->{'required1'};
+                    next;
+                }
+                $bbox = [$g->{'xMin'} * $s, $g->{'yMin'} * $s, $g->{'xMax'} * $s, $g->{'yMax'} * $s];
+ 
+                push (@glyphs, {
+                    'GID' => ++$gcount,
+                    'font' => $f,
+                    'fnum' => $f->{'number'},
+                    'glyph_list' => [{
+                        'glyph' => $g,
+                        'GID' => $i,
+                        'offset' => [0, 0]}],
+                    'bbox' => $bbox,
+                    ($opt_d & 2 ? () : ('PSName' => $f->{'post'}{'VAL'}[$i]))});
+                $g->{'required'} = $gcount;
+                $of->{'hmtx'}{'advance'}[$gcount] = $f->{'hmtx'}{'advance'}[$i] * $f->{'scale'};
             }
-            $bbox = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
-    
-            push (@glyphs, {
-                'GID' => ++$gcount,
-                'glyph_list' => [{
-                    'glyph' => $g,
-                    'GID' => $i,
-                    'offset' => [0, 0]}],
-                'bbox' => $bbox,
-                ($opt_d & 2 ? () : ('PSName' => $if->{'post'}{'VAL'}[$i]))});
-            $g->{'required'} = $gcount;
-            $of->{'hmtx'}{'advance'}[$gcount] = $if->{'hmtx'}{'advance'}[$i];
         }
     }
     
@@ -627,10 +652,11 @@ sub main
                     my ($comp);
                     $glyph->read_dat;
                     foreach $comp (@{$glyph->{'comps'}})
-                    { $comp->{'glyph'} = $if->{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
+                    { $comp->{'glyph'} = $g->{'font'}{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
                 }
-                if ($cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
+                if ($g->{'fnum'} || $cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
                 {
+                    my ($scale) = $g->{'font'}{'scale'};
                     $glyph->read_dat;
                     if ($glyph->{'numberOfContours'} < 0)
                     {
@@ -638,15 +664,15 @@ sub main
         
                         foreach $comp (@{$glyph->{'comps'}})
                         {
-                            $comp->{'args'}[0] += $cg->{'offset'}[0];
-                            $comp->{'args'}[1] += $cg->{'offset'}[1];
-                            $comp->{'scale'} = mat_mult($cg->{'scale'}, $comp->{'scale'});
+                            $comp->{'args'}[0] = $comp->{'args'}[0] * $scale + $cg->{'offset'}[0];
+                            $comp->{'args'}[1] = $comp->{'args'}[1] * $scale + $cg->{'offset'}[1];
+                            $comp->{'scale'} = mat_mult($cg->{'scale'}, $comp->{'scale'}, $scale);
                         }
                     } else
                     {
                         for (my $j = 0; $j < scalar @{$glyph->{'x'}}; $j++)
                         {
-                            my ($x, $y) = ($glyph->{'x'}[$j], $glyph->{'y'}[$j]);
+                            my ($x, $y) = ($glyph->{'x'}[$j] * $scale, $glyph->{'y'}[$j] * $scale);
                             
                             if ($cg->{'scale'})
                             {
@@ -819,11 +845,13 @@ sub resolve_glyph
 {
     my ($g, $orgx, $orgy, $pathcount, $overstrike) = @_;
     my ($glyph, $xMin, $yMin, $xMax, $yMax, $c, $p, $adv, $lorg);
+    my ($f) = $g->{'font'};
+    my ($s) = $f->{'scale'};
 
     $g->{'pathbase'} = $pathcount;
     $g->{'offset'} = [$g->{'roffset'}[0] + $orgx,
                       $g->{'roffset'}[1] + $orgy];
-    $adv = (defined $g->{'adv'} ? $g->{'adv'} : $if->{'hmtx'}{'advance'}[$g->{'gid'}])
+    $adv = (defined $g->{'adv'} ? $g->{'adv'} : $f->{'hmtx'}{'advance'}[$g->{'gid'}] * $s)
             + $g->{'offset'}[0];
     
     if ($glyph = $g->{'glyph'})
@@ -831,12 +859,12 @@ sub resolve_glyph
         $glyph->read->get_points;
         $pathcount += scalar @{$glyph->{'endPoints'}};
 
-        push (@{$g->{'glyph_list'}}, pos_glyphs($g->{'gid'}, $glyph, @{$g->{'offset'}}, $g->{'scale'}));
+        push (@{$g->{'glyph_list'}}, pos_glyphs($f, $g->{'gid'}, $glyph, @{$g->{'offset'}}, $g->{'scale'}, $s));
 
-        $xMin = $glyph->{'xMin'};
-        $yMin = $glyph->{'yMin'};
-        $xMax = $glyph->{'xMax'};
-        $yMax = $glyph->{'yMax'};
+        $xMin = $glyph->{'xMin'} * $s;
+        $yMin = $glyph->{'yMin'} * $s;
+        $xMax = $glyph->{'xMax'} * $s;
+        $yMax = $glyph->{'yMax'} * $s;
     }
     elsif (!defined $g->{'glyph_list'})
     { $g->{'glyph_list'} = []; }
@@ -863,7 +891,7 @@ sub resolve_glyph
 
 sub pos_glyphs
 {
-    my ($gid, $glyph, $orgx, $orgy, $scale) = @_;
+    my ($font, $gid, $glyph, $orgx, $orgy, $scale, $qs) = @_;
     my ($comp);
 
     if ($glyph->{'numberOfContours'} < 0)
@@ -872,10 +900,10 @@ sub pos_glyphs
         $glyph->read_dat;
         foreach $comp (@{$glyph->{'comps'}})
         {
-            push (@res, pos_glyphs($comp->{'glyph'},
-                    $if->{'loca'}{'glyphs'}[$comp->{'glyph'}],
-                    $comp->{'args'}[0] + $orgx,
-                    $comp->{'args'}[1] + $orgy, mat_mult($scale, $comp->{'scale'})));
+            push (@res, pos_glyphs($font, $comp->{'glyph'},
+                    $font->{'loca'}{'glyphs'}[$comp->{'glyph'}],
+                    $comp->{'args'}[0] * $qs + $orgx,
+                    $comp->{'args'}[1] * $qs + $orgy, mat_mult($scale, $comp->{'scale'}, $qs), $qs));
         }
         return @res;
     } elsif (scalar @{$glyph->{'endPoints'}} == $glyph->{'numPoints'})
@@ -885,6 +913,8 @@ sub pos_glyphs
     {
         $glyph->{'required'} = -1 if (!defined $glyph->{'required'});
         return ({
+            'font' => $font,
+            'fnum' => $font->{'number'},
             'GID' => $gid,
             'offset' => [$orgx, $orgy],
             'scale' => $scale,
@@ -895,10 +925,10 @@ sub pos_glyphs
 
 sub lookup_pt
 {
-    my ($glyph, $cont) = @_;
+    my ($glyph, $cont, $scale) = @_;
     $glyph->get_points;
-    return [$glyph->{'x'}[$glyph->{'endPoints'}[$cont]],
-            $glyph->{'y'}[$glyph->{'endPoints'}[$cont]]];
+    return [$glyph->{'x'}[$glyph->{'endPoints'}[$cont]] * $scale,
+            $glyph->{'y'}[$glyph->{'endPoints'}[$cont]] * $scale];
 }
 
 sub findbox
@@ -982,15 +1012,16 @@ sub over_asnum
 
 sub mat_mult
 {
-    my ($a, $b) = @_;
+    my ($a, $b, $s) = @_;
     
     if (!defined $a)
     { return $b; }
     if (!defined $b)
     { return $a; }
-    
-    return [$a->[0] * $b->[0] + $a->[1] * $b->[2], $a->[0] * $b->[1] + $a->[1] * $b->[3],
-            $a->[2] * $b->[0] + $a->[3] * $b->[2], $a->[2] * $b->[1] + $a->[3] * $b->[3]];
+    $s ||= 1.0;
+
+    return [($a->[0] * $b->[0] + $a->[1] * $b->[2]) * $s, ($a->[0] * $b->[1] + $a->[1] * $b->[3]) * $s,
+            ($a->[2] * $b->[0] + $a->[3] * $b->[2]) * $s, ($a->[2] * $b->[1] + $a->[3] * $b->[3]) * $s];
 }
 
 __END__
