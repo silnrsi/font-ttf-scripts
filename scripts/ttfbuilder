@@ -1,16 +1,17 @@
 #! /usr/bin/perl
 use Font::TTF::Font;
 use Pod::Usage;
-use Getopt::Std;
+use Getopt::Long;
 
 use strict;
 
-my %opts;
+my (%opts, @xaps);
 my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
+$VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
+# $VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
 # $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
 # $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
 # $VERSION = 0.24;    # MJPH      12-OCT-2005     Add more string names
@@ -42,7 +43,10 @@ $VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent
 
 unless ($CHAIN_CALL)
 {
-    getopts('ac:d:hx:z:', \%opts);
+#    getopts('ac:d:hx:z:', \%opts);
+#    $Getopt::Long::debug = 1;
+    %opts = ("x" => sub {$xaps[defined $opts{'f'} ? scalar @{$opts{'f'}} : 0] = $_[1]});
+    GetOptions(\%opts, 'a', 'c|config=s', 'd|debug=i', 'f|font=s@', 'h|help', 'x|apdb=s@', 'z|apout=s');
 
     unless ((defined $ARGV[1] && defined $opts{c}) || defined $opts{h})
     {
@@ -59,7 +63,9 @@ unless ($CHAIN_CALL)
     $if = Font::TTF::Font->open($ARGV[0]) || die "Can't read font $ARGV[0]";
 }
 
-$of = Font::TTF::Scripts::TTFBuilder::main($if, \%opts, [$if], [$opts{'x'}]);
+$of = Font::TTF::Scripts::TTFBuilder::main($if, \%opts, 
+            [$if, map {Font::TTF::Font->open($_) || die "Can't read font $_"} @{$opts{'f'}}],
+            [@xaps]);
 
 unless ($CHAIN_CALL)
 { $of->out($ARGV[1]) || die "Can't write to font file $ARGV[1]. Do you have it installed?"; }
@@ -1054,8 +1060,10 @@ out.xml.
               5: Default to not allowing overstriking on rhs
               6: Disable some warnings
               7: Don't report missing glyphs
+  -f font     Extra font to reference [repeatable]
   -h          Help
-  -x file     Attachment database to read
+  -x file     Attachment database to read [repeatable, follows correspond -f
+                or occurs before -f to correspond to main font]
   -z file     Attachment database to output
     
 =head1 DESCRIPTION
