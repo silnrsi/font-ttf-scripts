@@ -1146,6 +1146,12 @@ the value C<1>, then no attachment points from this glyph will appear in the out
 glyph. If C<noaps> contains a space separated listed of attachment point names, then
 none of those attachment points will propagate (whether or not they exist).
 
+When referencing a <base> or <attach> glyph, in additio to being able to use glyph
+id, unicode id, or postscript name, it is possible to specify a font number which the
+glyph should be taken from. This corresponds to the -f command line option values.
+Thus a value of 0 is the required input font. A value of 1 is the first font referenced
+by a -f option and so on.
+
 =item advance
 
 It is possible to override the default value of the advance width for any glyph. Thus
@@ -1255,6 +1261,7 @@ The DTD for the configuration file is:
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED
+        font    CDATA #IMPLIED
         noaps   CDATA #IMPLIED>
 
     <!ELEMENT attach (advance | rsb | lsb | shift)*>
@@ -1262,6 +1269,7 @@ The DTD for the configuration file is:
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
         GID     CDATA #IMPLIED
+        font    CDATA #IMPLIED
         with    CDATA #IMPLIED
         at      CDATA #IMPLIED
         noaps   CDATA #IMPLIED>
