@@ -910,7 +910,7 @@ sub pos_glyphs
             push (@res, pos_glyphs($font, $comp->{'glyph'},
                     $font->{'loca'}{'glyphs'}[$comp->{'glyph'}],
                     $comp->{'args'}[0] * $qs + $orgx,
-                    $comp->{'args'}[1] * $qs + $orgy, mat_mult($scale, $comp->{'scale'}, $qs), $qs));
+                    $comp->{'args'}[1] * $qs + $orgy, mat_mult($scale, $comp->{'scale'}, $qs), $qs)) if ($font->{'loca'}{'glyphs'}[$comp->{'glyph'}]);
         }
         return @res;
     } elsif (scalar @{$glyph->{'endPoints'}} == $glyph->{'numPoints'})
