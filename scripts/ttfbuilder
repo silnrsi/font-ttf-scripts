@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
+$VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
+# $VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
 # $VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
 # $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
 # $VERSION = 0.25;    # MJPH      27-APR-2006     Reorganise docs for better man pages
@@ -863,7 +864,7 @@ sub resolve_glyph
     if ($glyph = $g->{'glyph'})
     {
         $glyph->read->get_points;
-        $pathcount += scalar @{$glyph->{'endPoints'}};
+        $pathcount += scalar @{$glyph->{'endPoints'}} if (defined $glyph->{'endpoints'});
 
         push (@{$g->{'glyph_list'}}, pos_glyphs($f, $g->{'gid'}, $glyph, @{$g->{'offset'}}, $g->{'scale'}, $s));
 
