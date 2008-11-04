@@ -324,9 +324,9 @@ sub lig_rules
         { $compstr = ' {component.0.reference = @1; component.1.reference = @2}'; }
 
         if ($type eq 'first')
-        { $fh->print("$gname cligno_$c > _ cl$c:(1 2)$compstr / _ ^ _;\n"); }
+        { $fh->print("$gname cligno_$c > _ clig$c:(1 2)$compstr / _ ^ _;\n"); }
         else
-        { $fh->print("cligno_$c $gname > cl$c:(1 2)$compstr _/ ^ _ _;\n"); }
+        { $fh->print("cligno_$c $gname > clig$c:(1 2)$compstr _/ ^ _ _;\n"); }
 
     }
     $fh->print("endpass;\nendtable;\n");
