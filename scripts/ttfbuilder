@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
+$VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
+# $VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
 # $VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
 # $VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
 # $VERSION = 0.26;    # MJPH       2-FEB-2007     Fix crash when missing APs
@@ -232,6 +233,7 @@ sub main
         $gcount = 2;
     }
 
+    unshift(@$fonts, $if);
     $i = 0;
     foreach my $f (@$fonts)
     {
@@ -647,7 +649,8 @@ sub main
             $glyph->{'yMin'} = $g->{'bbox'}[1];
             $glyph->{'xMax'} = $g->{'bbox'}[2];
             $glyph->{'yMax'} = $g->{'bbox'}[3];
-            if (scalar @{$g->{'glyph_list'}} == 1 && $g->{'glyph_list'}[0]{'glyph'}{'required'} == $i)  # v0.20
+            if (scalar @{$g->{'glyph_list'}} == 1 
+                && ($g->{'glyph_list'}[0]{'glyph'}{'required'} == $i))  # v0.20
             {
                 my ($cg) = $g->{'glyph_list'}[0];
                 my ($gb) = $cg->{'glyph'};
@@ -663,7 +666,7 @@ sub main
                 }
                 if ($g->{'fnum'} || $cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
                 {
-                    my ($scale) = $g->{'font'}{'scale'};
+                    my ($scale) = $cg->{'font'}{'scale'};
                     $glyph->read_dat;
                     if ($glyph->{'numberOfContours'} < 0)
                     {
