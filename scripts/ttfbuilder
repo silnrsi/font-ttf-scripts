@@ -589,6 +589,8 @@ sub main
                     'font' => $f,
                     'fnum' => $f->{'number'},
                     'glyph_list' => [{
+                        'font' => $f,
+                        'fnum' => $f->{'number'},
                         'glyph' => $g,
                         'GID' => $i,
                         'offset' => [0, 0]}],
