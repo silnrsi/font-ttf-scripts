@@ -5,8 +5,14 @@ use strict;
 use Font::TTF::Font;
 use Pod::Usage;
 use Getopt::Long;
+use IO::String;
 
-our $VERSION = 0.01;    # BH      2007-11-04     First release
+our $VERSION = 0.03;    # BH      2009-02-02
+#		Added -update option (to force update of one or more tables)
+#			(Had to change inport code to use memory files so update could work)
+#   $VERSION = 0.02;    # BH      2008-06-27     
+#		Added -list option (outputs a list of tables from input font).
+#   $VERSION = 0.01;    # BH      2007-11-04     First release
 
 
 # Regarding $CHAIN_CALL
@@ -21,7 +27,7 @@ our $VERSION = 0.01;    # BH      2007-11-04     First release
 
 our $CHAIN_CALL;
 
-my (@exports, @imports, @deletes, $textmode, $list);
+my (@exports, @imports, @deletes, @updates, $textmode, $list);
 
 my $f;
 
@@ -33,6 +39,7 @@ unless ($CHAIN_CALL)
         'export=s' =>  \@exports,
         'import=s' =>  \@imports,
         'delete|remove=s' => \@deletes,
+		'update=s' =>	\@updates,
         'text'  =>      \$textmode,
         'list'  =>      \$list,
         'help|?'   =>   \$help) or pod2usage(2);
@@ -45,16 +52,18 @@ unless ($CHAIN_CALL)
 
 }
 
-# Deletes is special because:
+# Delete and update are special because:
 #   There are magic words like "graphite"
 #   it doesn't have the tag=fname format, so allow it to have be simple list.
 # While we're at it, go ahead and trim and pad the tags
-@deletes = map {sprintf('%-4.4s', $_)} grep {$_} split(/[\s,;]+/, join(',', (map { 
+foreach my $tag (\@deletes, \@updates)
+{
+	@{$tag} = map {sprintf('%-4.4s', $_)} grep {$_} split(/[\s,;]+/, join(',', (map { 
         s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
         s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
         s/\bopentype\b/ GDEF GSUB GPOS /oi;
-    $_ } (@deletes))));
-
+    $_ } (@{$tag}))));
+}
 
 # First, read data to be imported and save it for later
 
@@ -152,20 +161,49 @@ for my $tag (@deletes)
     delete $f->{$tag} if defined $f->{$tag};
 }
 
-# Finally, complete import of tables
+# Complete import of tables
 
 for my $tag (keys %importeddata)
 {
     # Create, if it doesn't exist, the tables we are going to replace
-    $f->{$tag} = Font::TTF::Table->new (PARENT => $f, NAME => $tag) unless exists $f->{$tag};
+    $f->{$tag} = Font::TTF::Table->new (PARENT => $f, NAME => $tag); # unless exists $f->{$tag};
+    
+    # Use in-memory file
+    my $fh = IO::String->new($importeddata{$tag}) ;
+    unless ($fh)
+    {
+    	warn "Couldn't open memory file for $tag ";
+    	next;
+    }
+    binmode $fh;
+    $f->{$tag}{' INFILE'} = $fh;
+    $f->{$tag}{' OFFSET'} = 0;
+    $f->{$tag}{' LENGTH'} = bytes::length($importeddata{$tag});
     
     # Now we can set the data
-    $f->{$tag}{' dat'} = $importeddata{$tag};
-    $f->{$tag}{' read'} = 0;    # Make sure ' dat' is written to file. (Fix this up for CHAIN_CALL)
+    # $f->{$tag}{' dat'} = $importeddata{$tag};
+    # $f->{$tag}{' read'} = 0;    # Make sure ' dat' is written to file. (Fix this up for CHAIN_CALL)
 }
 
+# Finally rebuild any tables in the update list
 
-    
+my $needupdate;
+for my $tag (@updates)
+{
+	next unless defined $f->{$tag};
+	$needupdate=1;
+	$f->{$tag}->read->dirty;
+	if ($tag eq 'glyf')
+	{
+		# Special processing for glyf table: read and dirty every glyph
+		for my $gid (0 .. $f->{'head'}{'maxGlyphs'}-1)
+		{
+			$f->{'loca'}{'glyphs'}[$gid]->read_dat;
+		}
+	}
+}
+$f->update if $needupdate;
+
 unless ($CHAIN_CALL)
 { 
     $f->out($ARGV[1]) || die "Can't write to font file '$ARGV[1]'. Do you have it installed?" if defined $ARGV[1]; 
@@ -195,6 +233,7 @@ then writes the modified font to outfile.ttf if provided.
   -import tag          Name of table to import from default datafile
   -import "tag=fname"  Name of table to import and optional datafile name
   -delete tag[,tag...] List of tables to remove from font
+  -update tag[,tag...] Force a re-build of the named tables 
   -list                Write a list of table tags from infile.ttf to STDOUT
   -text                Use text mode i/o for datafiles 
   -help                Help
@@ -209,7 +248,7 @@ separate files, and/or delete specified tables from the font.
 
 Changes are written to outfile.ttf if supplied.
 
-Tables are identified by their four-character tag. For the -delete option,
+Tables are identified by their four-character tag. For the -delete and -update options,
 more than one table tag can be supplied, and the following (case 
 insensitive) magic words can also be used:
 
@@ -222,6 +261,11 @@ equals sign and a filename. If the filename is not provided, ttftable
 makes up a file name by appending ".I<tagname>.dat" to the input
 font file name. CAUTION: Windows users should
 include quotes around parameters of the form tag=fname.
+
+-update is a debugging tool that forces the named tables to be read in detail, then
+"dirties" them, and finally updates the font. This should bring the font into consistent 
+state if it wasn't before. Note that updating the 'glyf' table will cause every 
+glyph to be read and parsed and then reconstructed, taking significantly more time.
 
 Font tables such as TSIV that contain text use various conventions for line ending. 
 During -export, the -text option will convert any line-endings in the font data to what is needed by 
