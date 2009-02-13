@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<font name='Testing' upem='2048'>
+    <glyph GID='0'>
+    </glyph>
+    <glyph GID='1' PSName='.null'>
+    </glyph>
+    <glyph GID='2' PSName='nonmarkingreturn'>
+    </glyph>
+    <glyph GID='3' PSName='zero' UID='0030'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='4' PSName='one' UID='0031'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='5' PSName='two' UID='0032'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='6' PSName='three' UID='0033'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='7' PSName='four' UID='0034'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='8' PSName='five' UID='0035'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='9' PSName='six' UID='0036'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='10' PSName='seven' UID='0037'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='11' PSName='eight' UID='0038'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='12' PSName='nine' UID='0039'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='13' PSName='Agrave' UID='00C0'>
+        <compound PSName='A' bbox='0, 0, 1198, 1317'/>
+        <compound PSName='grave' bbox='313, 1347, 721, 1789'/>
+        <property name='numcomp' value='2'/>
+    </glyph>
+    <glyph GID='14' PSName='agrave' UID='00E0'>
+        <compound PSName='a' bbox='80, -30, 926, 960'/>
+        <compound PSName='grave' bbox='173.5, 1047, 581.5, 1489'/>
+        <property name='numcomp' value='2'/>
+    </glyph>
+    <glyph GID='15' PSName='A'>
+        <property name='classes' value='bases'/>
+    </glyph>
+    <glyph GID='16' PSName='grave'>
+    </glyph>
+    <glyph GID='17' PSName='a'>
+        <property name='classes' value='bases'/>
+    </glyph>
+</font>

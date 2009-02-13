@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<classes>
+    <class name="bases">
+        one two three four five six seven eight nine zero
+        A B C D E F G a b c d e f g
+    </class>
+    <property name="numcomp" value="2">Agrave agrave</property>
+</classes>

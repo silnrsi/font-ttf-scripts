@@ -19,22 +19,29 @@ if ($opt_h)
     exit;
 }
 
-my ($indent, $currclass, $text, %classes, $isempty);
+my ($indent, $currclass, $text, %classes, %properties, $isempty);
+my ($classlist, $propdict);
+
 my ($xml) = XML::Parser->new(Handlers => {
     Start => sub {
         my ($xp, $tag, %attrs) = @_;
 
         if ($tag eq 'class')
         { $currclass = $attrs{'name'} }
+        elsif ($tag eq 'property')
+        {
+            $currclass = [$attrs{'value'}];
+            push (@{$properties{$attrs{'name'}}}, $currclass);
+        }
         $text = '';
     },
     End => sub {
         my ($xp, $tag) = @_;
 
         if ($tag eq 'class')
-        {
-            $classes{$currclass} = [split(' ', $text)];
-        }
+        { $classes{$currclass} = [split(' ', $text)]; }
+        elsif ($tag eq 'property')
+        { push (@{$currclass}, [split(' ', $text)]); }
     },
     Char => sub {
         my ($xp, $str) = @_;
@@ -78,7 +85,12 @@ my ($xml) = XML::Parser->new(Handlers => {
         my ($xp, $str) = @_;
         $text .= $str;
     }});
-    
+
+if ($ARGV[1])
+{
+    open(OFH, "> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
+    select OFH;
+}    
 $xml->parsefile($ARGV[0]);
 
 sub dotext
@@ -102,23 +114,31 @@ sub start
 
     if ($$tagr eq 'glyph')
     {
-        $classlist = get_classes(\%classes, $attrs->{'PSName'}, $attrs->{'UID'});    }
+        $classlist = get_classes(\%classes, $attrs->{'PSName'}, $attrs->{'UID'});
+        $propdict = get_properties(\%properties, $attrs->{'PSName'}, $attrs->{'UID'});
+    }
     elsif ($$tagr eq 'property' && $attrs->{'name'} eq 'classes')
     {
         my ($val) = merge_classes($classlist, $attrs->{'value'});
         $attrs->{'value'} = $val;
         $classlist = undef;
     }
+    elsif ($$tagr eq 'property' && defined $propdict->{$attrs->{'name'}})
+    { $attrs->{'value'} = delete $propdict->{$attrs->{'name'}}; }
 }
 
 sub end
 {
     my ($xp, $tagr, $isempty) = @_;
+    my ($p);
 
-    if ($$tagr eq 'glyph' && $classlist)
+    if ($$tagr eq 'glyph')
     {
         print ">" if ($isempty);
-        print "\n" . (" " x $indent) . "<property name='classes' value='$classlist'/>";
+        if ($classlist)
+        { print "\n" . (" " x $indent) . "<property name='classes' value='$classlist'/>"; }
+        foreach $p (sort keys %{$propdict})
+        { print "\n" . (" " x $indent) . "<property name='$p' value='$propdict->{$p}'/>"; }
         return 0;
     }
     return $isempty;
@@ -152,6 +172,25 @@ sub merge_classes
     my (%base) = map {$_ => 1} split(' ', $base);
     my (%res) = (%base, %list);
     my ($res) = join(" ", sort keys %res);
+    return $res;
+}
+
+sub get_properties
+{
+    my ($properties, $psname, $uid) = @_;
+    my ($res, $p, $q, $g);
+
+    foreach $p (keys %{$properties})
+    {
+        foreach $q (@{$properties->{$p}})
+        {
+            foreach $g (@{$q->[1]})
+            {
+                if (match_glyph($g, $psname, $uid))
+                { $res->{$p} = $q->[0]; }
+            }
+        }
+    }
     return $res;
 }
 
