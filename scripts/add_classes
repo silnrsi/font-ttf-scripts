@@ -5,7 +5,7 @@ use Pod::Usage;
 use Getopt::Std;
 use Font::TTF::PSNames;
 
-getopts('c:h');
+getopts('c:hp');
 
 unless ($ARGV[0] || $opt_h)
 {
@@ -31,7 +31,8 @@ my ($xml) = XML::Parser->new(Handlers => {
         elsif ($tag eq 'property')
         {
             $currclass = [$attrs{'value'}];
-            push (@{$properties{$attrs{'name'}}}, $currclass);
+            $pname = $attrs{'name'};
+            push (@{$properties{$pname}}, $currclass);
         }
         $text = '';
     },
@@ -41,7 +42,11 @@ my ($xml) = XML::Parser->new(Handlers => {
         if ($tag eq 'class')
         { $classes{$currclass} = [split(' ', $text)]; }
         elsif ($tag eq 'property')
-        { push (@{$currclass}, [split(' ', $text)]); }
+        {
+            push (@{$currclass}, [split(' ', $text)]);
+            if ($opt_p)
+            { $classes{"${pname}_$currclass->[0]"} = [split(' ', $text)]; }
+        }
     },
     Char => sub {
         my ($xp, $str) = @_;
@@ -235,6 +240,8 @@ the results to stdout.
 
   -c classes.xml    List of classes and their contents
   -h                print manpage
+  -p                Create classes for each property value
+                    called property_value
 
 =head1 DESCRIPTION
 

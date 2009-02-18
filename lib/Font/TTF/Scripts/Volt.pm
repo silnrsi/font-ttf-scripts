@@ -1576,6 +1576,7 @@ sub make_lookups
     foreach $c (sort keys %{$self->{'classes'}})
     {
         next if ($c =~ m/^no_/o);
+        next unless (defined $self->{'classes'}{"no_$c"});
         if ($opts->{'-force'})
         { $self->{'lookups'} = [grep {$_->{'id'} ne $c} @{$self->{'lookups'}}]; }
         else
