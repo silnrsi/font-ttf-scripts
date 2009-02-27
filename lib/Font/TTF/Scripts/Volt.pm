@@ -1199,7 +1199,7 @@ sub parse_volt
                                 'first' => [@firsts],
                                 'second' => [@seconds],
                                 'adj' => [@adjs]});
-                        unless ($str =~ m/\GEND_ADJUST\s+/ogc)
+                        unless ($str =~ m/\G\s*END_ADJUST\s+/ogc)
                         { die "Expected END_ADJUST in LOOKUP $name, found: " . substr($str, pos($str), 20); }
                     }
 #        | 'ADJUST_SINGLE' <commit> post_single(s) 'END_ADJUST'
@@ -1311,6 +1311,8 @@ sub parse_enum
             unless ($$str =~ m/\GEND_ENUM\s+/ogc)
             { die "Expected END_ENUM, found: " . substr($$str, pos($$str), 20); }
         }
+        elsif ($$str =~ m/\GEMPTY\s+/ogc)
+        { }
         else
         { last; }
     }
