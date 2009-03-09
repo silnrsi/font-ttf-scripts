@@ -570,7 +570,7 @@ sub make_classes
                                             # when processing x.y, etc.
             {
                 my ($base, $ext) = ($` , $1);    #` make editor happy
-                if ($base && defined $namemap{$base})
+                if ($base && (!defined $classes{"no_$ext"} || defined $namemap{$base}))
                 {
                     my ($i) = $namemap{$base};
                     push (@{$classes{$ext}}, $glyph->{'gnum'});

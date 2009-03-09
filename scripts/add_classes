@@ -27,10 +27,13 @@ my ($xml) = XML::Parser->new(Handlers => {
         my ($xp, $tag, %attrs) = @_;
 
         if ($tag eq 'class')
-        { $currclass = $attrs{'name'} }
+        {
+            $currclass = [$attrs{'exts'}];
+            $classes{$attrs{'name'}} = $currclass;
+        }
         elsif ($tag eq 'property')
         {
-            $currclass = [$attrs{'value'}];
+            $currclass = [$attrs{'value'}, $attrs{'exts'}];
             $pname = $attrs{'name'};
             push (@{$properties{$pname}}, $currclass);
         }
@@ -40,7 +43,7 @@ my ($xml) = XML::Parser->new(Handlers => {
         my ($xp, $tag) = @_;
 
         if ($tag eq 'class')
-        { $classes{$currclass} = [split(' ', $text)]; }
+        { push (@{$currclass}, [split(' ', $text)]); }
         elsif ($tag eq 'property')
         {
             push (@{$currclass}, [split(' ', $text)]);
@@ -156,13 +159,16 @@ sub get_classes
 
     foreach $c (keys %$classes)
     {
-        my ($g);
-        foreach $g (@{$classes->{$c}})
+        my ($g, $e);
+        foreach $e (split(' ', $classes->{$c}[0]), '')
         {
-            if (match_glyph($g, $psname, $uid))
+            foreach $g (@{$classes->{$c}[1]})
             {
-                $res .= "$c ";
-                last;
+                if (match_glyph("$g$e", $psname, $uid))
+                {
+                    $res .= "$c ";
+                    last;
+                }
             }
         }
     }
@@ -183,16 +189,19 @@ sub merge_classes
 sub get_properties
 {
     my ($properties, $psname, $uid) = @_;
-    my ($res, $p, $q, $g);
+    my ($res, $p, $q, $g, $e);
 
     foreach $p (keys %{$properties})
     {
         foreach $q (@{$properties->{$p}})
         {
-            foreach $g (@{$q->[1]})
+            foreach $e (split(' ', $q->[1]), '')
             {
-                if (match_glyph($g, $psname, $uid))
-                { $res->{$p} = $q->[0]; }
+                foreach $g (@{$q->[2]})
+                {
+                    if (match_glyph("$g$e", $psname, $uid))
+                    { $res->{$p} = $q->[0]; }
+                }
             }
         }
     }
@@ -250,11 +259,18 @@ create context classes in the generated GDL or VOLT.
 
 The DTD for the classes file is:
 
-    <!ELEMENT classes (class)*>
+    <!ELEMENT classes (class, property)*>
 
     <!ELEMENT class (#PCDATA)>
     <!ATTLIST class
-        name    CDATA #REQUIRED>
+        name    CDATA #REQUIRED
+        exts    CDATA #IMPLIED>
+
+    <!ELEMENT property (#PCDATA)>
+    <!ATTLIST property
+        name    CDATA #REQUIRED
+        value   CDATA #REQUIRED
+        exts    CDATA #IMPLIED>
 
 =head1 SEE ALSO
 
