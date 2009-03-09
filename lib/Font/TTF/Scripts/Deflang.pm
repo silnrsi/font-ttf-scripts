@@ -35,7 +35,7 @@ sub ttfdeflang
         {
             foreach $s (keys %{$t->{'SCRIPTS'}})
             {
-                if (defined $t->{'SCRIPTS'}{$lang})
+                if (defined $t->{'SCRIPTS'}{$s}{$lang})
                 {
                     $found = 1;
                     $t->{'SCRIPTS'}{'DEFAULT'}{' REFTAG'} = $lang;
