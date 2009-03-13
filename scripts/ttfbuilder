@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
+$VERSION = 0.30;    # MJPH      13-MAR-2009     Get multifont scaling working
+# $VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
 # $VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
 # $VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
 # $VERSION = 0.27;    # MJPH      27-MAR-2008     Add -d128 to ignore non-existent glyphs
@@ -233,7 +234,7 @@ sub main
         $gcount = 2;
     }
 
-    unshift(@$fonts, $if);
+#    unshift(@$fonts, $if);
     $i = 0;
     foreach my $f (@$fonts)
     {
@@ -666,7 +667,7 @@ sub main
                     foreach $comp (@{$glyph->{'comps'}})
                     { $comp->{'glyph'} = $g->{'font'}{'loca'}{'glyphs'}[$comp->{'glyph'}]{'required'}; }
                 }
-                if ($g->{'fnum'} || $cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
+                if ($cg->{'fnum'} || $cg->{'offset'}[0] != 0 || $cg->{'offset'}[1] != 0 || defined $cg->{'scale'})
                 {
                     my ($scale) = $cg->{'font'}{'scale'};
                     $glyph->read_dat;
