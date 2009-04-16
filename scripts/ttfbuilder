@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.30;    # MJPH      13-MAR-2009     Get multifont scaling working
+$VERSION = 0.31;    # MJPH      16-APR-2009     Take last advance for sequential base glyphs
+# $VERSION = 0.30;    # MJPH      13-MAR-2009     Get multifont scaling working
 # $VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
 # $VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
 # $VERSION = 0.28;    # MJPH      27-JUN-2008     Add multifont support
@@ -436,13 +437,13 @@ sub main
         }
         elsif ($tag eq 'glyph')
         {
-            my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg, $pcount, $i);
+            my ($adv, $g, $xMin, $yMin, $xMax, $yMax, $p, $lorg, $pcount, $i, $lastg);
 
             $i = 0;
             foreach $g (@{$curbase->{'glyphs'}})
             {
-                $pcount = resolve_glyph($g, $adv, 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph, create flattened glyph_list
-                $adv = $g->{'adv'};			# + $g->{'offset'}[0]
+                $pcount = resolve_glyph($g, ($lastg ? $lastg->{'adv'} : 0), 0, $pcount, !(over_asnum($curbase->{'overstrike'}, ($opt_d & 32) >> 4) & 2));    # get absolute position of glyph, create flattened glyph_list
+                $adv = $g->{'adv'} if ($g->{'adv'} > $adv);	    # + $g->{'offset'}[0]
                 $lorg = $g->{'lorg'} if ($g->{'lorg'} < $lorg);
                 push (@{$curbase->{'glyph_list'}}, @{$g->{'glyph_list'}});  # compile full glyph list
                 if (defined $g->{'bbox'})
@@ -455,6 +456,7 @@ sub main
                     $curbase->{'properties'}{"component.$i"} = $adv;
                     $i++;
                 }
+                $lastg = $g;
             }
     
             if ((over_asnum($curbase->{'overstrike'}, ($opt_d & 16) >> 4) & 1) && $lorg < 0)
