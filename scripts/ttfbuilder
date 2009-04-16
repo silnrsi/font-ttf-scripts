@@ -1099,6 +1099,10 @@ absolute locations in terms of shifting.
 
 Ability to change the name of the font and change strings in the name table.
 
+=item *
+
+Ability to merge glyphs from other fonts.
+
 =back
 
 ttfbuilder is controlled via a description file which describes the glyphs in the
@@ -1135,6 +1139,8 @@ sequence according to their advance widths, creating a single glyph. If a glyph 
 contains a single base glyph with no attachments, and the base glyph has not been
 shifted in any way, then the resulting font will include the glyph directly rather
 than by reference.
+
+The C<font> attribute indicates that the glyph comes from another font. The attribute is a number (starting at 1) that refers to the nth font file in the list of -f command line options. Notice that any hinting associate with the glyph will be lost. The glyph will also be automatically scaled if the units per em of its source font are different from the main font.
 
 =item attach
 
