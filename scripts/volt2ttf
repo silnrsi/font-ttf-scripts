@@ -568,6 +568,7 @@ sub add_gpos_lookup
             }
             for ($i = 0; $i < @{$s->{'first'}}; $i++)
             {
+                next unless ($rules[$i]);
                 $rules[$i] = [sort {$a->{'MATCH'}[0] <=> $b->{'MATCH'}[0]} @{$rules[$i]}];
                 foreach $g (@{$self->scon_glyphs($s->{'first'}[$i])})
                 { $font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}[0]{'RULES'}[$cover->add($g)] = $rules[$i]; }
