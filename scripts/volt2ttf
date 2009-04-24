@@ -812,7 +812,7 @@ Compiles volt source into OT tables in the font.
 
 =head1 OPTIONS
 
-  -a file     Attachment point database
+  -a file     Attachment point database [only needed for anchor attachment]
   -i          Include all lookups even those not referenced by a used feature
   -t file     Volt source as text file to use instead of what is in the font
   -h          Help

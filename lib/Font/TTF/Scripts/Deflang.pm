@@ -25,7 +25,7 @@ sub ttfdeflang
         { warn "No language $opts{'d'} found in Sill table"; }
     }
 
-    my ($lang) = uc($opts{'d'});
+    my ($lang) = lc($opts{'d'});
     $lang .= " " x (4 - length($lang));
 
     foreach my $tk (qw(GSUB GPOS))
@@ -37,8 +37,14 @@ sub ttfdeflang
             {
                 if (defined $t->{'SCRIPTS'}{$s}{$lang})
                 {
+                    my ($ttag);
                     $found = 1;
-                    $t->{'SCRIPTS'}{'DEFAULT'}{' REFTAG'} = $lang;
+                    for ($ttag = 'DEFAULT'; $ttag; )
+                    {
+                        last if (defined $t->{'SCRIPTS'}{$s}{$lang}{' REFTAG'} && $t->{'SCRIPTS'}{$s}{$lang}{' REFTAG'} eq $ttag);
+                        ($ttag, $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'}) = 
+                        ((defined $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} ? $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} : ''), $lang);
+                    }
                     last;
                 }
             }
