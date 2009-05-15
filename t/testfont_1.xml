@@ -21,7 +21,11 @@
 <glyph UID="0035" PSName="five"><base UID="0035"/></glyph>
 <glyph UID="0036" PSName="six"><base UID="0036"/></glyph>
 <glyph UID="0037" PSName="seven"><base UID="0037"/></glyph>
-<glyph UID="0038" PSName="eight"><base UID="0038"/></glyph>
+<glyph UID="0038" PSName="eight">
+    <base UID="0038"/>
+    <point name="test" x="=(xMin + xMax)/2" y="=yMax + 100"/>
+</glyph>
+
 <glyph UID="0039" PSName="nine"><base UID="0039"/></glyph>
 
 <!-- and now for something a little more interesting -->

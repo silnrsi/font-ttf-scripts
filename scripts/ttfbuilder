@@ -411,8 +411,10 @@ sub main
         {
             $attrs{'num'} = $name_nums{$attrs{'num'}} if (defined $name_nums{$attrs{'num'}});
             $currtext .= $if->{'name'}->find_name($attrs{'num'});
+        } elsif ($tag eq 'point')
+        {
+            $curbase->{'points'}{$attrs{'name'}}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
         }
-
     }, 'End' => sub {
         my ($xml, $tag) = @_;
         my ($curbase) = $xml->{' curbase'};
@@ -763,9 +765,26 @@ sub main
             print OX "        <contour num=\"" .
                 ($p1->{'cont'} + $pb->{'pathbase'}) .
                 "\"/>\n" if (defined $p1->{'cont'});
-            print OX "        <location x=\"" . ($p1->{'loc'}[0] + $pb->{'offset'}[0]) .
-                "\" y=\"" . ($p1->{'loc'}[1] + $pb->{'offset'}[1]) .
-                "\"/>\n" if ($p1->{'loc'});
+            if ($p1->{'loc'})
+            {
+                my ($x) = $p1->{'loc'}[0];
+                my ($y) = $p1->{'loc'}[1];
+                if ($pb->{'offset'}[0])
+                {
+                    if ($x != m/^[0-9]*$/o)
+                    { $x = "$x + $pb->{'offset'}[0]"; }
+                    else
+                    { $x = $x + $pb->{'offset'}[0]; }
+                }
+                if ($pb->{'offset'}[1])
+                {
+                    if ($y != m/^[0-9]*$/o)
+                    { $y = "$y + $pb->{'offset'}[1]"; }
+                    else
+                    { $y = $y + $pb->{'offset'}[1]; }
+                }
+                print OX "        <location x=\"$x\" y=\"$y\"/>\n";
+            }
             print OX "    </point>\n";
         }
 #       }
