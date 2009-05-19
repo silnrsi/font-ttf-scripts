@@ -771,14 +771,14 @@ sub main
                 my ($y) = $p1->{'loc'}[1];
                 if ($pb->{'offset'}[0])
                 {
-                    if ($x != m/^[0-9]*$/o)
+                    if ($x == 0 and $x != m/^\s*-?[0-9]*\s*$/o)
                     { $x = "$x + $pb->{'offset'}[0]"; }
                     else
                     { $x = $x + $pb->{'offset'}[0]; }
                 }
                 if ($pb->{'offset'}[1])
                 {
-                    if ($y != m/^[0-9]*$/o)
+                    if ($y == 0 and $y != m/^\s*-?[0-9]*\s*$/o)
                     { $y = "$y + $pb->{'offset'}[1]"; }
                     else
                     { $y = $y + $pb->{'offset'}[1]; }
