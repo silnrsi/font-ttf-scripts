@@ -1,0 +1,142 @@
+#! /usr/bin/perl
+
+use strict;
+use Font::TTF::Useall;
+use Pod::Usage;
+
+# Can't use GetOpt variants because of the funky syntax of -m and -M  (see perlrun)
+
+my (@modules, $prog, $infont, $outfont);
+
+while(scalar (@ARGV) >= 0)
+{
+	my $arg = shift;
+	if ($arg =~ /^-\?/o)
+	{
+		pod2usage( -verbose => 2, -noperldoc => 1);
+		exit;
+	}
+	
+	if ($arg =~ /^-([mM])([^-].*)$/o)
+	{
+		push @modules, [ $1, $2 ];	# Save -m or -M and their args for later
+		next;
+	}
+	elsif ($arg =~ /^-e$/o)
+	{
+		$prog .= shift() . "\n";	# Concatinate -e arguments -- that's the user's program.
+		next;
+	}
+	elsif ($arg =~ /^-o(.*)$/o)
+	{
+		die "Only one -o option allowed." if defined $outfont;
+		$outfont = $1 || shift;		# Remember outputfile
+	}
+	else
+	{
+		$infont = $arg;
+		last;
+	}
+}
+
+pod2usage(-msg => "missing infont.ttf parameter\n", -verbose => 1) unless defined $infont;
+
+# 'require' modules specified on -m or -M  -- this is intended to mimic what perl -m or perl -M does
+
+foreach (@modules)
+{
+	my ($c, $m) = @{$_};	# $c is either 'm' or 'M'; $m is the module name plus any extra info user gave
+	
+	$m =~ s/^\s+//o;
+	$m =~ s/\s+$//o;
+	
+	my $res;
+		
+	if ($m =~ /^(\S+)\s*=\s*(.*)$/o)		# 'module=something'
+	{
+		eval "\$res = require $1; $1->import(split(/,/,'$2'));" ;
+	}
+	elsif ($m =~ /^(\S+)\s+(.*)$/o)			# 'module something'
+	{
+		eval "\$res = require $1; $1->import($2);" ;
+	}
+	else			 	 					# 'module'  
+	{
+		eval "\$res = require $m; $m->import unless \$c eq 'm';"  ;
+	}	
+	die "Couldn't find module '$m'\n" unless $res;
+}
+
+
+# Open the font:
+
+my ($f);
+
+$f = Font::TTF::Font->open($infont) || die "Can't open font file '$infont': $!\n";
+
+# Invoke user's script, if any:
+
+eval $prog if $prog;
+
+# Write the resultant font if requested
+
+if ($outfont)
+{
+	$f->update;
+	$f->out($outfont) || die "Failed writing output font file '$outfont': $!\n";
+}
+
+=head1 TITLE
+
+ttfeval - wrapper for short L<Font::TTF> hacks
+
+=head1 SYNOPSIS
+
+tteval [options] infont.ttf
+
+=head1 OPTIONS
+
+=over 
+
+=item B<-m>module
+
+=item B<-M>module
+
+=item B<-M>'module ...'
+
+=item B<-[mM]>module=arg[,arg]...
+
+=item B<-e> commandline
+
+Work essentially like the same options for Perl. See L<perlrun>.
+
+=item B<-o> outfont
+
+Indicates that you want an output font written, and names the font file.
+
+=item B<-?>
+
+Verbose help.
+
+=back
+
+=head1 DESCRIPTION
+
+ttfeval is a wrapper for those one- or two-line font hacks. It does
+the work of including the Font::TTF module, opening the input font file, 
+and optionally writing the output font file. You just supply the code in the middle.
+For example, to list out all the glyph names of a font, use:
+
+ ttfeval -e 'print join("\n",@{$f->{'post'}->read->{'VAL'}});' myfont.ttf
+
+Like the perl command line, you can specify multiple B<-e> options to build up a 
+multiline program, and you can include additional modules via the B<-m> and B<-M> options.
+
+When the caller-supplied expression is executed, B<$f> holds the result of 
+the Font::TTF::Font->open() function and elements of B<@ARGV> up to and including
+the input font name have been deleted -- you can use any remaining arguments
+for your own purposes.  B<$infont> and B<$outfont> hold the
+names of the input and optional output font files -- changing B<$infont> has no
+effect, but setting or clearing B<$outfont> will change the output.
+
+=cut
