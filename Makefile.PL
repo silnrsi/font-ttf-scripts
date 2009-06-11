@@ -1,6 +1,10 @@
 use ExtUtils::MakeMaker;
 use Config;
 use IO::File;
+use Getopt::Std;
+
+getopts('d:rv:');
+$opt_v ||= 1;
 
 $VERSION = "0.13";
 
@@ -72,8 +76,6 @@ pm_to_blib: \$(TO_INST_PM)
 EOT
 }
 
-}
-
 sub MY::postamble
 {
     my (@files) = map {m|scripts/(.*)$|o; $1;} @scripts;
@@ -124,5 +126,54 @@ EOT
     
     $res;
 }
+}
+elsif ($^O eq 'linux')
+{
+
+sub MY::postamble
+{
+    my ($self) = @_;
+    my ($res);
+    my ($package) = lc($self->{'NAME'});
+	my ($pversion) = $self->{'VERSION'};
+    my ($svn) = `svnversion`;
+	my ($sign) = '--auto-debsign' if ($opt_r);
+    my ($fpackage);
+
+    $svn =~ s/[0-9]*://og;
+    $svn =~ s/\s+$//o;
+    $package =~ s/::/-/g;
+    $package = "lib${package}-perl";
+    $pversion .= "+$svn" unless ($opt_r);
+    $fpackage = "$package-$pversion";
+
+    $res = <<"EOT";
+deb-base: dist
+	rm -fr $self->{'DISTVNAME'}
+	rm -fr $fpackage
+	tar xvzf $self->{'DISTVNAME'}.tar.gz
+	mv $self->{'DISTVNAME'} $fpackage
+	tar cfz "${package}_$pversion.orig.tar.gz" $fpackage
+	cp -a debian $fpackage
+	cd $fpackage && find . -name .svn | xargs rm -rf
+
+# make deb builds an interim deb from svn source for release
+deb: deb-base
+EOT
+
+    foreach $d (split(' ', $opt_d))
+    {
+    	$res .= <<"EOT";
+	mkdir -p dists/$d	
+	dch -D $d -v $pversion-$opt_v -m -b -c $fpackage/debian/changelog "Auto build from perl for $d"
+	cd $fpackage && pdebuild --buildresult ../dists/$d -- --basetgz /var/cache/pbuilder/base-$d.tgz $pbuilderopts{$d}
+EOT
+    }
+
+    return $res;
+}
+
+}
+
 
 1;
