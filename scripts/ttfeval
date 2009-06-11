@@ -6,7 +6,7 @@ use Pod::Usage;
 
 # Can't use GetOpt variants because of the funky syntax of -m and -M  (see perlrun)
 
-my (@modules, $prog, $infont, $outfont);
+my (@modules, $prog, $opt_v, $output, $exe);
 
 while(scalar (@ARGV) >= 0)
 {
@@ -18,28 +18,24 @@ while(scalar (@ARGV) >= 0)
 	}
 	
 	if ($arg =~ /^-([mM])([^-].*)$/o)
-	{
-		push @modules, [ $1, $2 ];	# Save -m or -M and their args for later
-		next;
-	}
+	{ push @modules, [ $1, $2 ]; }	# Save -m or -M and their args for later
 	elsif ($arg =~ /^-e$/o)
-	{
-		$prog .= shift() . "\n";	# Concatinate -e arguments -- that's the user's program.
-		next;
-	}
+	{ $prog .= shift() . "\n"; }	# Concatinate -e arguments -- that's the user's program.
 	elsif ($arg =~ /^-o(.*)$/o)
 	{
-		die "Only one -o option allowed." if defined $outfont;
-		$outfont = $1 || shift;		# Remember outputfile
+		die "Only one -o option allowed." if defined $output;
+		$output = $1 || shift;		# Remember outputfile
 	}
-	else
-	{
-		$infont = $arg;
-		last;
-	}
+    elsif ($arg =~ m/^-v$/o)
+    { $opt_v = 1; }
+    else
+    {
+        unshift (@ARGV, $arg);
+        last;
+    }
 }
 
-pod2usage(-msg => "missing infont.ttf parameter\n", -verbose => 1) unless defined $infont;
+pod2usage(-msg => "missing infont.ttf parameter\n", -verbose => 1) unless defined $ARGV[0];
 
 # 'require' modules specified on -m or -M  -- this is intended to mimic what perl -m or perl -M does
 
@@ -69,21 +65,49 @@ foreach (@modules)
 
 
 # Open the font:
-
 my ($f);
+$exe = eval "sub{$prog}" if ($prog);
+$output =~ s|\\|/|og;
+my ($out_rep) = $output;
+my ($i);
+$out_rep =~ s/[?*]/'$m[' . ($i++) . ']'/oge;
 
-$f = Font::TTF::Font->open($infont) || die "Can't open font file '$infont': $!\n";
+foreach my $a (@ARGV)
+{
+    $a =~ s|\\|/|og;
+    my ($sub) = $a;
+    $sub =~ s/\*/([^.]*)/og;
+    $sub =~ s/\?/(.?)/og;
+
+    foreach my $infile (glob($a))
+    {
+        my (@m) = ($infile =~ m/$sub/g);
+        my ($outfile);
+
+        if ($output && -d $output)        # then get filename and append
+        {
+            if ($infile =~ m|[\\/]([^/\\]+)$|o)
+            { $outfile = "$output/$1"; }
+            else
+            { $outfile = "$output/$f"; }
+        }
+        elsif ($output)                  # replace wildcards with corresponding wildcard matches
+        { $outfile = eval "\"$out_rep\""; }
+
+        print STDERR "$infile -> $outfile\n" if ($opt_v);
+
+        $f = Font::TTF::Font->open($infile) || die "Can't open font file '$infile': $!\n";
 
 # Invoke user's script, if any:
-
-eval $prog if $prog;
+        eval $exe->() if $prog;
 
 # Write the resultant font if requested
-
-if ($outfont)
-{
-	$f->update;
-	$f->out($outfont) || die "Failed writing output font file '$outfont': $!\n";
+        if ($outfile)
+        {
+            $f->update;
+            $f->out($outfile) || die "Failed writing output font file '$outfile': $!\n";
+        }
+    }
 }
 
 =head1 TITLE
@@ -92,7 +116,7 @@ ttfeval - wrapper for short L<Font::TTF> hacks
 
 =head1 SYNOPSIS
 
-tteval [options] infont.ttf
+tteval [options] infont.ttf ...
 
 =head1 OPTIONS
 
@@ -112,7 +136,7 @@ Work essentially like the same options for Perl. See L<perlrun>.
 
 =item B<-o> outfont
 
-Indicates that you want an output font written, and names the font file.
+Indicates that you want an output font written, and names the font file. May take globs or be a directory.
 
 =item B<-?>
 
@@ -135,8 +159,11 @@ multiline program, and you can include additional modules via the B<-m> and B<-M
 When the caller-supplied expression is executed, B<$f> holds the result of 
 the Font::TTF::Font->open() function and elements of B<@ARGV> up to and including
 the input font name have been deleted -- you can use any remaining arguments
-for your own purposes.  B<$infont> and B<$outfont> hold the
+for your own purposes.  B<$infont> and B<$outfile> hold the
 names of the input and optional output font files -- changing B<$infont> has no
-effect, but setting or clearing B<$outfont> will change the output.
+effect, but setting or clearing B<$outfile> will change the output.
+
+ ttfeval -e 'print $f->{'name'}->read->find_name(4) . "\n"' *.ttf
+
 
 =cut
