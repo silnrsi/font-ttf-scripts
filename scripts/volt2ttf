@@ -100,6 +100,7 @@ sub main
     $fv->features_ttf(%opts);
     foreach my $t (qw(GSUB GPOS))
     {
+        next unless (defined $font->{$t}{'FEATURES'});
         $font->{$t}{'FEATURES'}{'FEAT_TAGS'} = [sort {$fv->{'featmap'}{$a} cmp $fv->{'featmap'}{$b}} @{$font->{$t}{'FEATURES'}{'FEAT_TAGS'}}];
         $fv->lookups_ttf($t);
         $font->{$t}->dirty;
