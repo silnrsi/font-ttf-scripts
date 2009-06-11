@@ -66,7 +66,11 @@ foreach (@modules)
 
 # Open the font:
 my ($f);
-$exe = eval "sub{$prog}" if ($prog);
+{
+    no strict;
+    $exe = eval "sub{ $prog }" if ($prog ne "");
+    die $@ if $@;
+}
 $output =~ s|\\|/|og;
 my ($out_rep) = $output;
 my ($i);
