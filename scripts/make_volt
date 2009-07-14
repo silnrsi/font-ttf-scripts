@@ -64,11 +64,14 @@ if ($opt_i)
         $fh->close();
     }
     else
-    { die "Can't open $opt_i as a font or text file"; }
+    { warn "Can't open $opt_i as a font or text file"; }
 
-    $dat = $f->parse_volt($vtext) || die "VOLT code failed to parse";
-    @map = $f->align_glyphs($dat);
-    $f->merge_volt($dat, \@map);
+    if ($vtext)
+    {
+        $dat = $f->parse_volt($vtext) || die "VOLT code failed to parse";
+        @map = $f->align_glyphs($dat);
+        $f->merge_volt($dat, \@map);
+    }
 }
 $f->make_anchors;
 $f->make_groups;
