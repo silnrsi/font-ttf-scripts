@@ -372,6 +372,11 @@ sub main
             $curbase->{'roffset'}[0] += $attrs{'x'};
             $curbase->{'roffset'}[1] += $attrs{'y'};
         }
+        elsif ($tag eq 'scale')
+        {
+            $curbase->{'scale'}[0] = $attrs{'x'};
+            $curbase->{'scale'}[3] = $attrs{'y'};
+        }
         elsif ($tag eq 'string')
         {
             $cur_str = {%attrs};

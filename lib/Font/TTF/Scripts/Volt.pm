@@ -363,18 +363,18 @@ sub out_volt
     my ($self, %opts) = @_;
     my ($res);
     
-    $res = $self->out_volt_glyphs;
-    $res .= $self->out_volt_scripts;
-    $res .= $self->out_volt_classes;
-    $res .= $self->out_volt_lookups;
-    $res .= $self->out_volt_anchors;
-    $res .= $self->out_volt_final;
+    $res = $self->out_volt_glyphs(%opts);
+    $res .= $self->out_volt_scripts(%opts);
+    $res .= $self->out_volt_classes(%opts);
+    $res .= $self->out_volt_lookups(%opts);
+    $res .= $self->out_volt_anchors(%opts);
+    $res .= $self->out_volt_final(%opts);
     $res;
 }
 
 sub out_volt_glyphs
 {
-    my ($self) = @_;
+    my ($self, %opts) = @_;
     my ($c) = $self->{'font'}{'cmap'}->read->find_ms;
     my ($g, $res, $i, @revmap, $u);
 
@@ -395,7 +395,7 @@ sub out_volt_glyphs
             { $res .= " UNICODE $g->{'uni'}[0]"; }
         }
 
-        $type = glyph_type($g);
+        $type = glyph_type($g) || $opts{'-default_glyphtype'};
         
         $res .= " TYPE $type" if ($type);
         $res .= " COMPONENTS " . $g->{'component_num'} if ($g->{'component_num'});

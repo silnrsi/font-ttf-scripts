@@ -5,8 +5,8 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_a, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t);
-getopts('a:e:fhi:l:m:no:t');
+our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t);
+getopts('a:be:fhi:l:m:no:t');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -77,7 +77,7 @@ $f->make_anchors;
 $f->make_groups;
 $f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m}) unless ($opt_n);
 
-my $res = $f->out_volt;
+my $res = $f->out_volt(-default_glyphtype => ($opt_b ? 'BASE' : undef));
 
 if ($opt_t)
 { print $res; }
