@@ -235,7 +235,7 @@ warning messages are accumulated in C<WARNINGS>.
 sub read_font
 {
     my ($class, $fname, $xml_file, %opts) = @_;
-    my (@glyphs, $f, $t, $xml, $cur_glyph, $cur_pt);
+    my (@glyphs, $f, $t, $xml, $cur_glyph, $cur_pt, $numg, @reverse);
     my ($self) = {};
     bless $self, ref $class || $class;
 
@@ -244,14 +244,17 @@ sub read_font
     map {$omittedAPs{"_$_"} = 1} grep {/^[^_]/} keys %omittedAPs;
     map {$known_empty_glyphs{$_} = 1} ( ref ($opts{'-knownemptyglyphs'}) eq 'ARRAY' ? @{$opts{'-knownemptyglyphs'}} : ($opts{'-knownemptyglyphs'} =~m/[^\s,]+/go));
 
-    $f = Font::TTF::Font->open($fname) || die "Can't open font $fname";
-    foreach $t (qw(post cmap loca name))
-    { $f->{$t}->read; }
+    if ($fname)
+    {
+        $f = Font::TTF::Font->open($fname) || die "Can't open font $fname";
+        foreach $t (qw(post cmap loca name))
+        { $f->{$t}->read; }
 
-    $self->{'font'} = $f;
-    $self->{'cmap'} = $f->{'cmap'}->find_ms->{'val'} || die "Can't find Unicode table in font $fname";
-    my (@reverse) = $f->{'cmap'}->reverse('array' => 1);
-    my ($numg) = $f->{'maxp'}{'numGlyphs'};
+        $self->{'font'} = $f;
+        $self->{'cmap'} = $f->{'cmap'}->find_ms->{'val'} || die "Can't find Unicode table in font $fname";
+        @reverse = $f->{'cmap'}->reverse('array' => 1);
+        $numg = $f->{'maxp'}{'numGlyphs'};
+    }
 
     
 #    my $minUID;
@@ -272,23 +275,19 @@ sub read_font
             $cur_glyph = {%attrs};
             undef $cur_pt;
 
-            if (defined $attrs{'UID'})
+            if ($f && defined $attrs{'UID'})
             {
                 $attrs{'UID'} =~ s/^U\+//o;      # Not supposed to contain "U+", but some do
                 my ($uni) = hex($attrs{'UID'});
                 $ug = $self->{'cmap'}{$uni};
                 if (defined $ug)
-                {
-                	$cur_glyph->{'gnum'} = $ug;
-                }
+                { $cur_glyph->{'gnum'} = $ug; }
                 else
-                {	
-                	$self->APerror($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}") ;
-                }
+                { $self->APerror($xml, $cur_glyph, undef, "No glyph associated with UID $attrs{'UID'}"); }
                 $cur_glyph->{'uni'} = [$uni];
                 # delete $attrs{'UID'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
-            if (defined $attrs{'PSName'})
+            if ($f && defined $attrs{'PSName'})
             {
                 $pg = $f->{'post'}{'STRINGS'}{$attrs{'PSName'}};
                 unless (defined $pg)
@@ -322,28 +321,31 @@ sub read_font
                 $cur_glyph->{'gnum'} ||= $ig;
                 # delete $attrs{'GID'}; # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
-            $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$cur_glyph->{'gnum'}];
-            $cur_glyph->{'uni'} = $reverse[$cur_glyph->{'gnum'}] if (!defined $cur_glyph->{'uni'} && defined $reverse[$cur_glyph->{'gnum'}]);
-
-            if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$cur_glyph->{'gnum'}])
+            if ($f)
             {
-                # v0.04: Slight difference in this code and MH's: this code causes
-                # $cur_glyph->{'glyph'} to be defined for all glyphs; in MH's code
-                # it was defined only for non-empty glyphs.
-                $cur_glyph->{'glyph'}->read_dat;
-                if ($cur_glyph->{'glyph'}{'numberOfContours'} > 0)
-                { $cur_glyph->{'props'}{'drawn'} = 1; }
-                $cur_glyph->{'glyph'}->get_points;
-            }
-            elsif ($opts{'-knownemptyglyphs'})
-            {
-                $self->APerror($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
-            }
+                $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$cur_glyph->{'gnum'}];
+                $cur_glyph->{'uni'} = $reverse[$cur_glyph->{'gnum'}] if (!defined $cur_glyph->{'uni'} && defined $reverse[$cur_glyph->{'gnum'}]);
 
-            # MH's code includes the following two lines, but these are redundant with 
-            # assignment $cur_glyph = {%attrs} at start of this block
-            #foreach (keys %attrs)
-            #{ $cur_glyph->{$_} = $attrs{$_}; }
+                if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$cur_glyph->{'gnum'}])
+                {
+                    # v0.04: Slight difference in this code and MH's: this code causes
+                    # $cur_glyph->{'glyph'} to be defined for all glyphs; in MH's code
+                    # it was defined only for non-empty glyphs.
+                    $cur_glyph->{'glyph'}->read_dat;
+                    if ($cur_glyph->{'glyph'}{'numberOfContours'} > 0)
+                    { $cur_glyph->{'props'}{'drawn'} = 1; }
+                    $cur_glyph->{'glyph'}->get_points;
+                }
+                elsif ($opts{'-knownemptyglyphs'})
+                {
+                    $self->APerror($xml, $cur_glyph, undef, "Empty glyph outline in font") unless $known_empty_glyphs{$cur_glyph->{'post'}};
+                }
+
+                # MH's code includes the following two lines, but these are redundant with 
+                # assignment $cur_glyph = {%attrs} at start of this block
+                #foreach (keys %attrs)
+                #{ $cur_glyph->{$_} = $attrs{$_}; }
+            }
 
             $cur_glyph->{'line'} = $xml->current_line;
             $self->{'glyphs'}[$cur_glyph->{'gnum'}] = $cur_glyph;

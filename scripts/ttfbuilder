@@ -394,6 +394,7 @@ sub main
                 $s = '0' x (16 - length($s)) . $s;
                 $of->{'OS/2'}{'ulCodePageRange1'} = hex(substr($s, 8));
                 $of->{'OS/2'}{'ulCodePageRange2'} = hex(substr($s, 0, 8));
+                $of->{'OS/2'}{'Version'} = 1 unless ($of->{'OS/2'}{'Version'});
             }
             if ($s = $attrs{'coverage'})
             {
@@ -402,6 +403,7 @@ sub main
                 $of->{'OS/2'}{'ulUnicodeRange2'} = hex(substr($s, 16, 8));
                 $of->{'OS/2'}{'ulUnicodeRange3'} = hex(substr($s, 8, 8));
                 $of->{'OS/2'}{'ulUnicodeRange4'} = hex(substr($s, 0, 8));
+                $of->{'OS/2'}{'Version'} = 1 unless ($of->{'OS/2'}{'Version'});
             }
         }
         elsif ($tag eq 'property')
