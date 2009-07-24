@@ -1447,15 +1447,6 @@ sub align_glyphs
                         last;
                     }
                 }
-                unless ($gnew)
-                {
-                    if ($s->[0] eq 'c' && !defined $map[$gnum] && !defined $revmap[$self->{'glyph_names'}{$s->[2]}])
-                    {           # assume glyph name change and align as such
-                        my ($gnew) = $self->{'glyph_names'}{$s->[2]};
-                        $map[$gnum] = $gnew;
-                        $revmap[$gnew] = $gnum;
-                    }           # otherwise it's an insertion and we don't need to do anything
-                }
             }
     # make it a deletion (i.e. in old but not in new)
         }
