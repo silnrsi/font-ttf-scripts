@@ -679,7 +679,7 @@ sub split_lig
         { $_ = "_$_"; }
         $base = $str;
         if ($type =~ /last/)
-        { $base =~ s/_(.*?)$//o; }
+        { $base =~ s/_([^_]*)$//o; }
         else
         { $base =~ s/^(.*?)_//o; }
     }
