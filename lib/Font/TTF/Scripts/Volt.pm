@@ -1449,9 +1449,13 @@ sub align_glyphs
                 }
                 unless ($gnew)
                 {
-                    print STDERR "Can't find alignment for glyph $s->[1]\n";
-                    $self->{'error'} = 1;
-            }
+                    if ($s->[0] eq 'c' && !defined $map[$gnum] && !defined $revmap[$self->{'glyph_names'}{$s->[2]}])
+                    {           # assume glyph name change and align as such
+                        my ($gnew) = $self->{'glyph_names'}{$s->[2]};
+                        $map[$gnum] = $gnew;
+                        $revmap[$gnew] = $gnum;
+                    }           # otherwise it's an insertion and we don't need to do anything
+                }
             }
     # make it a deletion (i.e. in old but not in new)
         }
