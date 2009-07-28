@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.31;    # MJPH      16-APR-2009     Take last advance for sequential base glyphs
+$VERSION = 0.32;    # MJPH      28-JUL-2009     Add <scale> to scale glyphs
+# $VERSION = 0.31;    # MJPH      16-APR-2009     Take last advance for sequential base glyphs
 # $VERSION = 0.30;    # MJPH      13-MAR-2009     Get multifont scaling working
 # $VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
 # $VERSION = 0.29;    # MJPH      18-JUL-2008     Fix references to empty glyphs
@@ -428,7 +429,7 @@ sub main
 
         if ($tag eq 'base' || $tag eq 'attach')
         {
-            $curbase->{'adv'} = $curbase->{'font'}{'hmtx'}{'advance'}[$curbase->{'gid'}] * $curbase->{'font'}{'scale'}
+            $curbase->{'adv'} = $curbase->{'font'}{'hmtx'}{'advance'}[$curbase->{'gid'}] * $curbase->{'font'}{'scale'} * (defined $curbase->{'scale'} ? $curbase->{'scale'}[0] : 1)
                 unless (defined $curbase->{'adv'});
             $xml->{' curbase'} = $curbase->{'parent'};
             $curbase = $xml->{' curbase'};
