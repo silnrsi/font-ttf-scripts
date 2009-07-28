@@ -309,7 +309,6 @@ adjust value and the ppem value at which the adjustment occurs.
 #use Parse::RecDescent;
 
 use strict;
-use Algorithm::Diff qw(sdiff);
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
 
@@ -1377,98 +1376,6 @@ sub parse_adjs
     while ($$str =~ m/\GADJUST_BY\s+(-?\d+)\s+AT\s+(\d+)\s+/ogc)
     { push (@res, [$1, $2]); }
     return @res;
-}
-
-=head2 $fv->align_glyphs($dat)
-
-Provides one possible way to map glyph names in a new font with an existing VOLT project.
-
-Compares the list of glyphs found during L</"read_font"> (the I<new> glyph list) with the list 
-from L</"parse_volt"> in $dat (the I<old> glyph list>, returning an array that provides
-a mapping between old and new glyph IDs. The array is indexed by old glyph ID and returns the
-new glyph ID.
-
-This implementation works by C<sdiff>ing the two ordered lists of glyph C<name>s and 
-then matching them up, first by C<name> then by C<uni>.
-
-=cut
-
-sub align_glyphs
-{
-    my ($self, $data) = @_;
-    my (@map, @revmap, @old, @new, @diff, $s, $g, $u);
-
-    @new = map {$_->{'name'}} @{$self->{'glyphs'}};
-    @old = map {$_->{'name'}} @{$data->{'glyphs'}};
-    @diff = sdiff(\@old, \@new);
-
-# first find solid alignments
-    foreach $s (@diff)
-    {
-        if ($s->[0] eq 'u')
-        {
-            $map[$data->{'glyph_names'}{$s->[1]}] = $self->{'glyph_names'}{$s->[2]};
-            $revmap[$self->{'glyph_names'}{$s->[2]}] = $data->{'glyph_names'}{$s->[1]};
-        }
-    }
-
-# now deal with the rest
-    foreach $s (@diff)
-    {
-        if ($s->[0] eq '-' || $s->[0] eq 'c')
-        {
-            my ($gnum) = $data->{'glyph_names'}{$s->[1]};
-            my ($uni) = $data->{'glyphs'}[$gnum]{'uni'};
-            my ($gnew);
-    # anything with the same name not already used?
-            if ($g = $self->{'glyph_names'}{$s->[1]} and !defined $revmap[$g])
-            {
-                $map[$gnum] = $g;
-                $revmap[$g] = $gnum;
-            }
-    # anything spare with the same unicode (any unicode the same)?
-            else
-            {
-                foreach $u (@{$uni})
-                {
-                    next unless (defined $u);
-                    foreach $g (@{$self->{'glyphs'}})
-                    {
-                        if (ref $g->{'uni'} && grep {$_ == $u} @{$g->{'uni'}} && !defined $revmap[$g->{'gnum'}])
-                        {
-                            $gnew = $g->{'gnum'};
-                            last;
-                        }
-                    }
-                    if ($gnew)
-                    {
-                        $map[$gnum] = $gnew;
-                        $revmap[$gnew] = $gnum;
-                        last;
-                    }
-                }
-            }
-    # make it a deletion (i.e. in old but not in new)
-        }
-        elsif ($s->[0] eq '+')
-        {
-            # nothing to do since only really interested in old->new mapping
-        }
-    }
-
-# deal with unaligned conflicts and simply align them
-    foreach $s (@diff)
-    {
-        if ($s->[0] eq 'c')
-        {
-            my ($gnum) = $data->{'glyph_names'}{$s->[1]};
-            my ($nnum) = $self->{'glyph_names'}{$s->[2]};
-            next if ($map[$gnum] || $revmap[$nnum]);
-            $map[$gnum] = $nnum;
-            $revmap[$nnum] = $gnum;
-        }
-    }
-    return (@map);
 }
 
 sub merge_volt

@@ -171,6 +171,7 @@ Count of number fo warnings or errors encountered.
 
 use Font::TTF::Font 0.36;
 use XML::Parser::Expat;
+use Algorithm::Diff qw(sdiff);
 
 use strict;
 use vars qw($VERSION);
@@ -269,7 +270,12 @@ sub read_font
     $xml->setHandlers('Start' => sub {
         my ($xml, $tag, %attrs) = @_;
 
-        if ($tag eq 'glyph')
+        if ($tag eq 'font')
+        {
+            foreach (qw(name upem))
+            { $self->{$_} = $attrs{$_}; }
+        }
+        elsif ($tag eq 'glyph')
         {
             my ($ug, $pg, $ig);
             $cur_glyph = {%attrs};
@@ -317,7 +323,7 @@ sub read_font
                 $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
                         if (defined $pg && $pg != $ig);
                 $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} is >= number of glyphs in font ($numg)")
-                        if ($ig < 0 || $ig >= $numg);
+                        if ($ig < 0 || ($f && $ig >= $numg));
                 $cur_glyph->{'gnum'} ||= $ig;
                 # delete $attrs{'GID'}; # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
@@ -346,7 +352,18 @@ sub read_font
                 #foreach (keys %attrs)
                 #{ $cur_glyph->{$_} = $attrs{$_}; }
             }
+            else
+            {
+                my (@basicnames) = qw(.notdef null cr);
+#                $numg ||= 3;
+                if ($cur_glyph->{'gnum'} > $numg)
+                { $numg = $cur_glyph->{'gnum'} + 1; }
+                else
+                { $cur_glyph->{'gnum'} ||= $numg++; }
 
+                $cur_glyph->{'post'} = $cur_glyph->{'PSName'} || $basicnames[$cur_glyph->{'gnum'}];
+                $cur_glyph->{'uni'} = [map {hex($_)} split(' ', $cur_glyph->{'UID'})] if (defined $cur_glyph->{'UID'});
+            }
             $cur_glyph->{'line'} = $xml->current_line;
             $self->{'glyphs'}[$cur_glyph->{'gnum'}] = $cur_glyph;
 
@@ -435,8 +452,8 @@ sub read_font
         undef $xml;
     }
 
+    $self->{'numg'} = $numg;
 # now fill in the glyphs that aren't in the xml
-    my ($numg) = $f->{'maxp'}{'numGlyphs'};
     my ($i);
 
     for ($i = 0; $i < $numg; $i++)
@@ -444,9 +461,11 @@ sub read_font
         next if (defined $self->{'glyphs'}[$i]);
 
         my ($cur_glyph) = {'gnum' => $i};
+        $self->{'glyphs'}[$i] = $cur_glyph;
+        next unless ($f);
+
         $cur_glyph->{'uni'} = $reverse[$i] if (defined $reverse[$i]);
         $cur_glyph->{'post'} = $f->{'post'}{'VAL'}[$i];
-        $self->{'glyphs'}[$i] = $cur_glyph;
         if ($cur_glyph->{'glyph'} = $f->{'loca'}{'glyphs'}[$i])
         {
             # v0.04: Slight difference in this code and MH's: this code causes
@@ -476,8 +495,7 @@ in the glyph' sC<name> element.
 sub make_names
 {
     my ($self) = @_;
-    my ($f) = $self->{'font'};
-    my ($numg) = $f->{'maxp'}{'numGlyphs'};
+    my ($numg) = $self->{'numg'};
     my ($i, $gname);
 
     for ($i = 0; $i < $numg; $i++)
@@ -487,7 +505,7 @@ sub make_names
         $gname = $self->make_name($glyph->{'post'}, $glyph->{'uni'}, $glyph);
 
         while (defined $self->{'glyph_names'}{$gname})
-        { $gname =~ s/(?:_(\d+))$/"_".($1+1)/oe; }
+        { $gname =~ s/(?:_(\d+))?$/"_".($1+1)/oe; }
         $self->{'glyph_names'}{$gname} = $i;
         $glyph->{'name'} = $gname;
     }
@@ -521,11 +539,11 @@ Ligature elements are separated by _ in the glyph name. Ligatures are only made 
 sub make_classes
 {
     my ($self, %opts) = @_;
-    my ($f) = $self->{'font'};
+    my ($numg) = $self->{'numg'};
     my (%classes, %namemap);
     my ($g, $gname, $i, $j, $glyph, %used, $p, $name);
 
-    for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
+    for ($i = 0; $i < $numg; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];
         $gname = $self->make_name($glyph->{'post'}, $glyph->{'uni'}, $glyph);
@@ -646,6 +664,7 @@ sub make_name
     my ($self, $gname, $uni, $glyph) = @_;
     $gname =~ s{/.*$}{}o;           # strip alternates
     $gname = defined $uni ? sprintf("u%04x", $uni->[0]) : "glyph$glyph->{'gnum'}" if $gname eq '.notdef';
+    $gname ||= ".unk";
     $gname;
 }
 
@@ -664,6 +683,122 @@ sub make_point
     $p;
 }
 
+=head2 $fv->align_glyphs($dat)
+
+Provides one possible way to map glyph names in a new font with an existing project.
+
+Compares the list of glyphs found during L</"read_font"> (the I<new> glyph list) with the list 
+from L</"parse_volt"> in $dat (the I<old> glyph list>, returning an array that provides
+a mapping between old and new glyph IDs. The array is indexed by old glyph ID and returns the
+new glyph ID.
+
+This implementation works by C<sdiff>ing the two ordered lists of glyph C<name>s and 
+then matching them up, first by C<name> then by C<uni>.
+
+=cut
+
+sub align_glyphs
+{
+    my ($self, $data) = @_;
+    my (@map, @revmap, @old, @new, @diff, $s, $g, $u);
+
+    @new = map {$_->{'name'}} @{$self->{'glyphs'}};
+    @old = map {$_->{'name'}} @{$data->{'glyphs'}};
+    @diff = sdiff(\@old, \@new);
+
+# first find solid alignments
+    foreach $s (@diff)
+    {
+        if ($s->[0] eq 'u')
+        {
+            $map[$data->{'glyph_names'}{$s->[1]}] = $self->{'glyph_names'}{$s->[2]};
+            $revmap[$self->{'glyph_names'}{$s->[2]}] = $data->{'glyph_names'}{$s->[1]};
+        }
+    }
+
+# now deal with the rest
+    foreach $s (@diff)
+    {
+        if ($s->[0] eq '-' || $s->[0] eq 'c')
+        {
+            my ($gnum) = $data->{'glyph_names'}{$s->[1]};
+            my ($uni) = $data->{'glyphs'}[$gnum]{'uni'};
+            my ($gnew);
+    # anything with the same name not already used?
+            if ($g = $self->{'glyph_names'}{$s->[1]} and !defined $revmap[$g])
+            {
+                $map[$gnum] = $g;
+                $revmap[$g] = $gnum;
+            }
+    # anything spare with the same unicode (any unicode the same)?
+            else
+            {
+                foreach $g (@{$self->{'glyphs'}})
+                {
+                    if ($g->{'uni'} == $uni && !defined $revmap[$g->{'gnum'}])
+                    {
+                        $gnew = $g->{'gnum'};
+                        last;
+                    }
+                }
+                if ($gnew)
+                {
+                    $map[$gnum] = $gnew;
+                    $revmap[$gnew] = $gnum;
+                    last;
+                }
+            }
+    # make it a deletion (i.e. in old but not in new)
+        }
+        elsif ($s->[0] eq '+')
+        {
+            # nothing to do since only really interested in old->new mapping
+        }
+    }
+
+# deal with unaligned conflicts and simply align them
+    foreach $s (@diff)
+    {
+        if ($s->[0] eq 'c')
+        {
+            my ($gnum) = $data->{'glyph_names'}{$s->[1]};
+            my ($nnum) = $self->{'glyph_names'}{$s->[2]};
+            next if ($map[$gnum] || $revmap[$nnum]);
+            $map[$gnum] = $nnum;
+            $revmap[$nnum] = $gnum;
+        }
+    }
+    return (@map);
+}
+
+=head2 $str = $ap->as_xml()
+
+Returns an XML representation of the AP database
+
+=cut
+
+sub as_xml
+{
+    my ($self) = @_;
+    my ($numg) = $self->{'numg'};
+    my ($res, $i);
+
+    $res = "<?xml version='1.0'?>\n<font";
+    foreach (qw(name upem))
+    { $res .= " $_='$self->{$_}'" if (defined $self->{$_}); }
+    $res .= ">\n\n";
+
+    for ($i = 0; $i < $numg; $i++)
+    {
+        my ($g) = $self->{'glyphs'}[$i];
+        $res .= "<glyph GID='$i'";
+        $res .= " PSName='$g->{'post'}'" if (defined $g->{'post'});
+        $res .= " UID='" . join(' ', map{sprintf("%04X", $_)} @{$g->{'uni'}}) . "'" if (defined $g->{'uni'});
+        $res .= ">\n";
+    }
+
+    $res;
+}
 # Private routine:'
 
 sub split_lig
