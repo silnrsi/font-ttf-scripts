@@ -486,7 +486,9 @@ sub main
     
                 if ($cg->{'offset'}[0] == 0 && $cg->{'offset'}[1] == 0 && !defined $cg->{'scale'})     # no move - then basis for other references
                 { $cg->{'glyph'}{'required'} = $curbase->{'GID'}; }
-                else
+                elsif (!defined $cg->{'glyph'}{'required1'} or
+                    !defined $cg->{'scale'} or
+                    mat_det($glyphs[$cg->{'glyph'}{'required1'}]{'scale'}) < mat_det($cg->{'scale'}))
                 { $cg->{'glyph'}{'required1'} = $curbase->{'GID'}; }         # moved - perhaps a basis
             }
     
@@ -1077,6 +1079,13 @@ sub mat_div
 
     return $d unless defined $a;
     return mat_mult($a, $d, 1);
+}
+
+sub mat_det
+{
+    my ($a) = @_;
+    return 1.0 unless (defined $a);
+    return ($a->[0] * $a->[3] - $a->[1] * $a->[2]) * 1.;
 }
 
 __END__
