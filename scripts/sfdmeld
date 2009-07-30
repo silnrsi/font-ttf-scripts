@@ -130,8 +130,8 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
             $str =~ s/^(\S+\s*\"[^"]*\")\s*//o;
             my ($pref) = $1;
             my (@gs) = split(' ', $str);
-            $res .= ($res ? "\n" : "") . "$pref " . join(' ', 
-                map {my($i)=$revmap[$struct->{'gnames'}{$_}]; $i ? $design->{'glyphs'}[$i]{'post'} : ""} @gs);
+            $res .= "$pref " . join(' ', 
+                map {my($i)=$revmap[$struct->{'gnames'}{$_}]; $i ? $design->{'glyphs'}[$i]{'post'} : ""} @gs) . "\n";
         }
     }
     foreach $p (qw(PairPos2 LCarets2 AltUni2 Kerns2 Position2))
@@ -139,7 +139,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
         foreach $i (@{$char->{'commands'}{$p}})
         { $char->{'lines'}[$i] = ''; }
         foreach $i (@{$other->{'commands'}{$p}})
-        { $res .= ($res ? "\n" : "") . $other->{'commands'}{$p}[$i]; }
+        { $res .= $other->{'lines'}[$i]; }
     }
     push (@{$char->{'lines'}}, "$res\n") if ($res);
 
