@@ -723,13 +723,14 @@ sub main
                 $glyph->{'numberOfContours'} = -1;
                 foreach $gb (@{$g->{'glyph_list'}})
                 {
-                    my ($co) = $glyphs[$gb->{'glyph'}{'required'}]{'glyph_list'}[0];
+                    my ($c) = $glyphs[$gb->{'glyph'}{'required'}];
+                    my ($co) = $c->{'glyph_list'}[0];
     
                     push (@{$glyph->{'comps'}}, {
                         'glyph' => $gb->{'glyph'}{'required'},
                         'flag' => 2,
-        #                'scale' => mat_mult($gb->{'scale'}, $co->{'scale'}),
-                        'scale' => $gb->{'scale'},
+                        'scale' => mat_div($gb->{'scale'}, $co->{'scale'}),
+                #        'scale' => $gb->{'scale'},
                         'args' => [$gb->{'offset'}[0] - $co->{'offset'}[0], $gb->{'offset'}[1] - $co->{'offset'}[1]]});
                 }
             }
@@ -1064,6 +1065,18 @@ sub mat_mult
 
     return [($a->[0] * $b->[0] + $a->[1] * $b->[2]) * $s, ($a->[0] * $b->[1] + $a->[1] * $b->[3]) * $s,
             ($a->[2] * $b->[0] + $a->[3] * $b->[2]) * $s, ($a->[2] * $b->[1] + $a->[3] * $b->[3]) * $s];
+}
+
+sub mat_div
+{
+    my ($a, $b) = @_;
+
+    return $a unless defined $b;
+    my ($det) = ($b->[0] * $b->[3] - $b->[1] * $b->[2]) * 1.;
+    my ($d) = [$b->[3] / $det, -$b->[1] / $det, -$b->[2] / $det, $b->[0] / $det];
+
+    return $d unless defined $a;
+    return mat_mult($a, $d, 1);
 }
 
 __END__
