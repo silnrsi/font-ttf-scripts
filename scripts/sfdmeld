@@ -139,7 +139,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
         foreach $i (@{$char->{'commands'}{$p}})
         { $char->{'lines'}[$i] = ''; }
         foreach $i (@{$other->{'commands'}{$p}})
-        { $res .= $str; }
+        { $res .= ($res ? "\n" : "") . $other->{'commands'}{$p}[$i]; }
     }
     push (@{$char->{'lines'}}, "$res\n") if ($res);
 
