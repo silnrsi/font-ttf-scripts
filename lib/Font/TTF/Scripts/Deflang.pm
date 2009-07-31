@@ -10,7 +10,7 @@ sub ttfdeflang
     my ($font, %opts) = @_;
     my ($f, $t);
 
-    if ($t = $font->{'Sill'}->read and $f = $font->{'Feat'}->read)
+    if (defined $font->{'Sill'} and defined $font->{'Feat'} and $t = $font->{'Sill'}->read and $f = $font->{'Feat'}->read)
     {
         if (defined $t->{'langs'}{$opts{'d'}})
         {
@@ -31,19 +31,20 @@ sub ttfdeflang
     foreach my $tk (qw(GSUB GPOS))
     {
         my ($found) = 0;
+        next unless (defined $font->{$tk});
         if ($t = $font->{$tk}->read)
         {
             foreach $s (keys %{$t->{'SCRIPTS'}})
             {
-                if (defined $t->{'SCRIPTS'}{$s}{$lang})
+                if (defined ($l = $t->{'SCRIPTS'}{$s}{$lang}) || defined ($l = $t->{'SCRIPTS'}{$s}{uc($lang)}))
                 {
                     my ($ttag);
                     $found = 1;
                     for ($ttag = 'DEFAULT'; $ttag; )
                     {
-                        last if (defined $t->{'SCRIPTS'}{$s}{$lang}{' REFTAG'} && $t->{'SCRIPTS'}{$s}{$lang}{' REFTAG'} eq $ttag);
+                        last if (defined $l->{' REFTAG'} && $l->{' REFTAG'} eq $ttag);
                         ($ttag, $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'}) = 
-                        ((defined $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} ? $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} : ''), $lang);
+                        ((defined $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} ? $t->{'SCRIPTS'}{$s}{$ttag}{' REFTAG'} : ''), defined $t->{'SCRIPTS'}{$s}{$lang} ? $lang : uc($lang));
                     }
                     last;
                 }
