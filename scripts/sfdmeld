@@ -134,7 +134,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
                 map {my($i)=$revmap[$struct->{'gnames'}{$_}]; $i ? $design->{'glyphs'}[$i]{'post'} : ""} @gs) . "\n";
         }
     }
-    foreach $p (qw(PairPos2 LCarets2 AltUni2 Kerns2 Position2))
+    foreach $p (qw(PairPos2 LCarets2 AltUni2 Kerns2 Position2 GlyphClass))
     {
         foreach $i (@{$char->{'commands'}{$p}})
         { $char->{'lines'}[$i] = ''; }
