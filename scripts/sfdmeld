@@ -134,7 +134,8 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
                 map {my($i)=$revmap[$struct->{'gnames'}{$_}]; $i ? $design->{'glyphs'}[$i]{'post'} : ""} @gs) . "\n";
         }
     }
-    foreach $p (qw(PairPos2 LCarets2 AltUni2 Kerns2 Position2 GlyphClass))
+# need to merge Kerns2, PairPos2 & Position2 with values coming from the design
+    foreach $p (qw(LCarets2 AltUni2 GlyphClass))
     {
         foreach $i (@{$char->{'commands'}{$p}})
         { $char->{'lines'}[$i] = ''; }
