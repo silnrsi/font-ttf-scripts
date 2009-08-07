@@ -1,19 +1,12 @@
-libfont-ttf-scripts-perl (0.8-1ubuntu1) gutsy; urgency=low
+libfont-ttf-scripts-perl (0.14-1ubuntu1.1) jaunty; urgency=low
 
-  * Non-maintainer upload.
-  * package for gutsy
+  * Add sfdmeld 
 
- -- Martin Hosken <martin_hosken@sil.org>  Mon, 04 Feb 2008 16:30:26 +0700
+ -- Martin Hosken <martin_hosken@sil.org>  Fri, 07 Aug 2009 11:10:07 +0700
 
-libfont-ttf-scripts-perl (0.8-1) feisty; urgency=low
+libfont-ttf-scripts-perl (0.13-1ubuntu1) gutsy; urgency=low
 
-  * Bug fixes particularly in ttfname
+  * Sync with libfont-ttf-scripts v0.10
 
- -- Martin Hosken <martin_hosken@sil.org>  Wed, 29 Aug 2007 09:51:13 +0100
-
-libfont-ttf-scripts-perl (0.7-1) unstable; urgency=low
-
-  * Initial Release.
-
- -- Martin Hosken <martin_hosken@sil.org>  Wed, 14 Jun 2006 16:35:47 +0700
+ -- Martin Hosken <martin_hosken@sil.org>  Thu, 20 Mar 2008 17:21:11 +0700
 

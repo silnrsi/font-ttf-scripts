@@ -1,4 +1,4 @@
-This is the debian package for the Font::TTF::Scripts module.
+This is the debian package for the Font-TTF module.
 It was created by Martin Hosken <martin_hosken@sil.org> using dh-make-perl.
 
 This copyright info was automatically extracted from the perl module.
@@ -7,13 +7,5 @@ if don't want to get into legal troubles.
 
 The upstream author is: 
 
-Martin Hosken <martin_hosken@sil.org>.
-
-
-This module and all scripts are copyright SIL International and are licensed under
-the same terms as Perl itself.
-
-Perl is distributed under your choice of the GNU General Public License or
-the Artistic License.  On Debian GNU/Linux systems, the complete text of the
-GNU General Public License can be found in `/usr/share/common-licenses/GPL'
-and the Artistic Licence in `/usr/share/common-licenses/Artistic'.
+Martin Hosken Martin_Hosken@sil.org. See Font::TTF::Font for copyright and
+licensing..

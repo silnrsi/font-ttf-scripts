@@ -24,6 +24,8 @@ build-stamp:
 	dh_testdir
 
 	# Add commands to compile the package here
+	# tar xvzf *.tar.gz
+	
 	$(PERL) Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) OPTIMIZE="-Wall -O2 -g"
 
@@ -45,7 +47,8 @@ install-stamp:
 	dh_clean -k
 
 	# Add commands to install the package into debian/$PACKAGE_NAME here
-	#$(MAKE) test
+	ls
+	$(MAKE) test
 	$(MAKE) install DESTDIR=$(TMP) PREFIX=/usr
 
 	# As this is a architecture independent package, we are not
@@ -64,8 +67,8 @@ binary-indep: build install
 #	dh_installcron
 #	dh_installmenu
 #	dh_installexamples
-	dh_installdocs doc/make_smart.odp
-	dh_installchangelogs 
+#	dh_installdocs README.TXT
+#	dh_installchangelogs lib/Font/TTF/Changes
 	dh_perl
 	dh_link
 	dh_strip

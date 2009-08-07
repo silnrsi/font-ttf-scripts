@@ -12,4 +12,4 @@ ok(!$res);
 system($^X, "scripts/add_classes", "-c", "t/testclasses.xml", "t/temp.xml", "t/temp1.xml");
 $res = compare("t/temp1.xml", "t/base/test_classes.xml");
 ok(!$res);
-unlink "t/temp.ttf", "t/temp1.ttf" unless ($res);
+unlink "t/temp.xml", "t/temp1.xml" unless ($res);

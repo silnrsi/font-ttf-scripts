@@ -311,23 +311,21 @@ sfdmeld - merges sfd files
 
 =head1 SYNOPSIS
 
-  sfdaddap infile.sfd infile_ap.xml outfile.sfd
+  sfdmeld [-p] structure.sfd design.sfd output.sfd
 
-Reads a FontForge font file and extracts anchor point information into an XML
-anchor point database.
+Merges two FontForge font files such that the lookups and behaviour in the
+second (design) file is overridden by that in the first file. So for example,
+which attachment points a glyph has are governed by the structure file but
+their positions are taken from the design file. Lookups are taken from the
+structure file.
 
 =head1 OPTIONS
 
   -h            print manpage
-
-=head1 DESCRIPTION
-
-FontForge's has the concept of anchor points. This program extracts those and
-any glyph comments into an XML anchor point database. See ttfbuilder -h for
-documentation on this format.
+  -p            Take attachment point positions from the structure file
 
 =head1 SEE ALSO
 
-ttfbuilder, volt2ap
+ttfbuilder, sfd2ap
 
 =cut

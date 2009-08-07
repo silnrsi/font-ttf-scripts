@@ -1,26 +1,16 @@
 Source: libfont-ttf-scripts-perl
 Section: perl
 Priority: optional
-Build-Depends: debhelper (>= 4.0.2)
-Build-Depends-Indep: perl (>= 5.8.0-7)
+Build-Depends: debhelper (>= 5.0.0)
+Build-Depends-Indep: perl (>= 5.8), libfont-ttf-perl (> 0.45), libalgorithm-diff-perl, libtext-pdf-perl, libxml-parser-perl
 Maintainer: Martin Hosken <martin_hosken@sil.org>
-Standards-Version: 3.6.1
+Standards-Version: 3.7.2
 
 Package: libfont-ttf-scripts-perl
+Depends: ${perl:Depends}, libfont-ttf-perl (> 0.45), libalgorithm-diff-perl, libtext-pdf-perl, libxml-parser-perl
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, libfont-ttf-perl (>= 0.43), libtext-pdf-perl, libalgorithm-diff-perl, libparse-recdescent-perl (>= 1.51)
-Description:  Smart font script supporting modules and scripts for TTF/OTF
- This module contains a number of useful programs for hacking with TTF files:
- .
- check_attach, eurofix, fret, hackos2, make_gdl, make_volt, psfix, thai2gdl,
- thai2ot, thai2volt, ttfbuilder, ttfenc, ttfname, ttfremap, ttfsetver,
- volt2xml, voltExportAnchors, voltFixup, voltImportAnchors
- .
- Highlights include:
- .
- fret       - produces PDF report of an uninstalled font including all glyphs
- hackos2    - manipulates the OS/2 table of a font
- ttfbuilder - builds a font from another font, attaching glyphs, subsetting, etc.
- ttfname    - renames a font
+Description:  Perl module for TrueType Font hacking
+ This module allows you to do almost anything to a TrueType/OpenType Font
+ including modify and inspect nearly all tables.
  .
  This description was automagically extracted from the module by dh-make-perl.
