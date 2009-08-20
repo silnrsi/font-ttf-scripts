@@ -6,8 +6,9 @@ use Pod::Usage;
 use Getopt::Std;
 use Encode;
 use Font::TTF::Scripts::AP;
+use XML::Parser;
 
-getopts('hp');
+getopts('a:hp');
 
 unless ($ARGV[0] || $opt_h)
 {
@@ -30,6 +31,25 @@ my %plabels = (
     'baselig' => ':',
     'basemark' => '+');
 my %ptypes = join('', values %plabels);
+
+my (%aps, $curname, $curpt);
+
+$xml = XML::Parser::Expat->new();
+$xml->setHandlers('Start' => sub {
+    my ($xml, $tag, %attrs) = @_;
+
+    if ($tag eq 'glyph' && defined $attrs{'PSName'})
+    { $curname = $attrs{'PSName'}; }
+    elsif ($tag eq 'point')
+    { $curpt = $attrs{'type'}; }
+    elsif ($tag eq 'location')
+    { $aps{$curname}{$curpt} = [$attrs{'x'}, $attrs{'y'}]; }
+    });
+
+if ($opt_a)
+{
+    $xml->parsefile($opt_a) || die "Can't read XML file $opt_a";
+}
 
 $s = Font::TTF::Scripts::SFD->new(
     'AnchorClass2' => sub {
@@ -105,6 +125,21 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
         my ($point) = $opt_p ? $other->{'points'}{$p} : $char->{'points'}{$p};
         $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} 0\n";
         $allpoints{$p} = 1;
+    }
+
+# insert AP points here
+    if (defined $aps{$char->{'PSName'}})
+    {
+        foreach $bp (keys %{$aps{$char->{'PSName'}}})
+        {
+            my ($p) = $bp;
+            my ($t) = $p =~ s/^(_)//o;
+            next if (defined $char->{'points'}{$p});
+            my ($x, $y) = @{$aps{$char->{'PSName'}}{$p}};
+            $char->{'points'}{$p} = {'x' => $x, 'y' => $y, 'name' => $p, 'type' => $t ? "mark" : "base"};
+            $str .= "AnchorPoint: \"$char->{'name'}\" $char->{'x'} $char->{'y'} $char->{'type'} 0\n";
+            $allpoints{$p} = 1;
+        }
     }
 
     foreach $p (keys %{$other->{'points'}})
@@ -311,7 +346,7 @@ sfdmeld - merges sfd files
 
 =head1 SYNOPSIS
 
-  sfdmeld [-p] structure.sfd design.sfd output.sfd
+  sfdmeld [-a ap.xml] [-p] structure.sfd design.sfd output.sfd
 
 Merges two FontForge font files such that the lookups and behaviour in the
 second (design) file is overridden by that in the first file. So for example,
@@ -321,6 +356,7 @@ structure file.
 
 =head1 OPTIONS
 
+  -a file.xml   Optional AP database to merge APs from
   -h            print manpage
   -p            Take attachment point positions from the structure file
 

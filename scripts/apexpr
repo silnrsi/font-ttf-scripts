@@ -76,6 +76,13 @@ use vars qw(%FUNC);
    'sin'     => sub { sin($_[0]); },
    'sqrt'    => sub { sqrt($_[0]); },
    'srand'   => sub { srand($_[0]); },
+
+   'glyph'   => sub { $_[0]->{'post'}{'STRINGS'}{$_[1]}; },
+   'advance' => sub { $_[0]->{'hmtx'}{'advance'}[$_[1]]; },
+   'xMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMin'}; } 
+   'yMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'yMin'}; } 
+   'xMax'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMax'}; } 
+   'yMax'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'yMax'}; } 
   );
 
 sub _expr_evaluate {
@@ -216,6 +223,7 @@ sub start_element
             { $vars->{$_} = $glyph->{$_}; }
         }
         $vars->{'adv'} = $f->{'hmtx'}{'advance'}[$gid];
+        $vars->{'font'} = $f;
         $self->{'vars'} = $vars;
     }
         
