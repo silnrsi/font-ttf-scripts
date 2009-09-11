@@ -18,7 +18,7 @@ $VERSION = 0.01;    # MJPH      11-OCT-2007     First release
 
 unless ($CHAIN_CALL)
 {
-    getopts('a:d:hit:x:', \%opts);
+    getopts('a:d:hirt:x:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -83,7 +83,7 @@ sub main
     { $volt_text = $font->{'TSIV'}->read->{' dat'}; }
     else
     { die "No VOLT table in the font, nothing to do"; }
-    delete $font->{'TSIV'};        # remove the volt source
+    delete $font->{'TSIV'} unless $opts{'r'};        # remove the volt source
 
     if ($opts{'d'})
     {
@@ -815,6 +815,7 @@ Compiles volt source into OT tables in the font.
 
   -a file     Attachment point database [only needed for anchor attachment]
   -i          Include all lookups even those not referenced by a used feature
+  -r          Do not delete Volt source table in the font
   -t file     Volt source as text file to use instead of what is in the font
   -h          Help
   -x file     Generate TypeTuner aliases .xml file
