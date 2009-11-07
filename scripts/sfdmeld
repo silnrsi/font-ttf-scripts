@@ -69,14 +69,8 @@ $s = Font::TTF::Scripts::SFD->new(
         my (@nums) = split(' ', $str);
         $$font->{'numg'} = $nums[1];
         return undef;
-    }, 'StartChar' => sub {
-        my ($name) = @_;
-        $name =~ s/\s*$//o;
-
-        $currchar = {'post' => $name, 'PSName' => $name};
-        return $currchar;
     }, 'Encoding' => sub {
-        my ($str) = @_;
+        my ($str, $currchar) = @_;
         my (@vals) = split(' ', $str);
         $currchar->{'uni'} = [hex($vals[1])];
         $currchar->{'gnum'} = $vals[2];
@@ -84,7 +78,7 @@ $s = Font::TTF::Scripts::SFD->new(
         $$font->{'gnames'}{$currchar->{'post'}} = $vals[2];
         return undef;
     }, 'AnchorPoint' => sub {
-        my ($str) = @_;
+        my ($str, $currchar) = @_;
         my (@values) = split(' ', $str);
         my ($name) = $values[0];
         my ($pname);
@@ -284,7 +278,7 @@ sub parse_file
             my ($t) = $text;
             $t =~ s/^\s*//o;
 
-            $res = &{$self->{$command}}($t);
+            $res = &{$self->{$command}}($t, $base);
             $base = $res if ($res);
         }
         if ($command)
@@ -298,8 +292,22 @@ sub parse_file
             { }
             else
             { $commstr .= ":"; }
+            if ($command eq 'StartChar')
+            {
+                $text =~ s/\s*$//o;
+                $text =~ s/^\s*//o;
+                $base = {'post' => $text, 'PSName' => $text, 'parent' => $base};
+                $text = " $text\n";
+            }
+            elsif ($command eq 'EndChars')
+            {
+                $base->{'final'} = {'base' => $base};
+                $base = $base->{'final'};
+            }
             push (@{$base->{'lines'}}, "$commstr$text");
             push (@{$base->{'commands'}{$command}}, scalar @{$base->{'lines'}} - 1);
+            if ($command eq 'EndChar')
+            { $base = $base->{'parent'} if defined ($base->{'parent'}); }
             $command = '';
             $text = '';
         }
@@ -334,6 +342,11 @@ sub print_font
     foreach $g (@{$font->{'glyphs'}})
     {
         foreach $l (@{$g->{'lines'}})
+        { $fh->print($l); }
+    }
+    if (defined $font->{'final'})
+    {
+        foreach $l (@{$font->{'final'}{'lines'}})
         { $fh->print($l); }
     }
 }
