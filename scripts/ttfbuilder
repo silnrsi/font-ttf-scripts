@@ -240,7 +240,7 @@ sub main
     $i = 0;
     foreach my $f (@$fonts)
     {
-        foreach (qw(cmap hmtx loca head))
+        foreach (qw(cmap hmtx loca head post))
         { $f->{$_}->read; }
         $f->{'scale'} = 1. * $if->{'head'}{'unitsPerEm'} / $f->{'head'}{'unitsPerEm'};
         $f->{'number'} = $i++;
