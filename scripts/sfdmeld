@@ -8,7 +8,7 @@ use Encode;
 use Font::TTF::Scripts::AP;
 use XML::Parser;
 
-getopts('a:dhp');
+getopts('a:hp');
 
 unless ($ARGV[0] || $opt_h)
 {
@@ -72,6 +72,7 @@ $s = Font::TTF::Scripts::SFD->new(
     }, 'Encoding' => sub {
         my ($str, $currchar) = @_;
         my (@vals) = split(' ', $str);
+        $currchar->{'encoded'} = $vals[0];
         $currchar->{'uni'} = [hex($vals[1])];
         $currchar->{'gnum'} = $vals[2];
         $$font->{'glyphs'}[$vals[2]] = $currchar;
@@ -101,23 +102,19 @@ $s->parse_file($ARGV[1], $design);
 
 $struct->make_names;
 $design->make_names;
-if ($opt_d)
-{ @map = $struct->align_glyphs($design); }  # map from design -> struct
-else
-{ @map = $design->align_glyphs($struct); }
-
+@map = $struct->align_glyphs($design);  # map from design -> struct
 for ($i = 0; $i < @map; $i++)
 { $revmap[$map[$i]] = $i; } 
 
-$numg = $opt_d ? $design->{'numg'} : $struct->{'numg'};
 # Anchors position comes from design, but list from struct
-for ($i = 0; $i < $numg; $i++)
+for ($i = 0; $i < $design->{'numg'}; $i++)
 {
-    my ($char) = $design->{'glyphs'}[$opt_d ? $i : $map[$i]];
-    my ($other) = $struct->{'glyphs'}[$oppt_d ? $map[$i] : $i];
+    my ($char) = $design->{'glyphs'}[$i];
+    my ($other) = $struct->{'glyphs'}[$map[$i]];
     my ($str);
     next unless (defined $other);
 
+    $other->{'used'} = 1;
     foreach $p (keys %{$char->{'points'}})
     {
         next unless (defined $other->{'points'}{$p});
@@ -180,6 +177,23 @@ for ($i = 0; $i < $numg; $i++)
 
     push (@{$char->{'lines'}}, $char->{'lines'}[$char->{'commands'}{'EndChar'}[-1]]);
     $char->{'lines'}[$char->{'commands'}{'EndChar'}[-1]] = '';
+}
+
+for ($i = 0; $i < $struct->{'numg'}; $i++)
+{
+    my ($char) = $struct->{'glyphs'}[$i];
+    next if ($char->{'used'});
+
+    $char->{'gnum'} = $design->{'numg'}++;
+    foreach ($char->{'lines'})
+    {
+        if (m/^Encoding:\s+/o)
+        {
+            $_ = sprintf("Encoding: %d %04X %d\n", $char->{'encoded'}, $char->{'uni'}[0], $char->{'gnum'});
+            last;
+        }
+    }
+    push (@{$design->{'glyphs'}}, $char);
 }
 
 # copy lookups from struct -> design
@@ -375,7 +389,6 @@ structure file.
 =head1 OPTIONS
 
   -a file.xml   Optional AP database to merge APs from
-  -d            Take glyph list order from design
   -h            print manpage
   -p            Take attachment point positions from the structure file
 
