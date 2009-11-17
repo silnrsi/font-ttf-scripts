@@ -1,0 +1,274 @@
+#!/usr/bin/perl
+
+use IO::File;
+use Encode::Unicode;
+use Pod::Usage;
+use Getopt::Std;
+use Encode;
+
+getopts('hr:');
+
+unless ($ARGV[0] || $opt_h)
+{
+    pod2usage(1);
+    exit;
+}
+
+if ($opt_h)
+{
+    pod2usage(-verbose => 2, -noperldoc => 1);
+    exit;
+}
+
+%parser = (
+    'Encoding' => sub {
+        my ($str, $currchar) = @_;
+        my (@vals) = split(' ', $str);
+        $currchar->{'gnum'} = $vals[2];
+        return undef;
+    });
+
+$base = Font::TTF::Scripts::SFD->new(%parser);
+$local = Font::TTF::Scripts::SFD->new(%parser);
+$other = Font::TTF::Scripts::SFD->new(%parser);
+
+$base->parse_file($ARGV[0], $base);
+$local->parse_file($ARGV[1], $local);
+$other->parse_file($ARGV[2], $other);
+
+@basechars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$base->{'glyphs'}};
+@localchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$local->{'glyphs'}};
+@otherchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$other->{'glyphs'}};
+
+merge_items($base, $local, $other);
+for ($i = 0; $i < @basechars; $i++)
+{ merge_items($base->{'glyphs'}[$i], $local->{'glyphs'}[$i], $other->{'glyphs'}[$i]); }
+
+$maxnum = scalar @basechars;
+for ($i = @basechars; $i < @localchars; $i++)
+{ add_char($base, $localchars[$i]); }
+
+for ($i = $maxnum; $i < @otherchars; $i++)
+{ add_char($base, $otherchars[$i]); }
+
+$ofh = IO::File->new("> $ARGV[3]") || die "Can't open $ARGV[3] for writing";
+$base->print_font($base, $ofh);
+$ofh->close();
+
+sub add_char
+{
+    my ($base, $char) = @_;
+    my ($newind) = scalar @{$base->{'glyphs'}};
+    push (@{$base->{'glyphs'}}, $char);
+    $char->{'lines'}[$char->{'commands'}{'Encoding'}[0]] =~ s/\s(\d+)$/ $newind/o;
+}
+
+sub merge_items
+{
+    my ($base, $local, $other) = @_;
+    my ($c);
+
+    foreach $c (@{$base->{'commindex'}})
+    {
+        my ($cb) = $base->{'commands'}{$c->[0]}[$c->[1]];
+        my ($cl) = $local && $local->{'commands'}{$c->[0]}[$c->[1]];
+        my ($co) = $other && $other->{'commands'}{$c->[0]}[$c->[1]];
+        my ($lb) = $cb && $base->{'lines'}[$cb];
+        my ($ll) = $cl && $local->{'lines'}[$cl];
+        my ($lo) = $co && $other->{'lines'}[$co];
+
+        if ($lb eq $ll)
+        { $base->{'lines'}[$cb] = $lo if ($lb ne $lo); }
+        elsif ($lb ne $lo)
+        { $base->{'lines'}[$cb] = ($opt_r eq 'o' or !defined($ll)) ? $lo : (($opt_r eq 'l' and defined ($ll)) ? $ll : $lb); }
+        else
+        { $base->{'lines'}[$cb] = $ll; }
+    }
+
+    if ($local)
+    {
+        foreach $c (@{$local->{'commindex'}})
+        {
+            next if (defined $base->{'commands'}{$c->[0]} && scalar @{$base->{'commands'}{$c->[0]}} > $c->[1]);
+            insert_line($base, $local, $other, $c, $cold);
+        }
+        continue { $cold = $c; }
+    }
+
+    if ($other)
+    {
+        foreach $c (@{$other->{'commindex'}})
+        {
+            next if (defined $base->{'commands'}{$c->[0]} && scalar @{$base->{'commands'}{$c->[0]}} > $c->[1]);
+            insert_line($base, $local, $other, $c, $cold);
+        }
+        continue { $cold = $c; }
+    }
+}
+
+sub insert_line
+{
+    my ($base, $local, $other, $c, $cold) = @_;
+
+    my $cl = $local->{'commands'}{$c->[0]}[$c->[1]];
+    my $cb = $base->{'commands'}{$cold->[0]}[-1];
+    my $co = $other->{'commands'}{$c->[0]}[$c->[1]];
+    my $ll = $cl && $local->{'lines'}[$cl];
+    my $lo = $co && $other->{'lines'}[$co];
+    if ($ll ne $lo and defined ($lo))
+    { $base->{'lines'}[$cb] .= $opt_r eq 'o' ? $lo : $ll; }
+    else
+    { $base->{'lines'}[$cb] .= $ll; }
+    push (@{$base->{'commands'}{$c->[0]}}, $cb);
+}
+
+
+package Font::TTF::Scripts::SFD;
+
+use IO::File;
+
+sub new
+{
+    my ($class, %info) = @_;
+    my ($self) = {%info};
+    return bless $self, ref $class || $class;
+}
+
+sub parse_file
+{
+    my ($self, $fname, $base) = @_;
+    my ($fh);
+    my ($command, $text);
+    my %modes = (
+        'TtTable' => 'EndTTInstrs',
+        'TtInstrs' => 'EndTTInstrs',
+        'Image' => 'EndImage',
+        'TtfInstrs' => 'EndTtf',
+        'ChainSub2' => 'EndFPST',
+        'ChainPos2' => 'EndFPST',
+        'ContextSub2' => 'EndFPST',
+        'ContextPos2' => 'EndFPST',
+        'ReverseChain2' => 'EndFPST',
+        'ShortTable' => 'EndShort'
+    );
+
+    if (ref $fname)
+    { $fh = $fname; }
+    else
+    { $fh = IO::File->new("< $fname") || die "Can't open $fname for reading"; }
+
+    while (<$fh>)
+    {
+        my ($res);
+
+        if ($_ =~ m/^[\s\d"]/o || $mode)
+        {
+            $text .= $_;
+            if ($_ =~ m/^$mode/)
+            { $mode = ''; }
+            next;
+        }
+        elsif (defined $self->{$command})
+        {
+            my ($t) = $text;
+            $t =~ s/^\s*//o;
+
+            $res = &{$self->{$command}}($t, $base);
+            $base = $res if ($res);
+        }
+        if ($command)
+        {
+            my ($commstr) = $command;
+            if ($text =~ m/^\s*$/o)
+            { }
+            elsif ($modes{$command})
+            { $commstr .= ":"; }
+            elsif ($text =~ m/\n.+\n/o)
+            { }
+            else
+            { $commstr .= ":"; }
+            if ($command eq 'StartChar')
+            {
+                $text =~ s/\s*$//o;
+                $text =~ s/^\s*//o;
+                my $nbase = {'post' => $text, 'PSName' => $text, 'parent' => $base};
+                push (@{$base->{'glyphs'}}, $nbase);
+                $base = $nbase;
+                $text = " $text\n";
+            }
+            elsif ($command eq 'EndChars')
+            {
+                $base->{'final'} = {'base' => $base};
+                $base = $base->{'final'};
+            }
+            push (@{$base->{'lines'}}, "$commstr$text");
+            push (@{$base->{'commands'}{$command}}, scalar @{$base->{'lines'}} - 1);
+            push (@{$base->{'commindex'}}, [$command, scalar @{$base->{'commands'}{$command}} - 1]);
+            if ($command eq 'EndChar')
+            { $base = $base->{'parent'} if defined ($base->{'parent'}); }
+            $command = '';
+            $text = '';
+        }
+
+        if (s/^([^\s:]+)://o)
+        {
+            $command = $1;
+            $text = $_ || "\n";
+            $mode = $modes{$command};
+        }
+        else
+        {
+            $command = $_;
+            $command =~ s/(\s*)$//o;
+            $text = $1;
+        }
+    }
+    if (defined $self->{$command})
+    { &{$self->{$command}}($text); }
+    push (@{$base->{'lines'}}, "$command$text");
+    push (@{$base->{'commands'}{$command}}, scalar @{$base->{'lines'}});
+}
+
+
+sub print_font
+{
+    my ($self, $font, $fh) = @_;
+    my ($g, $l);
+
+    foreach $l (@{$font->{'lines'}})
+    { $fh->print($l); }
+    foreach $g (@{$font->{'glyphs'}})
+    {
+        foreach $l (@{$g->{'lines'}})
+        { $fh->print($l); }
+    }
+    if (defined $font->{'final'})
+    {
+        foreach $l (@{$font->{'final'}{'lines'}})
+        { $fh->print($l); }
+    }
+}
+
+__END__
+
+=head1 TITLE
+
+sfdmeld - merges sfd files
+
+=head1 SYNOPSIS
+
+  sfdmerge [-r winner] base local other
+
+Does a 3 way ancestral merge of sfd files.
+
+=head1 OPTIONS
+
+  -h            print manpage
+  -r winner     o => other wins clashes, l => local wins clashes
+                default base wins clashes
+
+=head1 SEE ALSO
+
+sfdmeld
+
+=cut
