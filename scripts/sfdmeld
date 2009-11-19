@@ -80,7 +80,7 @@ $s = Font::TTF::Scripts::SFD->new(
         return undef;
     }, 'AnchorPoint' => sub {
         my ($str, $currchar) = @_;
-        my (@values) = split(' ', $str);
+        my (@values) = split(' ', $str, 5);
         my ($name) = $values[0];
         my ($pname);
 
@@ -89,7 +89,8 @@ $s = Font::TTF::Scripts::SFD->new(
         $currchar->{'points'}{$pname} = {'name' => $name,
             'x' => $values[1],
             'y' => $values[2],
-            'type' => $values[3]};
+            'type' => $values[3],
+            'rest' => $values[4] || "0"};
         return undef;
     });
 
@@ -119,7 +120,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
     {
         next unless (defined $other->{'points'}{$p});
         my ($point) = $opt_p ? $other->{'points'}{$p} : $char->{'points'}{$p};
-        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} 0\n";
+        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}\n";
         $allpoints{$p} = 1;
     }
 
@@ -133,7 +134,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
             next if (defined $char->{'points'}{$p});
             my ($x, $y) = @{$aps{$char->{'PSName'}}{$p}};
             $char->{'points'}{$p} = {'x' => $x, 'y' => $y, 'name' => $p, 'type' => $t ? "mark" : "base"};
-            $str .= "AnchorPoint: \"$char->{'name'}\" $char->{'x'} $char->{'y'} $char->{'type'} 0\n";
+            $str .= "AnchorPoint: \"$char->{'name'}\" $char->{'x'} $char->{'y'} $char->{'type'} $point->{'rest'}\n";
             $allpoints{$p} = 1;
         }
     }
@@ -142,7 +143,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
     {
         next if (defined $char->{'points'}{$p});
         my ($point) = $other->{'points'}{$p};
-        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} 0\n";
+        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}\n";
         $allpoints{$p} = 1;
     }
 
