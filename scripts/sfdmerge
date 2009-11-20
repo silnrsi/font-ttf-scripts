@@ -36,20 +36,29 @@ $base->parse_file($ARGV[0], $base);
 $local->parse_file($ARGV[1], $local);
 $other->parse_file($ARGV[2], $other);
 
-@basechars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$base->{'glyphs'}};
-@localchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$local->{'glyphs'}};
-@otherchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$other->{'glyphs'}};
+#@basechars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$base->{'glyphs'}};
+#@localchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$local->{'glyphs'}};
+#@otherchars = sort {$a->{'gnum'} <=> $b->{'gnum'}} @{$other->{'glyphs'}};
+@basechars = order_glyphs($base->{'glyphs'});
+@localchars = order_glyphs($local->{'glyphs'});
+@otherchars = order_glyphs($other->{'glyphs'});
 
 merge_items($base, $local, $other);
 for ($i = 0; $i < @basechars; $i++)
-{ merge_items($base->{'glyphs'}[$i], $local->{'glyphs'}[$i], $other->{'glyphs'}[$i]); }
+{ merge_items($basechars[$i], $localchars[$i], $otherchars[$i]); }
 
 $maxnum = scalar @basechars;
-for ($i = @basechars; $i < @localchars; $i++)
-{ add_char($base, $localchars[$i]); }
+push(@basechars, @localchars[$maxnum .. $#localchars]);
+push(@basechars, @otherchars[$maxnum .. $#otherchars]);
 
-for ($i = $maxnum; $i < @otherchars; $i++)
-{ add_char($base, $otherchars[$i]); }
+for ($i = 0; $i < @basechars; $i++)
+{
+    $g = $basechars[$i];
+    $g->{'gnum'} = $i;
+    $g->{'lines'}[$g->{'commands'}{'Encoding'}[0]] =~ s/^(.*?)(\d+)/$1 . $i/oe;
+}
+
+$base->{'glyphs'} = \@basechars;
 
 $ofh = IO::File->new("> $ARGV[3]") || die "Can't open $ARGV[3] for writing";
 $base->print_font($base, $ofh);
@@ -122,6 +131,20 @@ sub insert_line
     push (@{$base->{'commands'}{$c->[0]}}, $cb);
 }
 
+sub order_glyphs
+{
+    my ($glyphs) = @_;
+    my (@res, $g);
+    my ($max) = scalar(@{$glyphs});
+    foreach $g (@{$glyphs})
+    {
+        if (defined $res[$g->{'gnum'}])
+        { $res[$max++] = $g }
+        else
+        { $res[$g->{'gnum'}] = $g; }
+    }
+    return @res
+}
 
 package Font::TTF::Scripts::SFD;
 
@@ -149,8 +172,10 @@ sub parse_file
         'ContextSub2' => 'EndFPST',
         'ContextPos2' => 'EndFPST',
         'ReverseChain2' => 'EndFPST',
-        'ShortTable' => 'EndShort'
+        'ShortTable' => 'EndShort',
+        'SplineSet' => 'EndSplineSet'
     );
+    my %singles = map {$_ => 1 } qw(Fore Back);
 
     if (ref $fname)
     { $fh = $fname; }
@@ -179,7 +204,7 @@ sub parse_file
         if ($command)
         {
             my ($commstr) = $command;
-            if ($text =~ m/^\s*$/o)
+            if ($text =~ m/^\s*$/o || $command eq 'SplineSet')
             { }
             elsif ($modes{$command})
             { $commstr .= ":"; }
@@ -206,13 +231,20 @@ sub parse_file
             push (@{$base->{'commindex'}}, [$command, scalar @{$base->{'commands'}{$command}} - 1]);
             if ($command eq 'EndChar')
             { $base = $base->{'parent'} if defined ($base->{'parent'}); }
+            elsif ($command eq 'SplineSet')
+            {
+                my ($line) = pop(@{$base->{'lines'}});
+                $base->{'lines'}[-1] .= $line;
+                pop (@{$base->{'commindex'}});
+                pop (@{$base->{'commands'}{$command}});
+            }
             $command = '';
             $text = '';
         }
 
-        if (s/^([^\s:]+)://o)
+        if (s/^([^\s:]+)://o or $singles{$_})
         {
-            $command = $1;
+            $command = $1 || $_;
             $text = $_ || "\n";
             $mode = $modes{$command};
         }
@@ -220,6 +252,7 @@ sub parse_file
         {
             $command = $_;
             $command =~ s/(\s*)$//o;
+            $mode = $modes{$command};
             $text = $1;
         }
     }
