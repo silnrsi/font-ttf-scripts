@@ -239,26 +239,28 @@ sub append_feat
 {
     my ($self, $font, $script, $lang, $feat, $lindex, $type) = @_;
     my ($fname) = "${feat}_${script}_${lang}";
+    my ($othertype) = ($type eq 'GSUB') ? 'GPOS' : 'GSUB';
 
     $self->{'featmap'}{$fname} = $feat;
     
     if ($lang eq 'dflt')
-    { $font->{$type}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'}; }
+    {
+        $font->{$type}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'};
+        $font->{$othertype}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'};
+    }
 
     unless (defined $font->{$type}{'SCRIPTS'}{$script}{$lang})
     {
         push (@{$font->{$type}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
+        push (@{$font->{$othertype}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
+        $font->{$othertype}{'SCRIPTS'}{$script}{$lang}{'I Exist'} = 1;
     }
 
     unless (defined $font->{$type}{'FEATURES'}{$fname})
-    {
-        push (@{$font->{$type}{'FEATURES'}{'FEAT_TAGS'}}, $fname);
-    }
+    { push (@{$font->{$type}{'FEATURES'}{'FEAT_TAGS'}}, $fname); }
 
     unless (grep {$_ eq $fname} @{$font->{$type}{'SCRIPTS'}{$script}{$lang}{'FEATURES'}})
-    {
-        push (@{$font->{$type}{'SCRIPTS'}{$script}{$lang}{'FEATURES'}}, $fname);
-    }
+    { push (@{$font->{$type}{'SCRIPTS'}{$script}{$lang}{'FEATURES'}}, $fname); }
     
     push (@{$font->{$type}{'FEATURES'}{$fname}{'LOOKUPS'}}, $lindex);
 }

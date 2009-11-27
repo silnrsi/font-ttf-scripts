@@ -10,7 +10,8 @@ my $VERSION;
 our $CHAIN_CALL;
 our ($if, $of);
 
-$VERSION = 0.32;    # MJPH      28-JUL-2009     Add <scale> to scale glyphs
+$VERSION = 0.33;    # MJPH      27-NOV-2009     -a now copies all tables
+# $VERSION = 0.32;    # MJPH      28-JUL-2009     Add <scale> to scale glyphs
 # $VERSION = 0.31;    # MJPH      16-APR-2009     Take last advance for sequential base glyphs
 # $VERSION = 0.30;    # MJPH      13-MAR-2009     Get multifont scaling working
 # $VERSION = 0.30;    # MJPH       6-JAN-2009     Fix font scale reference in offset glyphs
@@ -82,6 +83,7 @@ use Font::TTF::Glyph;
 use Font::TTF::Hmtx;
 use Font::TTF::Loca;
 use Font::TTF::PSNames;
+use Font::TTF::Coverage;
 use XML::Parser::Expat;
 
 sub main
@@ -97,13 +99,18 @@ sub main
         preferred_family preferred_subfamily compat_full text CID_name));
 
     my $of = Font::TTF::Font->new();
-    foreach my $t ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post')
-    {
-        next unless defined $if->{$t};
-        $if->{$t}->read;
-        $of->{$t} = bless {%{$if->{$t}}}, ref $if->{$t};
+    $Font::TTF::Coverage::dontsort = 1;
+    my @tlist;
+    if ($opt_a)
+    { @tlist = sort grep {length($_) == 4 and $_ ne 'glyf' and $_ ne 'loca'} keys %$if; }
+    else
+    { @tlist = ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post'); }
+    $if->tables_do(sub {
+        my ($table, $t) = @_;
+        $table->read_dat;
+        $of->{$t} = bless {%{$table}}, ref $table;
         $of->{$t}{' PARENT'} = $of;
-    }
+        }, @tlist);
 
     my $ifissymbol = $if->{'cmap'}->read->ms_enc;
     $ifissymbol = 1 if (defined $ifissymbol && $ifissymbol == 0);
@@ -189,6 +196,8 @@ sub main
     }
 
     $if->{'loca'}->read;
+    $if->{'hmtx'}->read;
+    $if->{'post'}->read;
     $of->{'hmtx'} = Font::TTF::Hmtx->new(PARENT => $of, read => 1);
 
     if ($opt_a)
@@ -209,7 +218,6 @@ sub main
             if ($g)
             {
                 $g->read;
-                $bbox = 
                 $aglyph->{'glyph_list'} = [{
                     'glyph' => $g,
                     'GID' => $i,
@@ -217,15 +225,15 @@ sub main
                 $aglyph->{'bbox'} = [$g->{'xMin'}, $g->{'yMin'}, $g->{'xMax'}, $g->{'yMax'}];
             }
     
-            foreach $p (keys %{$xml_dat[$i]{'points'}})
+            foreach $p (keys %{$xml_dat[0][$i]{'points'}})
             {
-                my ($p1) = $xml_dat[$i]{'points'}{$p};
+                my ($p1) = $xml_dat[0][$i]{'points'}{$p};
                 $aglyph->{'points'}{$p}{'base'} = $aglyph;
                 $aglyph->{'points'}{$p}{'loc'} = [@{$p1->{'loc'}}] if (defined $p1->{'loc'});
                 $aglyph->{'points'}{$p}{'cont'} = $p1->{'cont'} if (defined $p1->{'cont'});     # deep copy - klunky
             }
-            $aglyph->{'properties'} = {%{$xml_dat[$i]{'properties'}}} if defined $xml_dat[$i]{'properties'};
-            $aglyph->{'notes'} = $xml_dat[$i]{'notes'} if defined $xml_dat[$i]{'notes'};
+            $aglyph->{'properties'} = {%{$xml_dat[0][$i]{'properties'}}} if defined $xml_dat[0][$i]{'properties'};
+            $aglyph->{'notes'} = $xml_dat[0][$i]{'notes'} if defined $xml_dat[0][$i]{'notes'};
             $g->{'required'} = $i;
             push (@glyphs, $aglyph);
             $of->{'hmtx'}{'advance'}[$i] = $if->{'hmtx'}{'advance'}[$i];
@@ -619,6 +627,7 @@ sub main
     
     
     $of->{'maxp'}{'numGlyphs'} = scalar @glyphs;
+    $of->{'post'}->read;
     $of->{'post'}{'VAL'} = [];
     $of->{'loca'} = Font::TTF::Loca->new(PARENT => $of, read => 1);
     $of->{'glyf'} = Font::TTF::Glyf->new(PARENT => $of, read => 1);
