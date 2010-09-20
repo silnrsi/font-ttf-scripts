@@ -107,6 +107,7 @@ sub main
     { @tlist = ('OS/2', 'cvt ', 'fpgm', 'gasp', 'head', 'hhea', 'maxp', 'name', 'prep', 'post'); }
     $if->tables_do(sub {
         my ($table, $t) = @_;
+        return unless $table;
         $table->read_dat;
         $of->{$t} = bless {%{$table}}, ref $table;
         $of->{$t}{' PARENT'} = $of;

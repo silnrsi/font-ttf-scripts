@@ -103,7 +103,7 @@ foreach my $a (@ARGV)
         $f = Font::TTF::Font->open($infile) || die "Can't open font file '$infile': $!\n";
 
 # Invoke user's script, if any:
-        eval $exe->() if $prog;
+        eval $exe->($infile, $outfile) if $prog;
 
 # Write the resultant font if requested
         if ($outfile)
