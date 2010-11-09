@@ -222,6 +222,7 @@ sub end_gdl
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
+    $gname =~ s/[:\(\)\{\}]//g;
     $gname =~ s{/.*$}{}o;
     $gname =~ s/\.(.)/'_'.lc($1)/oge;
     if ($gname =~ m/^u(?:[0-9A-Fa-f]{4,6})/oi)

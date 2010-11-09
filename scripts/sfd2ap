@@ -42,7 +42,7 @@ $s = Font::TTF::Scripts::SFD->new(
         my ($name) = $values[0];
 
         $name =~ s/^(['"])(.*?)\1/$2/o;   # "'
-        $name = "_$name" if ($values[3] eq 'mark' && $name !~ m/^_/o);
+        $name = "_$name" if (($values[3] eq 'mark' or $values[3] eq 'entry') && $name !~ m/^_/o);
         $currchar->{'points'}{$name} = [$values[1], $values[2]];
     }, 'Comment' => sub {
         my ($text) = @_;

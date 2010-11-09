@@ -702,8 +702,8 @@ sub align_glyphs
     my ($self, $data) = @_;
     my (@map, @revmap, @old, @new, @diff, $s, $g, $u);
 
-    @new = map {$_->{'name'}} @{$self->{'glyphs'}};
-    @old = map {$_->{'name'}} @{$data->{'glyphs'}};
+    @new = map {$_ ? $_->{'name'} : ""} @{$self->{'glyphs'}};
+    @old = map {$_ ? $_->{'name'} : ""} @{$data->{'glyphs'}};
     @diff = sdiff(\@old, \@new);
 
 # first find solid alignments
