@@ -162,8 +162,13 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
             $str =~ s/^(\S+\s*\"[^"]*\")\s*//o;
             my ($pref) = $1;
             my (@gs) = split(' ', $str);
-            $res .= "$pref " . join(' ', 
-                map {my($i)=$revmap[$struct->{'gnames'}{$_}]; $i ? $design->{'glyphs'}[$i]{'post'} : ""} @gs) . "\n";
+            my (@l) = ();
+            foreach $g (@gs)
+            {
+                my ($i) = $revmap[$struct->{'gnames'}{$_}]; 
+                push(@l, $design->{'glyphs'}[$i]{'post'}) if ($i);
+            }
+            $res .= "$pref " . join(' ', @l) if (scalar @l);
         }
     }
 # need to merge Kerns2, PairPos2 & Position2 with values coming from the design

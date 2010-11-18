@@ -10,22 +10,23 @@ sub ttfdeflang
     my ($font, %opts) = @_;
     my ($f, $t);
 
+    my ($ltag) = lc($opts{'d'});
     if (defined $font->{'Sill'} and defined $font->{'Feat'} and $t = $font->{'Sill'}->read and $f = $font->{'Feat'}->read)
     {
-        if (defined $t->{'langs'}{$opts{'d'}})
+        if (defined $t->{'langs'}{$ltag})
         {
             my %change;
-            foreach my $s (@{$t->{'langs'}{$opts{'d'}}})
+            foreach my $s (@{$t->{'langs'}{$ltag}})
             { $change{$s->[0]} = $s->[1]; }
 
             foreach my $g (@{$f->{'features'}})
             { $g->{'default'} = $change{$g->{'feature'}} if (defined $change{$g->{'feature'}}); }
         }
         else
-        { warn "No language $opts{'d'} found in Sill table"; }
+        { warn "No language '$ltag' found in Sill table"; }
     }
 
-    my ($lang) = lc($opts{'d'});
+    my ($lang) = uc($opts{'d'});
     $lang .= " " x (4 - length($lang));
 
     foreach my $tk (qw(GSUB GPOS))
