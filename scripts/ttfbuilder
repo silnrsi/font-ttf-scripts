@@ -111,12 +111,13 @@ sub main
         $table->read_dat;
         $of->{$t} = bless {%{$table}}, ref $table;
         $of->{$t}{' PARENT'} = $of;
+        $of->{$t}->read;
         }, @tlist);
 
     my $ifissymbol = $if->{'cmap'}->read->ms_enc;
     $ifissymbol = 1 if (defined $ifissymbol && $ifissymbol == 0);
 
-    my $fname = $if->{'name'}->find_name(4);
+    my $fname = $if->{'name'}->read->find_name(4);
 
     if (scalar @$iaps)
     {

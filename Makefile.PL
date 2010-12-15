@@ -6,7 +6,7 @@ use Getopt::Std;
 getopts('d:rv:');
 $opt_v ||= 1;
 
-$VERSION = "0.16";
+$VERSION = "0.16.1";
 
 $fversion = $VERSION;
 $fversion =~ s/\./_/og;

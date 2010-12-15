@@ -1,4 +1,4 @@
-#!/usr/bin/perl -CA
+#!/usr/bin/perl
 
 use Font::TTF::Font;
 use Getopt::Std;
