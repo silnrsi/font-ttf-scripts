@@ -77,6 +77,7 @@ $s = Font::TTF::Scripts::SFD->new(
         $currchar->{'gnum'} = $vals[2];
         $$font->{'glyphs'}[$vals[2]] = $currchar;
         $$font->{'gnames'}{$currchar->{'post'}} = $vals[2];
+        $$font->{'numg'} = $vals[2] + 1 if ($$font->{'numg'} <= $vals[2]);
         return undef;
     }, 'AnchorPoint' => sub {
         my ($str, $currchar) = @_;
