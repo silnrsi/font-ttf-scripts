@@ -37,7 +37,7 @@ sub ttfdeflang
         {
             foreach $s (keys %{$t->{'SCRIPTS'}})
             {
-                if (defined ($l = $t->{'SCRIPTS'}{$s}{$lang}) || defined ($l = $t->{'SCRIPTS'}{$s}{uc($lang)}))
+                if (defined ($l = $t->{'SCRIPTS'}{$s}{$lang}) || defined ($l = $t->{'SCRIPTS'}{$s}{lc($lang)}))
                 {
                     my ($ttag);
                     $found = 1;

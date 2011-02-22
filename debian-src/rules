@@ -48,7 +48,7 @@ install-stamp:
 
 	# Add commands to install the package into debian/$PACKAGE_NAME here
 	ls
-	$(MAKE) test
+#	$(MAKE) test
 	$(MAKE) install DESTDIR=$(TMP) PREFIX=/usr
 
 	# As this is a architecture independent package, we are not
