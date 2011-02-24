@@ -310,7 +310,7 @@ sub lig_rules
 {
     my ($self, $fh, $pnum, $type) = @_;
     my ($ligclasses) = $self->{'ligclasses'};
-    my ($c);
+    my ($c, %namemap, $glyph, $name);
 
     return unless (defined $pnum);
     return unless (scalar %{$self->{'ligclasses'}});
@@ -327,8 +327,40 @@ sub lig_rules
         if ($type eq 'first')
         { $fh->print("$gname cligno_$c > _ clig$c:(1 2)$compstr / _ ^ _;\n"); }
         else
-        { $fh->print("cligno_$c $gname > clig$c:(1 2)$compstr _/ ^ _ _;\n"); }
+        { $fh->print("cligno_$c $gname > clig$c:(1 2)$compstr _ / ^ _ _;\n"); }
 
+    }
+    foreach $glyph (@{$self->{'glyphs'}})
+    {
+        foreach $name (split('/', $glyph->{'post'}))
+        { $namemap{$name} = $glyph; }
+    }
+    foreach $glyph (@{$self->{'glyphs'}})
+    {
+        foreach $name (split('/', $glyph->{'post'}))
+        {
+            my ($ext, $base, @elem) = $self->split_lig($name, $type, '');
+            next if ($ext || scalar @elem < 3);
+            my ($islig) = 1;
+            my (@parts, $e, $g);
+            foreach $e (@elem)
+            {
+                my ($n) = $e;
+                $n =~ s/_//g;
+                $g = $namemap{$n};
+                if (!$g)
+                {
+                    $islig = 0;
+                    last;
+                }
+                else
+                {
+                    push(@parts, $g->{'name'});
+                }
+            }
+            next if (!$islig);
+            $fh->print(join(" ", @parts) . " > " . $glyph->{'name'} . ":(" . join(" ", 1 .. ($#parts + 1)) . ") " . join(" ", ("_") x (@parts - 1)) . ";\n");
+        }
     }
     $fh->print("endpass;\nendtable;\n");
 }
