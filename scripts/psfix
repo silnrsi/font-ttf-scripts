@@ -19,15 +19,19 @@ $nmap = {};
 
 for ($i = 1; $i < $num; $i++)
 {
-    $nmap{$p->{'VAL'}[$i]} = lookup($rmap[$i]) if (defined $rmap[$i]);
+    if (defined $rmap[$i])
+    {
+        $nmap{$p->{'VAL'}[$i]} = lookup($rmap[$i]);
+        $nmap{$p->{'VAL'}[$i]} =~ s/^uni/u/o;
+    }
 }
 
 for ($i = 1; $i < $num; $i++)
 {
     my (@parts) = split(/([_\/.])/, $p->{'VAL'}[$i]);
-    for ($i = 0; $i < @parts; $i += 2)
+    for ($j = 0; $j < @parts; $j += 2)
     {
-        $parts[$i] = $nmap{$parts[$i]} || $parts{$i} if (!$i || $parts[$i - 1] =~ m/[_\/]/o);
+        $parts[$j] = $nmap{$parts[$j]} || $parts{$j} if (!$j || $parts[$j - 1] =~ m/[_\/]/o);
     }
     $p->{'VAL'}[$i] = join('', @parts);
 }
