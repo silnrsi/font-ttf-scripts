@@ -5,8 +5,8 @@ use Font::TTF::OTTags qw( %tttags %ttnames readtagsfile );
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_h, $opt_v);
-getopts('hv');
+our ($opt_h, $opt_l, $opt_v);
+getopts('hlv');
 
 unless (defined $ARGV[0] || defined $opt_h)
 {
@@ -19,6 +19,19 @@ if ($opt_h)
     pod2usage( -verbose => 2, -noperldoc => 1);
     exit;
 }
+
+my %LookupText = (
+GSUB => ['Single substitution', 'Multiple', 'Alternate', 'Ligature', 'Contextual', 'Chain contextual', 'Extension', 'Reverse Chain'],
+GPOS => ['Single Adjustment', 'Pair Adjustment', 'Cursive', 'Mark to base', 'Mark to ligature', 'Mark to mark', 'Contextual', 'Chain contextual', 'Extension']
+);
+
+my @FlagDetail = (
+	[0x0001, "RightToLeft"],
+	[0x0002, "IgnoreBase"],
+	[0x0004, "IgnoreLigatures"],
+	[0x0008, "IgnoreMarks"],
+	[0x0010, "UseMarkFilteringSet"],
+);
 
 foreach (@ARGV)
 {
@@ -75,10 +88,39 @@ foreach (@ARGV)
 			next if $f =~ /^zz\d\d$/ && !$opt_v;
 			print "    <$f> ", $ttnames{'FEATURE'}{substr($f,0,4)}, " -> ", join (',', @{$g->{'FEATURES'}{$f}{'LOOKUPS'}}), "\n";
 		}	
+		
+		if ($opt_l)
+		{
+			print "  Lookups:\n";
+			foreach my $il (0 .. scalar(@{$g->{'LOOKUP'}})-1)
+			{
+				my $l = $g->{'LOOKUP'}[$il];
+				print "    $il: Type = $l->{'TYPE'} ($LookupText{$t}[$l->{'TYPE'}-1])";
+				if ($l->{'FLAG'})
+				{
+					print " Flag = $l->{'FLAG'} (";
+					my $x=0;
+					foreach (@FlagDetail)
+					{
+						print $x++ ? ' ' : '', "$_->[1]" if ($l->{'FLAG'} & $_->[0]);
+					}
+					print $x++ ? ' ' : '', "ProcessMarkClass=", ($l->{'FLAG'}) >> 8 if ($l->{'FLAG'} & 0xFF00);
+					print ')';
+				}
+				print "\n";
+				foreach my $is (0 .. scalar(@{$l->{'SUB'}})-1)
+				{
+					print "        Subtable $is: Format = $l->{'SUB'}[$is]{'FORMAT'} " . 
+						(defined $l->{'SUB'}[$is]{'RULES'} ? "Number of rules = " . scalar(@{$l->{'SUB'}[$is]{'RULES'}}) : "No rules") . "\n";
+				}
+			}
+		}
+		
 	}
 	
 	$font->release;
 }
+
 
 =head1 TITLE
 
@@ -93,6 +135,7 @@ Prints to STDOUT information about the Script, Language, and Feature structure o
 
 =head1 OPTIONS
 
+  -l   enumerate Lookups as well as Scripts, Languages and Features
   -v   include debugging entries added by Microsoft VOLT
   -h   print help message
 
