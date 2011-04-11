@@ -69,7 +69,7 @@ my $g;		# Glyph structure
 #	TYPE		one of BASE, MARK, LIGATURE, COMPONENT (from GDEF if present)
 #   ANCHORS     a hash of attachment points, indexed by attachment point name, value is a pointer to an Font::TTF::Anchor 
 
-# Gyph structures can be located from either glyph ID or PS name:
+# Gyph structures can be located from glyph ID, PS name or, for encoded glyphs, USV:
 my (%GlyphFromID, %GlyphFromName, %GlyphFromCmapUnicode);
 
 my ($gid, $gname, $u);	# Glyph ID, Glyph name, and Unicode
@@ -1550,7 +1550,7 @@ foreach $s (sort keys %scripts)
     			        $tbl->{'-LookupsNeeded'}[$lid] = 1;
     			        
     			        # Give it a name:
-    			        $tbl->{'LOOKUP'}[$lid]{'-name'} = "$f" . "_$lid";
+    			        $tbl->{'LOOKUP'}[$lid]{'-name'} = "$f" . "_$which$lid";
     			        
     			        # If this is a chaining context lookup, we need to coalesce subtables.
     			        CoalesceChainContextSubtables ($tbl->{'LOOKUP'}[$lid],$tbl) if $tbl->{'LOOKUP'}[$lid]{'TYPE'} == ($which eq 'S' ? 6 : 8);
