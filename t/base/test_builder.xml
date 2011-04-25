@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<font name="Testing" upem="2048">
+
+<glyph GID="0">
+</glyph>
+
+<glyph GID="1" PSName=".null">
+</glyph>
+
+<glyph GID="2" PSName="nonmarkingreturn">
+</glyph>
+
+<glyph GID="3" PSName="zero" UID="0030">
+</glyph>
+
+<glyph GID="4" PSName="one" UID="0031">
+</glyph>
+
+<glyph GID="5" PSName="two" UID="0032">
+</glyph>
+
+<glyph GID="6" PSName="three" UID="0033">
+</glyph>
+
+<glyph GID="7" PSName="four" UID="0034">
+</glyph>
+
+<glyph GID="8" PSName="five" UID="0035">
+</glyph>
+
+<glyph GID="9" PSName="six" UID="0036">
+</glyph>
+
+<glyph GID="10" PSName="seven" UID="0037">
+</glyph>
+
+<glyph GID="11" PSName="eight" UID="0038">
+    <point type="test">
+        <location x="=(xMin + xMax)/2" y="=yMax + 100"/>
+    </point>
+</glyph>
+
+<glyph GID="12" PSName="nine" UID="0039">
+</glyph>
+
+<glyph GID="13" PSName="Agrave" UID="00C0">
+    <compound bbox="0, 0, 1198, 1317" PSName="A"/>
+    <compound bbox="313, 1347, 721, 1789" PSName="grave"/>
+</glyph>
+
+<glyph GID="14" PSName="agrave" UID="00E0">
+    <compound bbox="80, -30, 926, 960" PSName="a"/>
+    <compound bbox="173.5, 1047, 581.5, 1489" PSName="grave"/>
+</glyph>
+
+<glyph GID="15" PSName="A">
+</glyph>
+
+<glyph GID="16" PSName="grave">
+</glyph>
+
+<glyph GID="17" PSName="a">
+</glyph>
+
+</font>
