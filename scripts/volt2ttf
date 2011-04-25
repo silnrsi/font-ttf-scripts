@@ -666,6 +666,7 @@ sub add_gdef
     $font->{'GDEF'}{'Version'} = 1.0;
     $font->{'GDEF'}{'GLYPH'} = $gdc;
     $font->{'GDEF'}{'MARKS'} = $gdm if ($gdm->{'max'} > 0);
+    $font->{'GDEF'}->dirty;
 }
 
 
