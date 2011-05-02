@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+
+use strict;
+use Font::TTF::Font;
+use Getopt::Std;
+use Pod::Usage;
+
+our $VERSION = 0.1;     #   MH      2011-02-28  Original
+
+our $CHAIN_CALL;
+our %opts;
+our $f;
+
+unless($CHAIN_CALL)
+{
+    getopts('a:d:hl:', \%opts);
+
+    pod2usage( -verbose => 2, -noperldoc => 1) if $opts{'h'};
+
+    pod2usage(-verbose => 1) unless defined $ARGV[0];
+
+    $f = Font::TTF::Font->open($ARGV[0]) || die "Can't open file $ARGV[0]";
+}
+
+my $h = $f->{'hhea'}->read;
+my $o = $f->{'OS/2'}->read;
+if ($opts{'a'})
+{
+    $h->{'Ascender'} = $opts{'a'};
+    $o->{'sTypoAscender'} = $opts{'a'};
+    $o->{'usWinAscent'} = $opts{'a'};
+}
+
+if ($opts{'d'})
+{
+    $h->{'Descender'} = -$opts{'d'};
+    $o->{'sTypoDescender'} = -$opts{'d'};
+    $o->{'usWinDescent'} = $opts{'d'};
+}
+
+if ($opts{'l'})
+{
+    $o->{'sTypoLineGap'} = $opts{'l'};
+}
+
+$f->out($ARGV[1]) if (defined $ARGV[1]);
+
+__END__
+
+=head1 TITLE
+
+ttfascent - sets ascent and descent of a TrueType font
+
+=head1 SYNOPSIS
+
+ttfascent [-a num] [-d num] [-l num] infile [outfile]
+
+Opens infile (a .ttf file) changes the ascent and descent values in the Hhea and
+OS/2 table and then writes the resulting file to outfile if specified.
+
+=head1 OPTIONS
+
+  -a num    Sets the ascent value to this number of em units
+  -d num    Sets the descent value to this number of em units. This value is
+            usually positive.
+  -l num    Sets the typographical line gap in the OS/2 table.
+
+=head1 DESCRIPTION
+
+Setting the ascent and descent values of a font is a fiddly business. This program
+sets the values in their default relationship.
+
+=cut

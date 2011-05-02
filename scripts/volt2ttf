@@ -602,10 +602,11 @@ sub add_gpos_lookup
             {
                 $anchors{$c->[1]} = $acount++ unless (defined $anchors{$c->[1]});
                 foreach $g (@{$self->scon_glyphs($c->[0])})
-                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'anchors'}{"MARK_$c->[1]"}[0])]; }
+                { $marks[$markc->add($g)] = [$anchors{$c->[1]}, make_anchor($dat->{'glyphs'}[$g]{'anchors'}{"MARK_$c->[1]"}[0])] if ($g); }
             }
             foreach $g (sort {$a <=> $b} @{$self->or_context_glyphs(@{$s->{'context'}})})
             {
+                next unless ($g);
                 my ($i) = $basec->add($g);
                 my $thistype = 
                     ($dat->{'glyphs'}[$g]{'type'} eq 'MARK') ? 6 :      # mark-to-mark
