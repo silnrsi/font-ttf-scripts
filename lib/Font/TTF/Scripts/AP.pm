@@ -161,7 +161,7 @@ If C<-errorfh> not set, this accumulates any warning or error messages encounter
 
 =item cWARNINGS
 
-Count of number fo warnings or errors encountered.
+Count of number of warnings or errors encountered.
 
 =back
 
