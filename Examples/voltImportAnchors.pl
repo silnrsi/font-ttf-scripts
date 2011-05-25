@@ -53,7 +53,9 @@ Options:
             vbelow,BotCenter
             vbelow_2,BotCenter,2
         If -l is not supplied, then all anchors will be imported and will
-        be assumed to be for component 1 (no ligatures).
+        be assumed to be for component 1 (no ligatures) unless anchor name
+        ends in '_' followed by a number, which is then taken to be 
+        the component number.
         (Note: the conversion between FontLab's convention of "_name" and
         VOLT's convention of "MARK_name" is automatic and should not be
         specified in a -l file).
@@ -194,8 +196,8 @@ sub ConvertXMLAnchorName {
 	}
 	else
 	{
-		# -l not supplied: Assume we strip any trailing digits off as the component number:
-		($xName, $xComponent) = ($xName =~ m/^(.*?)(\d*)$/);
+		# -l not supplied: Assume we strip any trailing /_\d+/ off as the component number:
+		($xName, $xComponent) = ($xName =~ m/^(.+)(?:_(\d+))?$/);
 		$xComponent ||= 1;
 	}
 	# adjust leading "_" to "MARK_":
@@ -212,7 +214,7 @@ if (exists $ap->{'WARNINGS'})
 {
 	print LOG $ap->{'WARNINGS'};
 	warn $ap->{'WARNINGS'};
-	$warningCount += $ap->{'cWarnings'};
+	$warningCount += $ap->{'cWARNINGS'};
 }
 	
 
@@ -259,8 +261,10 @@ sub WriteAnchors {
 				$vAnchor = $d->{'ANCHORS'}{$vName}[$vComponent];
 				if (defined $vAnchor) {
 					# Edit existing anchor:
+					MyWarn ("Multiple definitions for ancor '$vName' component '$vComponent' on glyph '$gid'\n") if $vAnchor->{'dirty'};
 					$vAnchor->{'SRC'} =~ s/ POS .*END_POS /" POS DX $xAnchor->{'x'} DY $xAnchor->{'y'} END_POS "/e;
 					$vAnchor->{'SRC'} =~ s/ AT / LOCKED AT / unless $vAnchor->{'SRC'} =~ / LOCKED /;
+					$vAnchor->{'dirty'} = 1;
 				} else {
 					# Create new anchor:
 					$d->{'ANCHORS'}{$vName}[$vComponent]{'SRC'} = "DEF_ANCHOR \"$vName\" ON $gid GLYPH "
