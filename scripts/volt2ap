@@ -55,7 +55,7 @@ for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
             for $c (0 .. $numcomp)
             {    
                 next unless defined $glyph->{'anchors'}{$p}[$c];
-                $n =~ s/\d*$/$c+1/e if $numcomp > 0;
+                $n =~ s/(_\d+)?$/'_' . ($c+1)/e if $numcomp > 0;
                 print "    <point type='$n'>\n";
                 printf "        <location x='%d' y='%d'/>\n", $glyph->{'anchors'}{$p}[$c]{'pos'}{'x'}[0], $glyph->{'anchors'}{$p}[$c]{'pos'}{'y'}[0];
                 print "    </point>\n";

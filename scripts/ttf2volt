@@ -8,14 +8,14 @@ use Data::Dumper;
 use Font::TTF::Font;
 use Font::TTF::OTTags qw( %ttnames readtagsfile);
 
-our ($opt_a, $opt_d, $opt_g, $opt_l, $opt_t, $opt_s, $opt_v, $VERSION);
+our ($opt_a, $opt_d, $opt_g, $opt_l, $opt_r, $opt_s, $opt_t, $opt_v, $VERSION);
 
 $VERSION = '0.53';
 
 my $progname = basename ($0);
 $progname =~ s/\.[^.]+$//;
 
-getopts('ad:g:l:st:v:');
+getopts('ad:g:l:rst:v:');
 
 die <<"EOT" unless $#ARGV >= 0 and $#ARGV <= 1;;
 
@@ -36,6 +36,7 @@ options:
     -a        allow non-adobe glyph names
     -g n      group creation threshold
     -l file   emit log messages to named file
+    -r        retain GPOS, GSUB, and GDEF tables in output font
     -s        do not send warnings to stdout (will still go to log)
     -t file   name of replacement VOLT tags file if needed.
     -v file   Volt project source (.vtp) file to create
@@ -512,7 +513,7 @@ sub WriteLookupHeader ($$)		# lookup structure reference, name to be used in loo
 
 	# set SKIP_BASE only if *both* IgnoreBaseGlyphs and IgnoreLigatures bits set:
 	$LookupText .= ($l->{'FLAG'} & 0x0006) == 0x0006 ? " SKIP_BASE" : " PROCESS_BASE";
-	$LookupText .= " PROCESS_MARKS " . ($l->{'FLAG'} & 0x0008 ? "NONE" : $l->{'FLAG'} & 0xFF00 ? GetGroupName($l->{'FLAG'}>>8) : "ALL");
+	$LookupText .= ($l->{'FLAG'} & 0x0008) ? " SKIP_MARKS" : " PROCESS_MARKS " . ($l->{'FLAG'} & 0xFF00 ? GetGroupName($l->{'FLAG'}>>8) : "ALL");
 	$LookupText .= " DIRECTION " . ($l->{'FLAG'} & 0x0001 ? "RTL" : "LTR");
 	MyWarn (sprintf "Lookup $name has unhandled lookup flag bits 0x%04X\n", $l->{'FLAG'} & 0xF0) if $l->{'FLAG'} & 0xF0;
 	$LookupText .= "\n";
@@ -1019,7 +1020,7 @@ sub ValueRecord(\%)
 {
     my $rec = shift;
     my $res = "POS";
-    for (keys %vrKeys)
+    for (sort keys %vrKeys)
     {
         $res .= " $vrKeys{$_} $rec->{$_}" if exists $rec->{$_} && $rec->{$_} != 0;
     }
@@ -1685,8 +1686,14 @@ if (defined $ARGV[1])
     # Replace source:
     $font->{'TSIV'}->{' dat'} = $vtp;
     
-    # Remove compiled tables if they exist:
-    for (qw( TSID TSIP TSIS GDEF GPOS GSUB)) { delete $font->{$_} };
+    # Remove other VOLT tables if they exist:
+    for (qw( TSID TSIP TSIS )) { delete $font->{$_} };
+    
+    unless ($opt_r)
+    {
+    	# Remove compiled tables if they exist:
+    	for (qw( GDEF GPOS GSUB)) { delete $font->{$_} };
+    }
     
     $font->out($ARGV[1]);
 }
