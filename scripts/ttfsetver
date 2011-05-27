@@ -40,7 +40,11 @@ if (exists $f->{'name'})
     my ($name) = $f->{'name'}->read->{'strings'};
     
     my $verstring = "Version $newVer";
-    $verstring .= " $opt_d" if $opt_d;
+    
+   	# The OT spec suggests including semicolon to separate version number from descriptive text
+   	# Handle cases where caller provided semicolon and/or leading whitespace
+   	$opt_d =~ s/^;?\s*//;
+   	$verstring .= "; $opt_d" if (length($opt_d) > 0);
        
 	do_name ($f, $verstring, 5);
 }
