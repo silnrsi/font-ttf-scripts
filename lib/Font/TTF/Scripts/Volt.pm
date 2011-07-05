@@ -11,6 +11,7 @@ Font::TTF::Scripts::Volt - Memory representation of a Volt based font
  $dat = $fv->parse_volt;
  @map = $fv->align_glyphs($dat);
  $fv->merge_volt($dat, \@map);
+ $fv->make_classes;
  $fv->make_anchors;
  $fv->make_groups;
  $fv->make_lookups;
@@ -19,7 +20,7 @@ Font::TTF::Scripts::Volt - Memory representation of a Volt based font
 =head1 DESCRIPTION
 
 C<Font::TTF::Scripts::Volt> is based on and inherits from C<Font::TTF::Scripts::AP>
-and as such contains all the information in such an object. The read method does
+and as such supports all the information and methods in such an object. The read method does
 little beyond calling the corresponding AP method.
 
 The real power in this module is in the C<parse_volt> that can parse Volt source code.
@@ -127,7 +128,7 @@ Array of names of lookups associated with this feature
 =item groups
 
 A hash of group definitions by name. The contents is an array of C<context_item>s corresponding
-to each element in the group's defining enum.
+to each element in the defining enum for the group.
 
 =item lookups
 
@@ -356,6 +357,15 @@ sub read_font
     $self;
 }
 
+=head2 $f->out_volt(%opts)
+
+Assembles the VOLT project source and returns it as a multi-line string.
+
+Options include
+
+  -default_glyphtype  Glyphs whose C<type> is unknown get set to this type
+
+=cut
 
 sub out_volt
 {
@@ -1472,6 +1482,16 @@ sub map_enum
     }
 }
 
+=head2 $fv->make_lookups($ligtype, \%opts)
+
+Construct substitution lookups for all C<classes> and C<ligclasses>, and 
+position lookups for all C<lists>. Options include
+
+  -force   force new lookup even if it already exists.
+  -notmark list of anchors that do not imply a MARK glyph (e.g. "_R")
+
+=cut
+
 sub make_lookups
 {
     my ($self, $ligtype, $opts) = @_;
@@ -1641,6 +1661,8 @@ NB: This function is not an object method, and it can be overridden by setting t
 option of C<read_font>.
 
 =cut
+
+# ' Make editors happy
 
 sub point2anchor
 {

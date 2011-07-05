@@ -44,13 +44,15 @@ Actual Postscript name from font.
 
 =item name
 
-This element is set by L</"make_names"> or L</"make_classes"> and is the replacement name returned by L</"make_name">.
+This element is set by L</"make_names"> or L</"make_classes"> and is the replacement name returned 
+by L</"make_name">.
 
 =back
 
 Note: The C<uni>, C<gnum> and C<post> values are based on the C<UID>, C<GID>, and C<PSName> fields
 of the APDB. If there are descrepancies between the APDB and the font's internal tables, then 
-for calcuating the above three values, priority is given first to C<UID> field, then C<PSName> field, and finally C<GID>. 
+for calcuating the above three values, priority is given first to C<UID> field, then C<PSName> field, 
+and finally C<GID>. 
 
 =over 4
 
@@ -168,6 +170,8 @@ Count of number of warnings or errors encountered.
 =head1 METHODS
 
 =cut
+
+# ' make editors happy
 
 use Font::TTF::Font 0.36;
 use XML::Parser::Expat;
@@ -488,7 +492,7 @@ sub read_font
 
 An alternative to L</"make_classes">, this method just creates name records for all the glyphs in the font. 
 That is, for every glyph record in C<glyphs>, L</"make_names"> invokes L</"make_name"> and saves the result 
-in the glyph' sC<name> element.
+in the C<name> element of the glyph.
 
 =cut
 
@@ -528,9 +532,13 @@ Options supported are:
 
 =item -ligatures
 
-Takes two values: first or last. First creates ligature classes with the class based on the first element of the ligature and the contents of the class on the rest of the ligature. Last creates classes based on the last element of the ligature, thus grouping all glyphs with the same last ligature element together. Ligature classes are stored in C<$self->{'ligclasses'}>.
+Accepts one of two possible values: C<'first'> or C<'last'>. First creates ligature classes with the class based on the first element of the ligature and the contents of the class on the rest of the ligature. Last creates classes based on the last element of the ligature, thus grouping all glyphs with the same last ligature element together. Ligature classes are stored in C<$self->{'ligclasses'}>.
 
 Ligature elements are separated by _ in the glyph name. Ligatures are only made if there are corresponding non ligature glyphs in the font. A final .text on the glyph name of a ligature is assumed to be associated with the whole ligature and not just the last element.
+
+=item -ligtype
+
+If set to C<'comp'>, then treat glyph name extension as part of the final element.
 
 =back
 
@@ -658,6 +666,8 @@ a programming language. By default this returns $gname, but the function
 could be overridden when subclassing.
 
 =cut
+
+#  ' make editors happy
 
 sub make_name
 {
