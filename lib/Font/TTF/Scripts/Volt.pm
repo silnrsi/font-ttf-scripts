@@ -312,6 +312,9 @@ adjust value and the ppem value at which the adjustment occurs.
 use strict;
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
+use Unicode::Normalize;
+use Text::Unicode::Equivalents qw(all_strings);
+use Carp;
 
 use vars qw($VERSION @ISA %dat $volt_grammar $volt_parser);
 @ISA = qw(Font::TTF::Scripts::AP);
@@ -320,7 +323,7 @@ $VERSION = "0.02";  # MJPH   9-AUG-2005     Add support for glyph alternates
 # $VERSION = "0.01";  # MJPH  26-APR-2004     Original based on existing code
 # *read_font = \&Font::TTF::Scripts::AP::read_font;
 
-=head2 $ap = Font::TTF::Scripts::Volt->read_font ($ttf_file, $ap_file, %opts)
+=head2 $fv = Font::TTF::Scripts::Volt->read_font ($ttf_file, $ap_file, %opts)
 
 Additional options available to this function include
 
@@ -357,7 +360,7 @@ sub read_font
     $self;
 }
 
-=head2 $f->out_volt(%opts)
+=head2 $fv->out_volt(%opts)
 
 Assembles the VOLT project source and returns it as a multi-line string.
 
@@ -918,7 +921,7 @@ EOG
 
 #" to keep editors happy
 
-=head2 $f->parse_volt([$vtext])
+=head2 $fv->parse_volt([$vtext])
 
 Parses volt source. If no C<$vtext> then take it from the C<TSIV> table in the font.
 
@@ -1482,6 +1485,108 @@ sub map_enum
     }
 }
 
+=head2 $fv->normal_rules($ndrawn, \%opts)
+
+Generate ligature lookup C<normal_rules> based on Unicode composition rules. 
+If C<$ndrawn> is true, then add rules for all Unicode composites, otherwise
+only those composites whose glyph is an actual TrueType contour glyph.
+
+Options:
+  -force   force new lookup even if it already exists.
+
+=cut
+
+sub normal_rules
+{
+    my ($self, $ndrawn, $opts) = @_;
+    my ($g, $struni, $seq, $dseq, $dcomb, @decomp, $d, @rules);
+    my ($c) = $self->{'cmap'};
+    my ($glyphs) = $self->{'glyphs'};
+    my %seen;	# Used for error checking to notice multiple rules for same sequence
+	my $id = 'normal_rules';
+
+    if ($opts->{'-force'})
+    { $self->{'lookups'} = [grep {$_->{'id'} ne $id} @{$self->{'lookups'}}]; }
+    else
+    { return if (grep {$_->{'id'} eq $id} @{$self->{'lookups'}}); }
+
+    foreach $g (@{$self->{'glyphs'}})
+    {
+		# Don't generate ligature rules for glyphs that are truetype composites
+		# (as opposed to contour glyphs) unless $ndrawn is true:		
+        next unless ($ndrawn || $g->{'props'}{'drawn'});
+
+        # Perhaps someday we will want to provide options to allow caller to specify
+        # required compositions and decompositions -- something like:
+        # next unless ($g->{'props'}{'drawn'} or exists $required_comp{$g->{'post'}});
+        # next if (exists $required_decomp{$g->{'post'}});
+
+        # Nothing to do unless this is an encoded glyph:
+        next unless exists $g->{'uni'};
+        
+        # glyphs can be multiply encoded and thus have multiple Unicode values, so process each value
+		foreach my $u (@{$g->{'uni'}})
+		{
+	    	# Don't make ligatures unless this is the nominal glyph for this Unicode value:        
+	    	next unless $c->{$u} == $g->{'gnum'};
+	    	
+	    	my $s = pack('U', $u);
+	    	
+	    	# If this character has a Unicode singleton decomposition, build a rule only
+	    	# if its NFC doesn't exist in the font.
+	    	@decomp = unpack('U*', NFC($s));
+	    	next if $#decomp == 0 and $decomp[0] != $u and $c->{$decomp[0]};
+	        
+	        # Process all strings that are cannonically equivalent to this Unicode character:
+	        my $list = all_strings($s);
+	        foreach $struni (@{$list})
+	        {
+	        	# unpack this canonically-equivalent sequence to an array
+	        	@decomp = unpack('U*', $struni);
+	        	# Don't need to make ligatures if length of decomposed sequence is 1
+	        	next if $#decomp == 0;
+	
+		        # Verify the font has all the components.
+		        my ($dok) = 1;
+		        foreach $d (@decomp)
+		        { $dok = 0 unless $c->{$d}; }
+		        next unless $dok;
+		        	        
+		        if ($seen{$struni})
+		        {
+		        	# oops -- have seen this decomposition before!
+		        	carp sprintf("oops: identical decompositions for U+%04X and U+%04X; the latter ignored.\n", $seen{$struni}, $u);
+		        	next;
+		        }
+		        $seen{$struni} = $u;
+	
+		        # Save this ligature data:
+		        push @rules, [ $g->{'gnum'}, [ map {$c->{$_}} @decomp ] ];
+		    }
+		}
+	}
+	
+	# Build the lookup:
+    my ($l) = {'id' => $id, 'base' => 'PROCESS_BASE', 'marks' => 'PROCESS_MARKS',
+                     'all' => 'ALL', 'dir' => 'LTR', 'contexts' => [], 'lookup' =>['sub', []] };
+#        $res .= "DEF_LOOKUP \"l$c\" PROCESS_BASE PROCESS_MARKS ALL DIRECTION LTR\n";
+#        $res .= "IN_CONTEXT\nEND_CONTEXT\nAS_SUBSTITUTION\n";
+
+	# sort rules into longest first, then ascending by first GID
+	foreach my $r (sort { scalar(@{$b->[1]}) <=> scalar(@{$a->[1]}) || $a->[1][0] <=> $b->[1][0] } @rules)
+	{
+		push @{$l->{'lookup'}[1]},   [ [ map { ['GLYPH', $_] } @{$r->[1]} ] , [['GLYPH', $r->[0]]] ] ;
+#        $res .= "SUB GLYPH \"$r->[1][0]\" GLYPH \"$r->[1][1]\" ... \n"; }
+#        $res .= "WITH GROUP \"$r->[0]\"\n";
+#        $res .= "END_SUB\n";
+#        $res .= "END_SUBSTITUTION\n";
+ 		
+	}
+
+	# Add the lookup to font:
+	unshift(@{$self->{'lookups'}}, $l);
+}
+
 =head2 $fv->make_lookups($ligtype, \%opts)
 
 Construct substitution lookups for all C<classes> and C<ligclasses>, and 
@@ -1496,7 +1601,7 @@ sub make_lookups
 {
     my ($self, $ligtype, $opts) = @_;
     my ($c);
-
+    	
     foreach $c (sort keys %{$self->{'classes'}})
     {
         next if ($c =~ m/^no_/o);
@@ -1577,8 +1682,7 @@ sub make_lookups
 
 =head2 $fv->make_groups
 
-Convert all C<lists>, C<classes> and C<ligclasses>
-into Volt C<groups>.
+Convert all C<lists>, C<classes> and C<ligclasses> into Volt C<groups>.
 
 =cut
 

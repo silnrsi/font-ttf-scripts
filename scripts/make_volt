@@ -5,8 +5,8 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t);
-getopts('a:be:fhi:l:m:no:t');
+our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t, $opt_z);
+getopts('a:be:f:hi:l:m:no:tz:');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -75,7 +75,11 @@ if ($opt_i)
 }
 $f->make_anchors;
 $f->make_groups;
-$f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m}) unless ($opt_n);
+unless ($opt_f == 2)
+{
+	$f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m});
+	$f->normal_rules(($opt_z & 2), {-force => $opt_f} ) if ($opt_n);
+}
 
 my $res = $f->out_volt(-default_glyphtype => ($opt_b ? 'BASE' : undef));
 
@@ -110,18 +114,25 @@ Creates a copy of the infile font file adding a VOLT table to it.
   -b            Set un-typed glyphs to type "BASE"
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 
-  -f            force new lookups even if same named exist
+  -f level      Force value for adding OpenType lookups:
+                    0 create lookups only if not already present [default]
+                    1 re-create lookups even if same named exist
+                    2 don't build any lookups
   -h            print manpage
-  -i fontfile   merge VOLT table from this font or text file
-  -l type       type =
+  -i fontfile   Merge VOLT table from this font or text file
+  -l type       How ligatures are built: type =
                     first - class name is first code, contents other codes
                     last  - class name is last code, contents other codes
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
   -m "list"     List of anchors that do not imply a MARK glyph (e.g. "_R")
-  -n            Don't generate lookups
+  -n            Add a normalization ligature lookups
   -o "list"     List of AP names to omit
   -t            output volt code to stdout and don't generate a font file
+  -z bitfield   Bitfield of various controls:
+                    0 - n/a
+                    1 - normalise even if presentation is only references
+                    2 - n/a
 
 =head1 DESCRIPTION
 
