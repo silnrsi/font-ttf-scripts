@@ -1253,6 +1253,12 @@ the glyph.
 It is also possible to shift glyphs, at least base and attach glyphs. Shifting
 occurs after attachment (for obvious reasons).
 
+=item scale
+
+Scaling a glyph allows for stretching given the x & y values may be different. The
+x position is multiplied by the x scale and the y position is multiplied by the y
+scale. There is no cross multiplication allowing for rotation.
+
 =item string
 
 In the names section of the description file it is possible to specify strings which
@@ -1331,7 +1337,7 @@ The DTD for the configuration file is:
         overstrike  (0 | false | none | 1 | true | all | both | left 
                        | right)  #IMPLIED>
 
-    <!ELEMENT base (advance | rsb | lsb | attach | shift)*>
+    <!ELEMENT base (advance | rsb | lsb | attach | shift | scale)*>
     <!ATTLIST base
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
@@ -1339,7 +1345,7 @@ The DTD for the configuration file is:
         font    CDATA #IMPLIED
         noaps   CDATA #IMPLIED>
 
-    <!ELEMENT attach (advance | rsb | lsb | shift)*>
+    <!ELEMENT attach (advance | rsb | lsb | shift | scale)*>
     <!ATTLIST attach
         PSName  CDATA #IMPLIED
         UID     CDATA #IMPLIED
@@ -1363,6 +1369,11 @@ The DTD for the configuration file is:
 
     <!ELEMENT shift EMPTY>
     <!ATTLIST shift
+        x       CDATA #IMPLIED
+        y       CDATA #IMPLIED>
+
+    <!ELEMENT scale EMPTY>
+    <!ATTLIST scale
         x       CDATA #IMPLIED
         y       CDATA #IMPLIED>
 
