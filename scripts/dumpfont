@@ -47,11 +47,11 @@ foreach (@tags)
     if (length($_) == 4 and exists $f->{$_})
     {
         $f->{$_}->read;
-        print Font::TTF::Dumper::Dumper(\$f->{$_}, $_);
+        print Font::TTF::Dumper::ttfdump(\$f->{$_}, $_);
     }
     elsif ($_ eq 'AP')
     {
-        print Font::TTF::Dumper::Dumper($ap, "AP");
+        print Font::TTF::Dumper::ttfdump($ap, "AP");
     }
     else
     {
