@@ -27,7 +27,7 @@ my $delim = $opts{'d'} || ', ';
 if ($opts{'c'})
 {
 	my $name = $ARGV[0];
-	$name =~ s/(\.[^.]+)?$/-metrics.csv/o;
+	$name =~ s/(\.[^.]+)?$/_metrics.csv/o;
 	open(STDOUT, '>', $name) or die "Cannot redirect STDOUT to '$name': $!";
 }
 
@@ -59,7 +59,7 @@ for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
 	next if $gid == 0;
 	my $usv = sprintf("U+%04X", $u);
 	my $g = $loca->{'glyphs'}[$gid];
-	my ($xMin, $xMax, $yMin, $yMax) = (0 x 4);
+	my ($xMin, $xMax, $yMin, $yMax) = (0,0,0,0);
 	if (defined $g)
 	{
 		$g->read;
@@ -106,7 +106,7 @@ of the font-wide metrics and, for all encoded glyphs, the individual glyph metri
 
 If the C<-c> option is not supplied, the output is to STDOUT. If C<-c> is
 supplied, output is to a file whose name is constructed by replacing the
-file name suffix (e.g., C<-.ttf>) with C<-metrics.csv>.
+file name suffix (e.g., C<-.ttf>) with C<_metrics.csv>.
 
 The default field delimiter is comma followed by space. This default 
 can be overridden with the C<-d> option.
