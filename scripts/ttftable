@@ -31,7 +31,7 @@ our $VERSION = 0.05;	# BH      2011-08-18
 
 our $CHAIN_CALL;
 
-my (@exports, @imports, @deletes, @updates, $textmode, $list);
+our (@exports, @imports, @deletes, @updates, $textmode, $list);
 
 my $f;
 
@@ -211,17 +211,48 @@ for (@updates)
 {
     # Pad and trim table tag
     my $tag = sprintf('%-4.4s', $_);
-    next unless defined $f->{$tag};
-    $needupdate=1;
-    $f->{$tag}->read->dirty;
-    if ($tag eq 'glyf')
+    unless (defined $f->{$tag})
     {
-        # Special processing for glyf table: read and dirty every glyph
-        for my $gid (0 .. $f->{'head'}{'maxGlyphs'}-1)
-        {
-            $f->{'loca'}{'glyphs'}[$gid]->read_dat;
-        }
+    	warn ("No '$tag' table found -- cannot update\n");
     }
+    else
+    {
+	    if ($tag eq 'loca' or $tag eq 'glyf')
+	    {
+	    	# loca and glyf tables are interrelated. To update either, we must
+	    	# update both. But we only need to do this once.
+	    	
+	    	# make sure the other table is present:
+	    	my $othertag = $tag eq 'loca' ? 'glyf' : 'loca';
+	    	unless (defined $f->{$othertag})
+	    	{
+	    		warn ("No '$othertag' table found -- cannot update '$tag'\n");
+	    	}
+	    	elsif (!$f->{'loca'}->dirty)	# checks and sets dirty -- we only do this block one time
+	    	{
+	    		$f->{'glyf'}->read;  # forces reading of loca as well.
+	    	
+		        # read_dat every glyph
+		        $f->{'loca'}->read->glyphs_do ( 
+				    sub {
+				        my ($g, $gid) = @_;
+				        $g->read_dat;
+				    }
+				);
+				# Now dirty 'head' to fix all the bounding boxes
+				$f->{'head'}->dirty;
+				
+				$needupdate=1;
+		    }
+	    }
+	    else
+	    {
+	    	# other tables are simpler:
+	   	    $f->{$tag}->read->dirty(1);
+			$needupdate=1;
+	   	}
+
+	}
 }
 $f->update if $needupdate;
 
@@ -283,7 +314,8 @@ include quotes around parameters of the form tag=fname.
 
 -update is a debugging tool that forces the named tables to be read in detail, then
 "dirties" them, and finally updates the font. This should bring the font into consistent 
-state if it wasn't before. Note that updating the 'glyf' table will cause every 
+state if it wasn't before. Note that, due to their interrelated nature, updating either 
+the 'loca' or the 'glyf' table updates both and will cause every 
 glyph to be read and parsed and then reconstructed, taking significantly more time.
 
 Font tables such as TSIV that contain text use various conventions for line ending. 
