@@ -208,14 +208,23 @@ sub get_properties
     return $res;
 }
 
+# %name_cache to cache results of slow Font::TTF::PSName::parse(). Significant speed up.
+%name_cache = ();
 sub match_glyph
 {
     my ($name, $psname, $uid) = @_;
-    my ($cname) = canon($name);
-    my ($cpsname) = canon($psname);
+    my ($cname, $cpsname);
 
     return 1 if ($psname eq $name);
+
+    $name_cache{$name} = canon($name) if (!defined $name_cache{$name});
+    $cname = $name_cache{$name};
+
     return 1 if ($cname eq $uid);
+
+    $name_cache{$psname} = canon($psname) if (!defined $name_cache{$psname});
+    $cpsname = $name_cache{$name};
+
     return 1 if ($cname eq $cpsname);
 }
 
