@@ -223,7 +223,7 @@ sub match_glyph
     return 1 if ($cname eq $uid);
 
     $name_cache{$psname} = canon($psname) if (!defined $name_cache{$psname});
-    $cpsname = $name_cache{$name};
+    $cpsname = $name_cache{$psname};
 
     return 1 if ($cname eq $cpsname);
 }
