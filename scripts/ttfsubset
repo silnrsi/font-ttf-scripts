@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+
+use strict;
+use Font::TTF::Font;
+use Getopt::Std;
+use Pod::Usage;
+
+our $VERSION = 0.1;     #   
+
+our $CHAIN_CALL;
+our %opts;
+our $f;
+
+unless($CHAIN_CALL)
+{
+    pod2usage(-verbose => 1) unless (getopts('d:g:hl:s:', \%opts) && $#ARGV == 1) || $opts{'h'};
+    pod2usage(-verbose => 2, -noperldoc => 1) if $opts{'h'};
+    $f = Font::TTF::Font->open($ARGV[0]) || die "Can't open file '$ARGV[0]'";
+}
+
+if ($opts{'d'})
+{
+    # expand magic words.
+    $opts{'d'} =~ s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
+    $opts{'d'} =~ s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
+    $opts{'d'} =~ s/\bopentype\b/ GDEF GSUB GPOS /oi;
+    # Split generously (spaces, comma, colon, semicolon)
+    foreach my $tag (grep {length($_) == 4} split(/[\s,:;]+/, $opts{'d'}))
+    {
+    	delete $f->{$tag} if exists $f->{$tag};
+    }
+}
+
+
+
+$f->out($ARGV[1]);
+
+__END__
+
+=head1 TITLE
+
+ttfsubset - subset a font
+
+=head1 SYNOPSIS
+
+ttfsubset [options] infont outfont
+
+Opens infont (a .ttf file), subsets it according to the supplied options, then writes the resulting file to outfont.
+
+=head1 OPTIONS
+
+  -h            Get full help
+  -d tag[,...]	List of font tables to remove.
+  -g listfile	File containing list of glyphs to retain 
+  -s tag[,...]	List of OpenType script tags to retain
+  -l tag[,...]  List of OpenType language tags to retain
+
+=head1 DESCRIPTION
+
+ttfsubset removes parts of a font in order to produce a working, smaller, font. Multiple subsetting 
+strategies are provided and controlled by options.
+
+The C<-d> option is used to delete whole font tables, e.g., all Graphite tables. A 
+list of four-letter table tags identifies the tables to be removed. As in L<ttftable>, 
+the following (case insensitive) pseudo tags can also be used:
+
+  graphite  all SIL Graphite tables (Silf Feat Gloc Glat Sill Sile)
+  volt      all Microsoft VOLT tables (TSIV TSID TSIP TSIS)
+  opentype  all OpenTYpe tables (GDEF GSUB GPOS)
+
+The C<-g> option specifies a file that lists glyphs to be retained in the 
+subset font -- ttfsubset will remove all other glyphs and then do what it can to simplify
+remaining features.  Glyphs are identified in the file using space-separated indentifiers which
+can be decimal numeric glyph IDs, postscript glyph names, or hexidecimal Unicode scalar values in the format
+of U+xxxx. Numeric or postscript glyph identifiers can be followed immediately by equals sign and 4 to 6 hex digits to
+indicate the glyph should be encoded.
+
+The C<-s> and C<-l> options identify OpenType script and language (respectively) tags
+to retain in the font. The Default language is always retained, so specify C<-l ''> to remove all but the default language. 
+
+=head1 BUGS
+
+ttfsubset is an evolving tool and the invitation is given to contribute improvements that will result
+in smaller output fonts.
+
+=cut
