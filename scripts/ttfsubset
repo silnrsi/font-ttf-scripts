@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 
-use strict;
 use Font::TTF::Font;
 use Getopt::Std;
+use IO::File;
 use Pod::Usage;
 
+use strict;
 our $VERSION = 0.1;     #   
 
 our $CHAIN_CALL;
@@ -31,9 +32,97 @@ if ($opts{'d'})
     }
 }
 
+my $subsetter = Font::TTF::Scripts::SubSetter->new();
+my $cmap = $f->{'cmap'}->read->find_ms;
+my $post = $f->{'post'}->read;
+if ($opts{'g'})
+{
+    my ($fh) = IO::File->new($opts{'g'}, "r") || die "Can't open $opts{'g'} for reading";
+    while (<$fh>)
+    {
+        foreach my $g (split)
+        {
+            my ($n, $u) = split(/=/, $g);
+            if ($n =~ m/^U\+/oi)
+            { $n = $cmap->{'val'}{hex($')}; }
+            elsif ($n !~ m/^\d/o)
+            { $n = $post->{'STRINGS'}{$n}; }
+            if ($n)
+            {
+                $subsetter->add_glyph($n);
+                if ($u)
+                { $subsetter->remap(hex($u), $n); }
+            }
+        }
+    }
+    $fh->close();
+}
 
+if ($opts{'l'})
+{
+    $subsetter->langlist(split(' ', $opts{'l'}));
+}
 
+if ($opts{'s'})
+{
+    $subsetter->langlist(split(' ', $opts{'s'}));
+}
+
+$f->tables_do(sub {$_[0]->subset($subsetter);});
 $f->out($ARGV[1]);
+
+package Font::TTF::Scripts::SubSetter;
+
+sub new
+{
+    my ($class) = @_;
+    my ($self) = {};
+    $self->{'glyphs'} = '';
+    $self->{'remaps'} = {};
+    bless $self, $class || ref $class;
+    foreach (0..2) { $self->add_glyph($_); }
+    return $self;
+}
+
+sub add_glyph
+{
+    my ($self, $n) = @_;
+    vec($self->{'glyphs'}, $n, 1) = 1;
+}
+
+sub remap
+{
+    my ($self, $u, $n) = @_;
+    $self->{'remaps'}{$u} = $n;
+}
+
+package Font::TTF::Table;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+    $self->read;
+    $self->dirty;
+}
+
+package Font::TTF::Loca;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+    my ($numg) = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
+    my ($i);
+
+    $self->SUPER::subset($subsetter);
+    for ($i = 0; $i < $numg; $i++)
+    {
+        if (!vec($subsetter->{'glyphs'}, $i, 1))
+        {
+            undef $self->{'glyphs'}[$i];
+        }
+    }
+}
+
 
 __END__
 
