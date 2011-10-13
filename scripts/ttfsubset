@@ -155,7 +155,7 @@ sub subset
     my ($l, $s);
     $self->SUPER::subset($subsetter);
 
-    my ($count, @lmap);
+    my ($count, @lmap, @lookups);
     foreach $l (0 .. $#{$self->{'LOOKUP'}})
     {
         my $res = [];
@@ -185,8 +185,10 @@ sub subset
         {
             $self->{'LOOKUP'}[$l]{'SUB'} = $res;
             push (@lmap, $count++);
+            push (@lookups, $self->{'LOOKUP'}[$l]);
         }
     }
+    $self->{'LOOKUP'} = \@lookups;
 
     foreach my $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
     {
