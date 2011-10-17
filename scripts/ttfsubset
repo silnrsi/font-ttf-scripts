@@ -32,9 +32,9 @@ if ($opts{'d'})
     }
 }
 
-my $subsetter = Font::TTF::Scripts::SubSetter->new();
 my $cmap = $f->{'cmap'}->read->find_ms;
 my $post = $f->{'post'}->read;
+my $subsetter = Font::TTF::Scripts::SubSetter->new();
 if ($opts{'g'})
 {
     my ($fh) = IO::File->new($opts{'g'}, "r") || die "Can't open $opts{'g'} for reading";
@@ -68,7 +68,13 @@ if ($opts{'s'})
     $subsetter->scriptlist(split(' ', $opts{'s'}));
 }
 
+my ($canchangegids) = 1;
+my ($numg) = $f->{'maxp'}{'numGlyphs'};
+$f->tables_do(sub {$canchangegids |= $_[0]->canchangegids();});
+$numg = $subsetter->creategidmap($f) if ($canchangegids);
+
 $f->tables_do(sub {$_[0]->subset($subsetter);});
+$f->{'maxp'}{'numGlyphs'} = $numg;
 $f->tables_do(sub {$_[0]->update;});
 $f->out($ARGV[1]);
 
@@ -115,14 +121,32 @@ sub scriptlist
     $self->{'scripts'} = { map {$_=>1} @dat };
 }
 
+sub creategidmap
+{
+    my ($self, $font) = @_;
+    my ($numg) = $font->{'maxp'}{'numGlyphs'};
+    my ($count) = 0;
+
+    $self->{'gidmap'} = [];
+    foreach my $i (0 .. $numg - 1)
+    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0); }
+    return $count;
+}
+
 sub map_glyph
 {
     my ($self, $g) = @_;
     # no glyph remapping yet
-    return $g;
+    if ($self->{'gidmap'})
+    { return $self->{'gidmap'}[$g]; }
+    else
+    { return $g; }
 }
 
 package Font::TTF::Table;
+
+sub canchangegids
+{ 1; }
 
 sub subset
 {
@@ -136,16 +160,16 @@ package Font::TTF::Loca;
 sub subset
 {
     my ($self, $subsetter) = @_;
-    my ($numg) = $self->{' PARENT'}{'maxp'}{'numGlyphs'};
+    my ($res) = [];
     my ($i);
 
     $self->SUPER::subset($subsetter);
-    # todo: add glyph remapping
-    for ($i = 0; $i < $numg; $i++)
+    for ($i = 0; $i < @{$self->{'glyphs'}}; $i++)
     {
-        if (!$subsetter->keep_glyph($i))
-        { undef $self->{'glyphs'}[$i]; }
+        if ($subsetter->keep_glyph($i))
+        { $res->[$subsetter->map_glyph($i)] = $self->{'glyphs'}[$i]; }
     }
+    $self->{'glyphs'} = $res;
 }
 
 package Font::TTF::Ttopen;
@@ -528,11 +552,13 @@ sub subset
 
     $self->SUPER::subset($subsetter);
     if (defined $self->{'GLYPH'})
-    { Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'}); }
+    { delete $self->{'GLYPH'} unless (Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'})); }
     if (defined $self->{'ATTACH'})
-    { Font::TTF::Ttopen->subset_cover($subsetter, $self->{'ATTACH'}{'COVERAGE'}, $self->{'ATTACH'}{'POINTS'}); }
+    { delete $self->{'ATTACH'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'ATTACH'}{'COVERAGE'}, $self->{'ATTACH'}{'POINTS'})); }
     if (defined $self->{'LIG'})
-    { Font::TTF::Ttopen->subset_cover($subsetter, $self->{'LIG'}{'COVERAGE'}, $self->{'LIG'}{'POINTS'}); }
+    { delete $self->{'LIG'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'LIG'}{'COVERAGE'}, $self->{'LIG'}{'POINTS'})); }
+    if (defined $self->{'MARKS'})
+    { delete $self->{'MARKS'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'MARKS'}, undef)); }
 }
 
 package Font::TTF::Cmap;
@@ -565,15 +591,19 @@ package Font::TTF::Post;
 sub subset
 {
     my ($self, $subsetter) = @_;
+    my ($res) = [];
 
     $self->SUPER::subset($subsetter);
     # need to rewrite for real glyph remapping
     foreach my $i (0 .. @{$self->{'VAL'}})
-    {
-        if (!$subsetter->keep_glyph($i))
-        { $self->{'VAL'}[$i] = ".notdef"; }
-    }
+    { $res->[$subsetter->map_glyph($i)] = $subsetter->keep_glyph($i) ? $self->{'VAL'}[$i] : ".notdef"; }
+    $self->{'VAL'} = $res;
 }
+
+package Font::TTF::Gloc;
+
+sub canchangegids
+{ 0; }
 
 
 __END__
