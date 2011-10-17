@@ -69,6 +69,7 @@ if ($opts{'s'})
 }
 
 $f->tables_do(sub {$_[0]->subset($subsetter);});
+$f->tables_do(sub {$_[0]->update;});
 $f->out($ARGV[1]);
 
 package Font::TTF::Scripts::SubSetter;
@@ -161,18 +162,18 @@ sub subset
         my $res = [];
         foreach $s (@{$self->{'LOOKUP'}[$l]{'SUB'}})
         {
-            if ($s->{'COVERAGE'} && !$self->subset_cover($subsetter, $s->{'COVERAGE'}, $s->{'RULES'}))
-            { $s->{'isEmpty'} = 1; }
-            $self->subset_subtable($subsetter, $s, $self->{'LOOKUP'}[$l]);
-            if (!@{$s->{'RULES'}})
+            if (($s->{'COVERAGE'} && !$self->subset_cover($subsetter, $s->{'COVERAGE'}, $s->{'RULES'}))
+                || (!$self->subset_subtable($subsetter, $s, $self->{'LOOKUP'}[$l]))
+                || (!@{$s->{'RULES'}}))
             { next; }
+            $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
             # remove unused coverage indices
             if ($s->{'COVERAGE'})
             {
                 my $c = $s->{'COVERAGE'}{'val'};
                 my $i = 0;
                 foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
-                { $c->{k} = $i++; }
+                { $c->{$k} = $i++; }
             }
             push (@{$res}, $s);
         }
@@ -203,7 +204,10 @@ sub subset
         }
         if (!@{$f->{'LOOKUPS'}})
         { delete $self->{'FEATURES'}{$t}; }
+        else
+        { $f->{'LOOKUPS'} = [grep {$_} @{$f->{'LOOKUPS'}}]; }
     }
+    $self->{'FEATURES'}{'FEAT_TAGS'} = [grep {defined $self->{'FEATURES'}{$_}} @{$self->{'FEATURES'}{'FEAT_TAGS'}}];
 
     my ($isEmpty) = 1;
     foreach $s (keys %{$self->{'SCRIPTS'}})
@@ -277,9 +281,10 @@ sub subset
 
 sub subset_class
 {
-    my ($self, $subsetter, $class) = @_;
+    my ($self, $subsetter, $classdef) = @_;
     my ($res) = [];
     my ($count) = 0;
+    my ($class) = $classdef->{'val'};
 
     foreach (sort {$b <=> $a} keys %{$class})
     {
@@ -295,7 +300,10 @@ sub subset_class
     # remap the class
     foreach (keys %{$class})
     { $class->{$_} = $res->[$class->{$_}]; }
-    return $res;
+    if (@{$res})
+    { return $res; }
+    else
+    { return undef; }
 }
 
 sub subset_cover
@@ -331,6 +339,7 @@ sub subset_string
     my ($self, $subsetter, $string, $fmt, $classvals) = @_;
     my ($test) = 1;
 
+    return 0 if (!$classvals);
     foreach (@{$string})
     {
         if ($fmt == 1 && $subsetter->keep_glyph($_))
@@ -355,9 +364,9 @@ sub subset_context
     my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
     my ($classvals, $prevals, $postvals, $i, $j);
 
-    $classvals = $self->subset_class($subsetter, $sub->{'CLASS'}) if (defined $sub->{'CLASS'});
-    $prevals = $self->subset_class($subsetter, $sub->{'PRE_CLASS'}) if (defined $sub->{'PRE_CLASS'});
-    $postvals = $self->subset_class($subsetter, $sub->{'POST_CLASS'}) if (defined $sub->{'POST_CLASS'});
+    return 0 if (defined $sub->{'CLASS'} && !($classvals = $self->subset_class($subsetter, $sub->{'CLASS'})));
+    return 0 if (defined $sub->{'PRE_CLASS'} && !($prevals = $self->subset_class($subsetter, $sub->{'PRE_CLASS'})));
+    return 0 if (defined $sub->{'POST_CLASS'} && !($postvals = $self->subset_class($subsetter, $sub->{'POST_CLASS'})));
 
     foreach $i (0 .. @{$sub->{'RULES'}})
     {
@@ -387,6 +396,7 @@ sub subset_context
             delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};  # already remapped
         }
     }
+    return 1;
 }
 
 package Font::TTF::GSUB;
@@ -438,7 +448,8 @@ sub subset_subtable
         }
     }
     elsif ($type >=4 && $type <= 6)
-    { $self->subset_context($subsetter, $sub, $type); }
+    { return $self->subset_context($subsetter, $sub, $type); }
+    return 1;
 }
 
 package Font::TTF::GPOS;
@@ -473,6 +484,8 @@ sub subset_subtable
             }
             if (!@{$sub->{'RULES'}[$i]})
             { delete $sub->{'RULES'}[$i]; }
+            else
+            { $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}]; }
         }
     }
     elsif ($type == 2 && $fmt == 2)
@@ -493,13 +506,18 @@ sub subset_subtable
                     else
                     { $sub->{'RULES'}[$i][$j] = $c2vals->[$sub->{'RULES'}[$i][$j]]; }
                 }
+                if (@{$sub->{'RULES'}[$i]})
+                { $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}]; }
+                else
+                { delete $sub->{'RULES'}[$i]; }
             }
         }
     }
     elsif ($type >= 4 && $type <= 6)
-    { $self->subset_cover($subsetter, $sub->{'MATCH'}[0], $sub->{'MARKS'}); }
+    { return $self->subset_cover($subsetter, $sub->{'MATCH'}[0], $sub->{'MARKS'}) ? 1 : 0; }
     elsif ($type >=7 && $type <= 8)
-    { $self->subset_context($subsetter, $sub, $type - 2); }
+    { return $self->subset_context($subsetter, $sub, $type - 2); }
+    return 1;
 }
 
 package Font::TTF::GDEF;
@@ -508,6 +526,7 @@ sub subset
 {
     my ($self, $subsetter) = @_;
 
+    $self->SUPER::subset($subsetter);
     if (defined $self->{'GLYPH'})
     { Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'}); }
     if (defined $self->{'ATTACH'})
@@ -522,6 +541,7 @@ sub subset
 {
     my ($self, $subsetter) = @_;
 
+    $self->SUPER::subset($subsetter);
     foreach my $i (0 .. $#{$self->{'Tables'}})
     {
         my ($t) = $self->{'Tables'}[$i]{'val'};
@@ -546,6 +566,7 @@ sub subset
 {
     my ($self, $subsetter) = @_;
 
+    $self->SUPER::subset($subsetter);
     # need to rewrite for real glyph remapping
     foreach my $i (0 .. @{$self->{'VAL'}})
     {
