@@ -74,7 +74,7 @@ $f->tables_do(sub {$canchangegids |= $_[0]->canchangegids();});
 $numg = $subsetter->creategidmap($f) if ($canchangegids);
 
 $f->tables_do(sub {$_[0]->subset($subsetter);});
-$f->{'maxp'}{'numGlyphs'} = $numg;
+$f->{'maxp'}{'numGlyphs'} = $subsetter->{'gcount'};
 $f->tables_do(sub {$_[0]->update;});
 $f->out($ARGV[1]);
 
@@ -93,8 +93,15 @@ sub new
 
 sub add_glyph
 {
-    my ($self, $n) = @_;
-    vec($self->{'glyphs'}, $n, 1) = 1;
+    my ($self, $n, $private) = @_;
+    if (($private && !$self->{'gidmap'}[$n]) || (!$private && !vec($self->{'glyphs'}, $n, 1)))
+    {
+        vec($self->{'glyphs'}, $n, 1) = 1 unless ($private);
+        $self->{'gidmap'}[$n] = $self->{'gcount'}++ if (defined $self->{'gidmap'});
+        return 1;
+    }
+    else
+    { return 0; }
 }
 
 sub keep_glyph
@@ -128,9 +135,10 @@ sub creategidmap
     my ($count) = 0;
 
     $self->{'gidmap'} = [];
+    $self->{'gcount'} = 0;
     foreach my $i (0 .. $numg - 1)
-    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0); }
-    return $count;
+    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $self->{'gcount'}++ : 0); }
+    return $self->{'gcount'};
 }
 
 sub map_glyph
@@ -161,15 +169,33 @@ sub subset
 {
     my ($self, $subsetter) = @_;
     my ($res) = [];
-    my ($i);
+    my ($i, $vec);
 
     $self->SUPER::subset($subsetter);
     for ($i = 0; $i < @{$self->{'glyphs'}}; $i++)
     {
         if ($subsetter->keep_glyph($i))
-        { $res->[$subsetter->map_glyph($i)] = $self->{'glyphs'}[$i]; }
+        { $self->outglyph($subsetter, $res, $i); }
     }
     $self->{'glyphs'} = $res;
+}
+
+sub outglyph
+{
+    my ($self, $subsetter, $res, $n) = @_;
+
+    $res->[$subsetter->map_glyph($n)] = $self->{'glyphs'}[$n];
+    if (defined $self->{'glyphs'}[$n] && $self->{'glyphs'}[$n]->read()->{'numberOfContours'} < 0)
+    {
+        my ($g) = $self->{'glyphs'}[$n]->read_dat();
+        foreach my $c (@{$g->{'comps'}})
+        {
+            if ($subsetter->add_glyph($c->{'glyph'}, 1))
+            { $self->outglyph($subsetter, $res, $c->{'glyph'}); }
+            $c->{'glyph'} = $subsetter->map_glyph($c->{'glyph'});
+        }
+        $g->{' isDirty'} = 1;
+    }
 }
 
 package Font::TTF::Ttopen;
@@ -177,43 +203,59 @@ package Font::TTF::Ttopen;
 sub subset
 {
     my ($self, $subsetter) = @_;
-    my ($l, $s);
     $self->SUPER::subset($subsetter);
 
-    my ($count, @lmap, @lookups);
+    my ($l, $count, @lmap, @lookups, $lkvec, $res);
+    $lkvec = "";
+    # process non-contextual lookups
     foreach $l (0 .. $#{$self->{'LOOKUP'}})
     {
-        my $res = [];
-        foreach $s (@{$self->{'LOOKUP'}[$l]{'SUB'}})
-        {
-            if (($s->{'COVERAGE'} && !$self->subset_cover($subsetter, $s->{'COVERAGE'}, $s->{'RULES'}))
-                || (!$self->subset_subtable($subsetter, $s, $self->{'LOOKUP'}[$l]))
-                || (!@{$s->{'RULES'}}))
-            { next; }
-            $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
-            # remove unused coverage indices
-            if ($s->{'COVERAGE'})
-            {
-                my $c = $s->{'COVERAGE'}{'val'};
-                my $i = 0;
-                foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
-                { $c->{$k} = $i++; }
-            }
-            push (@{$res}, $s);
-        }
+        my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
+        next if ($type >= $self->extension() - 2 || $type < $self->extension());
+        $res = $self->subset_lookup($self->{'LOOKUP'}[$l]);
+
         if (!@{$res})
         {
-            push (@lmap, -1);
             delete $self->{'LOOKUP'}[$l];
+            vec($lkvec, $l, 1) = 0;
         }
         else
         {
             $self->{'LOOKUP'}[$l]{'SUB'} = $res;
-            push (@lmap, $count++);
-            push (@lookups, $self->{'LOOKUP'}[$l]);
+            vec($lkvec, $l, 1) = 1;
         }
     }
+    # now process contextual lookups knowing whether the other lookup is there
+    # also collect the complete lookup list now
+    foreach $l (0 .. $#{$self->{'LOOKUP'}})
+    {
+        my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
+        if ($type >= $self->extension() - 2 || $type < $self->extension())
+        {
+            $res = $self->subset_lookup($self->{'LOOKUP'}[$l], $lkvec);
+            if (!@{$res})
+            {
+                delete $self->{'LOOKUP'}[$l];
+                vec($lkvec, $l, 1) = 0;
+            }
+            else
+            {
+                $self->{'LOOKUP'}[$l]{'SUB'} = $res;
+                vec($lkvec, $l, 1) = 1;
+            }
+        }
+        if (vec($lkvec, $l, 1))
+        {
+            push (@lookups, $self->{'LOOKUP'}[$l]);
+            push (@lmap, $count++);
+        }
+        else
+        { push (@lmap, -1); }
+    }
+    
     $self->{'LOOKUP'} = \@lookups;
+    foreach $l (@lookups)
+    { $self->fixcontext($l, \@lmap); }
 
     foreach my $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
     {
@@ -234,7 +276,7 @@ sub subset
     $self->{'FEATURES'}{'FEAT_TAGS'} = [grep {defined $self->{'FEATURES'}{$_}} @{$self->{'FEATURES'}{'FEAT_TAGS'}}];
 
     my ($isEmpty) = 1;
-    foreach $s (keys %{$self->{'SCRIPTS'}})
+    foreach my $s (keys %{$self->{'SCRIPTS'}})
     {
         foreach $l (-1 .. $#{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}})
         {
@@ -303,6 +345,32 @@ sub subset
     }
 }
 
+sub subset_lookup
+{
+    my ($self, $lookup, $lkvec) = @_;
+    my ($s, $l);
+    my ($res) = [];
+
+    foreach $s (@{$self->{'LOOKUP'}[$l]{'SUB'}})
+    {
+        if (!$self->subset_subtable($subsetter, $s, $self->{'LOOKUP'}[$l], $lkvec)
+            || !@{$s->{'RULES'}})
+        { next; }
+        $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
+        # remove unused coverage indices
+        if ($s->{'COVERAGE'})
+        {
+            my $c = $s->{'COVERAGE'}{'val'};
+            my $i = 0;
+            foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
+            { $c->{$k} = $i++; }
+        }
+        push (@{$res}, $s);
+    }
+    return $res;
+}
+
+
 sub subset_class
 {
     my ($self, $subsetter, $classdef) = @_;
@@ -310,7 +378,7 @@ sub subset_class
     my ($count) = 0;
     my ($class) = $classdef->{'val'};
 
-    foreach (sort {$b <=> $a} keys %{$class})
+    foreach (sort {$a <=> $b} keys %{$class})
     {
         if (!$subsetter->keep_glyph($_))
         { delete $class->{$_}; }
@@ -318,7 +386,7 @@ sub subset_class
         {
             my $g = $subsetter->map_glyph($_);
             $class->{$g} = delete $class->{$_};
-            $res->[$class->{$g}] = $count++ unless (defined $res->[$class->{$g}])
+            $res->[$class->{$g}] = ++$count unless (defined $res->[$class->{$g}])
         }
     }
     # remap the class
@@ -336,7 +404,7 @@ sub subset_cover
     return $coverage if (defined $coverage->{'isremapped'});
     my $isEmpty = 1;
     my $cover = $coverage->{'val'};
-    foreach (keys %{$cover})
+    foreach (sort {$a <=> $b} keys %{$cover})
     {
         if (!$subsetter->keep_glyph($_))
         {
@@ -383,14 +451,30 @@ sub subset_string
 
 sub subset_context
 {
-    my ($self, $subsetter, $sub, $type) = @_;
+    my ($self, $subsetter, $sub, $type, $lkvec) = @_;
     my ($fmt) = $sub->{'FORMAT'};
-    my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
-    my ($classvals, $prevals, $postvals, $i, $j);
+    my ($classvals, $prevals, $postvals, $i, $j, @gids);
 
+    return 0 if (defined $sub->{'COVERAGE'} && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $fmt < 2 ? $sub->{'RULES'} : undef));
+    while (my ($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
+    { $gids[$v] = $k; }
     return 0 if (defined $sub->{'CLASS'} && !($classvals = $self->subset_class($subsetter, $sub->{'CLASS'})));
     return 0 if (defined $sub->{'PRE_CLASS'} && !($prevals = $self->subset_class($subsetter, $sub->{'PRE_CLASS'})));
     return 0 if (defined $sub->{'POST_CLASS'} && !($postvals = $self->subset_class($subsetter, $sub->{'POST_CLASS'})));
+    # tidy up coverage tables that contain glyphs not in the matching class
+    if (defined $sub->{'CLASS'})
+    {
+        foreach $i (0 .. $#gids)
+        {
+            if (defined $gids[$i] && !defined $sub->{'CLASS'}{'val'}{$gids[$i]})
+            {
+                delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};
+                delete $gids[$i];
+            }
+        }
+    }
+    return 0 unless (@gids);
+
 
     foreach $i (0 .. @{$sub->{'RULES'}})
     {
@@ -401,7 +485,18 @@ sub subset_context
             {
                 my ($r) = $sub->{'RULES'}[$i][$j];
                 my ($test) = 1;
-                $test = $subsetter->keep_glyph($sub->{'RULES'}[$i][$j]{'ACTION'}[0]) if ($type == 4);
+                if ($type == 4)
+                { $test = $subsetter->keep_glyph($sub->{'RULES'}[$i][$j]{'ACTION'}[0]); }
+                else
+                {
+                    foreach my $k (0 .. $#{$sub->{'RULES'}[$i][$j]{'ACTION'}})
+                    {
+                        my $a = $sub->{'RULES'}[$i][$j]{'ACTION'}[$k];
+                        if (!vec($lkvec, $a->[1], 1))
+                        { delete $sub->{'RULES'}[$i][$j]{'ACTION'}[$k]; }
+                    }
+                    $test = (@{$sub->{'RULES'}[$i][$j]{'ACTION'}} != 0);
+                }
                 if ($test && $type == 6 && defined $r->{'PRE'})
                 { $test = $self->subset_string($subsetter, $r->{'PRE'}, $fmt, $prevals); }
                 if ($test && $type == 6 && defined $r->{'POST'})
@@ -417,29 +512,54 @@ sub subset_context
         if ($isEmpty)
         {
             delete $sub->{'RULES'}[$i];
-            delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};  # already remapped
+            delete $sub->{'COVERAGE'}{'val'}{$gids[$i]} if ($fmt < 2);  # already remapped
         }
     }
     return 1;
 }
 
+sub fixcontext
+{
+    my ($self, $l, $lmap) = @_;
+
+    return if ($l->{'TYPE'} < $self->extension() - 2 || $l->{'TYPE'} >= $self->extension());
+    foreach my $s (@{$l->{'SUB'}})
+    {
+        foreach my $r (@{$s->{'RULES'}})
+        {
+            foreach my $p (@{$r})
+            {
+                foreach my $b (@{$p->{'ACTION'}})
+                { $b->[1] = $lmap->[$b->[1]]; }
+            }
+        }
+    }
+}
+
+
+
 package Font::TTF::GSUB;
 
 sub subset_subtable
 {
-    my ($self, $subsetter, $sub, $lookup) = @_;
+    my ($self, $subsetter, $sub, $lookup, $lkvec) = @_;
     my ($type) = $lookup->{'TYPE'};
     my ($fmt) = $sub->{'FORMAT'};
-    my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
-    my ($r, $i, $j);
+    my ($r, $i, $j, @gids, $k, $v);
+
+    return 0 if ($type < 4 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
+
+    while (($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
+    { $gids[$v] = $k; }
 
     if (($type == 1 && $fmt > 1) || $type == 2)
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
             next unless (defined $sub->{'RULES'}[$i]);
-            foreach $j (@{$sub->{'RULES'}[$i][0]{'ACTION'}})
+            foreach my $k (0 .. $#{$sub->{'RULES'}[$i][0]{'ACTION'}})
             {
+                $j = $sub->{'RULES'}[$i][0]{'ACTION'}[$k];
                 if (!$subsetter->keep_glyph($j))
                 {
                     delete $sub->{'RULES'}[$i];
@@ -447,7 +567,7 @@ sub subset_subtable
                     last;
                 }
                 else
-                { $j = $subsetter->map_glyph($j); }
+                { $sub->{'RULES'}[$i][0]{'ACTION'}[$k] = $subsetter->map_glyph($j); }
             }
         }
     }
@@ -455,7 +575,11 @@ sub subset_subtable
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
-            next unless (defined $sub->{'RULES'}[$i]);
+            if (!defined $sub->{'RULES'}[$i])
+            {
+                delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};
+                next;
+            }
             my $res = [];
             foreach $j (@{$sub->{'RULES'}[$i][0]{'ACTION'}})
             {
@@ -472,7 +596,7 @@ sub subset_subtable
         }
     }
     elsif ($type >=4 && $type <= 6)
-    { return $self->subset_context($subsetter, $sub, $type); }
+    { return $self->subset_context($subsetter, $sub, $type, $lkvec); }
     return 1;
 }
 
@@ -480,12 +604,13 @@ package Font::TTF::GPOS;
 
 sub subset_subtable
 {
-    my ($self, $subsetter, $sub, $lookup) = @_;
+    my ($self, $subsetter, $sub, $lookup, $lkvec) = @_;
     my ($type) = $lookup->{'TYPE'};
     my ($fmt) = $sub->{'FORMAT'};
     my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
     my ($i, $j, $k);
 
+    return 0 if ($type < 6 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
     if ($type == 2 && $fmt == 1)
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
@@ -540,7 +665,7 @@ sub subset_subtable
     elsif ($type >= 4 && $type <= 6)
     { return $self->subset_cover($subsetter, $sub->{'MATCH'}[0], $sub->{'MARKS'}) ? 1 : 0; }
     elsif ($type >=7 && $type <= 8)
-    { return $self->subset_context($subsetter, $sub, $type - 2); }
+    { return $self->subset_context($subsetter, $sub, $type - 2, $lkvec); }
     return 1;
 }
 
@@ -580,8 +705,8 @@ sub subset
         }
         if ($self->is_unicode($i))
         {
-            foreach my $k (keys %{$subsetter->{'remap'}})
-            { $t->{$k} = $subsetter->map_glyph($subsetter->{'remap'}{$k}); }
+            foreach my $k (keys %{$subsetter->{'remaps'}})
+            { $t->{$k} = $subsetter->map_glyph($subsetter->{'remaps'}{$k}); }
         }
     }
 }
