@@ -56,4 +56,5 @@ out.ttf.
   -q          disable signon message
   -s filename overrides -n and gets string from file. Useful for -t
   -t num      overrides the normal naming areas to change another
-              string -f becomes inactive.
+              string -f becomes inactive. Use -l as well to create entry.
+

@@ -211,7 +211,7 @@ sub subset
     foreach $l (0 .. $#{$self->{'LOOKUP'}})
     {
         my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
-        next if ($type >= $self->extension() - 2 || $type < $self->extension());
+        next if ($type >= $self->extension() - 2 && $type < $self->extension());
         $res = $self->subset_lookup($self->{'LOOKUP'}[$l]);
 
         if (!@{$res})
@@ -230,7 +230,7 @@ sub subset
     foreach $l (0 .. $#{$self->{'LOOKUP'}})
     {
         my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
-        if ($type >= $self->extension() - 2 || $type < $self->extension())
+        if ($type >= $self->extension() - 2 && $type < $self->extension())
         {
             $res = $self->subset_lookup($self->{'LOOKUP'}[$l], $lkvec);
             if (!@{$res})
@@ -351,9 +351,9 @@ sub subset_lookup
     my ($s, $l);
     my ($res) = [];
 
-    foreach $s (@{$self->{'LOOKUP'}[$l]{'SUB'}})
+    foreach $s (@{$lookup->{'SUB'}})
     {
-        if (!$self->subset_subtable($subsetter, $s, $self->{'LOOKUP'}[$l], $lkvec)
+        if (!$self->subset_subtable($subsetter, $s, $lookup, $lkvec)
             || !@{$s->{'RULES'}})
         { next; }
         $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
@@ -431,7 +431,7 @@ sub subset_string
     my ($self, $subsetter, $string, $fmt, $classvals) = @_;
     my ($test) = 1;
 
-    return 0 if (!$classvals);
+    return 0 if ($fmt == 2 && !$classvals);
     foreach (@{$string})
     {
         if ($fmt == 1 && $subsetter->keep_glyph($_))
@@ -486,7 +486,12 @@ sub subset_context
                 my ($r) = $sub->{'RULES'}[$i][$j];
                 my ($test) = 1;
                 if ($type == 4)
-                { $test = $subsetter->keep_glyph($sub->{'RULES'}[$i][$j]{'ACTION'}[0]); }
+                {
+                    if ($subsetter->keep_glyph($r->{'ACTION'}[0]))
+                    { $r->{'ACTION'}[0] = $subsetter->map_glyph($r->{'ACTION'}[0]); }
+                    else
+                    { $test = 0; }
+                }
                 else
                 {
                     foreach my $k (0 .. $#{$sub->{'RULES'}[$i][$j]{'ACTION'}})
@@ -508,6 +513,7 @@ sub subset_context
                 else
                 { $isEmpty = 0; }
             }
+            $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}];
         }
         if ($isEmpty)
         {
