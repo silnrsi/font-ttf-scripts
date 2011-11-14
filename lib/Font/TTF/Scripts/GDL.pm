@@ -343,6 +343,18 @@ sub lig_rules
             next if ($ext || scalar @elem < 3);
             my ($islig) = 1;
             my (@parts, $e, $g);
+            my ($class, $oglyph);
+            if ($type eq 'first')
+            { $class = $elem[0]; }
+            else
+            {
+                $class = $elem[-1];
+                $class =~ s/^_//g;
+            }
+            $class =~ s/\./_/g;
+            $oglyph = $namemap{$base};
+            next if ($oglyph && has($ligclasses->{$class}, $glyph->{'gnum'}) && has($ligclasses->{"no_$class"}, $oglyph->{'gnum'}));
+
             foreach $e (@elem)
             {
                 my ($n) = $e;
@@ -388,4 +400,12 @@ EOT
         $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ opt4(cnTakes${p}Dia) _ {user1 == 0};\n");
     }
     $fh->print("endpass;\nendtable;\n");
+}
+
+sub has
+{
+    my ($cls, $val) = @_;
+    foreach (@{$cls})
+    { return 1 if ($_ == $val); }
+    return 0;
 }
