@@ -271,7 +271,7 @@ sub subset
         if (!@{$f->{'LOOKUPS'}})
         { delete $self->{'FEATURES'}{$t}; }
         else
-        { $f->{'LOOKUPS'} = [grep {$_} @{$f->{'LOOKUPS'}}]; }
+        { $f->{'LOOKUPS'} = [grep {defined $_} @{$f->{'LOOKUPS'}}]; }
     }
     $self->{'FEATURES'}{'FEAT_TAGS'} = [grep {defined $self->{'FEATURES'}{$_}} @{$self->{'FEATURES'}{'FEAT_TAGS'}}];
 
@@ -293,6 +293,7 @@ sub subset
                     if (!defined $self->{'FEATURES'}{$lang->{'FEATURES'}[$i]})
                     { delete $lang->{'FEATURES'}[$i]; }
                 }
+                $lang->{'FEATURES'} = [grep {$_} @{$lang->{'FEATURES'}}];
             }
             if (defined $lang->{'DEFAULT'} && $lang->{'DEFAULT'} >= 0)
             {
@@ -472,6 +473,7 @@ sub subset_context
                 delete $gids[$i];
             }
         }
+        @gids = grep {defined $_} @gids;
     }
     return 0 unless (@gids);
 
@@ -616,7 +618,7 @@ sub subset_subtable
     my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
     my ($i, $j, $k);
 
-    return 0 if ($type < 6 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
+    return 0 if ($type <= 6 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
     if ($type == 2 && $fmt == 1)
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
@@ -624,18 +626,10 @@ sub subset_subtable
             foreach $j (0 .. $#{$sub->{'RULES'}[$i]})
             {
                 my ($r) = $sub->{'RULES'}[$i][$j];
-                foreach $k (0 .. $#{$r->{'MATCH'}})
-                {
-                    if (!$subsetter->keep_glyph($r->{'MATCH'}[$k]))
-                    {
-                        delete $r->{'MATCH'}[$k];
-                        delete $r->{'ACTION'}[$k];
-                    }
-                    else
-                    { $r->{'MATCH'}[$k] = $subsetter->map_glyph($r->{'MATCH'}[$k]); }
-                }
-                if (!@{$r->{'MATCH'}})
+                if (!$subsetter->keep_glyph($r->{'MATCH'}[0]))
                 { delete $sub->{'RULES'}[$i][$j]; }
+                else
+                { $r->{'MATCH'}[0] = $subsetter->map_glyph($r->{'MATCH'}[0]); }
             }
             if (!@{$sub->{'RULES'}[$i]})
             { delete $sub->{'RULES'}[$i]; }
@@ -647,6 +641,7 @@ sub subset_subtable
     {
         my ($c1vals) = $self->subset_class($subsetter, $sub->{'CLASS'});
         my ($c2vals) = $self->subset_class($subsetter, $sub->{'MATCH'}[0]);
+        my ($nrules) = [];
         
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
@@ -654,19 +649,22 @@ sub subset_subtable
             { delete $sub->{'RULES'}[$i]; }
             else
             {
+                my (@nrule);
                 foreach $j (0 .. $#{$sub->{'RULES'}[$i]})
                 {
                     if (!defined $c2vals->[$j])
                     { delete $sub->{'RULES'}[$i][$j]; }
                     else
-                    { $sub->{'RULES'}[$i][$j] = $c2vals->[$sub->{'RULES'}[$i][$j]]; }
+                    { $nrule[$c2vals->[$j]] = $sub->{'RULES'}[$i][$j]; }
                 }
-                if (@{$sub->{'RULES'}[$i]})
-                { $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}]; }
-                else
-                { delete $sub->{'RULES'}[$i]; }
+                if (@nrule)
+                { $nrules->[$c1vals->[$i]] = [grep {$_} @nrule]; }
             }
         }
+        if (@{$nrules})
+        { $sub->{'RULES'} = $nrules; }
+        else
+        { return 0; }
     }
     elsif ($type >= 4 && $type <= 6)
     { return $self->subset_cover($subsetter, $sub->{'MATCH'}[0], $sub->{'MARKS'}) ? 1 : 0; }
@@ -730,6 +728,42 @@ sub subset
     { $res->[$subsetter->map_glyph($i)] = $subsetter->keep_glyph($i) ? $self->{'VAL'}[$i] : ".notdef"; }
     $self->{'VAL'} = $res;
 }
+
+package Font::TTF::Hmtx;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+
+    $self->SUPER::subset($subsetter);
+    for (my $i = 0; $i < @{$self->{'advance'}}; $i++)
+    {
+        if ($subsetter->keep_glyph($i))
+        {
+            my ($g) = $subsetter->map_glyph($i);
+            $self->{'advance'}[$g] = delete $self->{'advance'}[$i];
+            $self->{'lsb'}[$g] = delete $self->{'lsb'}[$i];
+        }
+    }
+}
+
+package Font::TTF::LTSH;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+    my ($res) = [];
+
+    $self->SUPER::subset($subsetter);
+    for (my $i = 0; $i < @{$self->{'glyphs'}}; $i++)
+    {
+        if ($subsetter->keep_glyph($i))
+        { $res->[$subsetter->map_glyph($i)] = $self->{'glyphs'}[$i]; }
+    }
+    $self->{'glyphs'} = $res;
+    $self->{'Num'} = $subsetter->{'gcount'};
+}
+
 
 package Font::TTF::Gloc;
 
