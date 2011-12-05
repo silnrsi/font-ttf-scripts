@@ -6,7 +6,7 @@ use Pod::Usage;
 use Getopt::Std;
 use Encode;
 
-getopts('h');
+getopts('e:h');
 
 unless ($ARGV[0] || $opt_h)
 {
@@ -20,7 +20,17 @@ if ($opt_h)
     exit;
 }
 
-my (@chars, $currchar, $fontname, $ascent, $descent);
+my (@chars, $currchar, $fontname, $ascent, $descent, %pmap);
+
+if ($opt_e)
+{
+    foreach my $e (split(/[,;\s]+/, $opt_e))
+    {
+        my (@f) = split(/=/, $e);
+        foreach my $f (@f[1..$#f])
+        { $pmap{$f} = $f[0]; }
+    }
+}
 
 $s = Font::TTF::Scripts::SFD->new(
     'FontName' => sub {$fontname = $_[0]; },
@@ -42,6 +52,7 @@ $s = Font::TTF::Scripts::SFD->new(
         my ($name) = $values[0];
 
         $name =~ s/^(['"])(.*?)\1/$2/o;   # "'
+        $name = $pmap{$name} if (defined $pmap{$name});
         $name = "_$name" if (($values[3] eq 'mark' or $values[3] eq 'entry') && $name !~ m/^_/o);
         $currchar->{'points'}{$name} = [$values[1], $values[2]];
     }, 'Comment' => sub {
@@ -163,6 +174,7 @@ anchor point database.
 =head1 OPTIONS
 
   -h            print manpage
+  -e X=Y,Z=W=A  equates attachment points
 
 =head1 DESCRIPTION
 
