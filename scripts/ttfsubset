@@ -374,7 +374,7 @@ sub subset_lookup
 
 sub subset_class
 {
-    my ($self, $subsetter, $classdef) = @_;
+    my ($self, $subsetter, $classdef, $noremap) = @_;
     my ($res) = [];
     my ($count) = 0;
     my ($class) = $classdef->{'val'};
@@ -391,8 +391,11 @@ sub subset_class
         }
     }
     # remap the class
-    foreach (keys %{$class})
-    { $class->{$_} = $res->[$class->{$_}]; }
+    unless ($noremap)
+    {
+        foreach (keys %{$class})
+        { $class->{$_} = $res->[$class->{$_}]; }
+    }
     if (@{$res})
     { return $res; }
     else
@@ -681,7 +684,7 @@ sub subset
 
     $self->SUPER::subset($subsetter);
     if (defined $self->{'GLYPH'})
-    { delete $self->{'GLYPH'} unless (Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'})); }
+    { delete $self->{'GLYPH'} unless (Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'}, 1)); }
     if (defined $self->{'ATTACH'})
     { delete $self->{'ATTACH'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'ATTACH'}{'COVERAGE'}, $self->{'ATTACH'}{'POINTS'})); }
     if (defined $self->{'LIG'})
