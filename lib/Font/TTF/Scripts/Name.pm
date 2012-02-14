@@ -1,6 +1,7 @@
 package Font::TTF::Scripts::Name;
 
 require Exporter;
+use Encode;
 
 @ISA = qw(Exporter);
 @EXPORT = qw(ttfname);
@@ -11,6 +12,11 @@ sub ttfname
     my ($font, %opts) = @_;
     my ($name) = $font->{'name'}->read;
     my (@cover);
+
+    foreach $k (qw(n f))
+    {
+        $opts{$k} = decode('utf-8', $opts{$k}) if (defined $opts{$k});
+    }
 
     if (defined $opts{'s'})
     {
@@ -61,18 +67,21 @@ sub ttfname
         $unique = $name->find_name(8) . ":$full:$time[3]-$time[4]-$time[5]";
         $post = $family;
         $post =~ s/[\s\[\](){}<>\/%]//og;
-        $post .= "-$subfamily";
+        $post .= "-$subfamily" if ($subfamily);
 
 # make sure post name set
-        $name->{'strings'}[6][1][0]{0} = $post;
-        $name->{'strings'}[6][3][1]{1033} = $post;
+        unless ($opts{'p'})
+        {
+            $name->{'strings'}[6][1][0]{0} = $post;
+            $name->{'strings'}[6][3][1]{1033} = $post;
+            $name->set_name(6, $post, $post, @cover);
+        }
 
 # now update all the interesting name fields
         $name->set_name(1, $family, $opts{'l'}, @cover);
         $name->set_name(2, $subfamily, $opts{'l'}, @cover);
         $name->set_name(3, $unique, $opts{'l'}, @cover);
         $name->set_name(4, $full, $opts{'l'}, @cover);
-        $name->set_name(6, $post, $opts{'l'}, @cover);
         $name->set_name(16, $family, $opts{'l'}, @cover);
         $name->set_name(17, $subfamily, $opts{'l'}, @cover);
         $name->set_name(18, $full, $opts{'l'}, @cover);

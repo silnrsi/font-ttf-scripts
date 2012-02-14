@@ -10,7 +10,7 @@ our ($if, $of, %opts);
 
 unless ($CHAIN_CALL)
 {
-    getopts('f:hl:n:qs:t:', \%opts);
+    getopts('f:hl:n:pqs:t:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -53,6 +53,7 @@ out.ttf.
               if specified name entries will be added for all platforms and
                   encodings covered by the cmap if not already there
   -n "name"   specifies new font family name (not optional)
+  -p          Don't update postscript font name
   -q          disable signon message
   -s filename overrides -n and gets string from file. Useful for -t
   -t num      overrides the normal naming areas to change another
