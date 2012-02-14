@@ -14,7 +14,7 @@ our $f;
 
 unless($CHAIN_CALL)
 {
-    pod2usage(-verbose => 1) unless (getopts('d:g:hl:s:', \%opts) && $#ARGV == 1) || $opts{'h'};
+    pod2usage(-verbose => 1) unless (getopts('d:g:hl:n:s:', \%opts) && $#ARGV == 1) || $opts{'h'};
     pod2usage(-verbose => 2, -noperldoc => 1) if $opts{'h'};
     $f = Font::TTF::Font->open($ARGV[0]) || die "Can't open file '$ARGV[0]'";
 }
@@ -59,14 +59,10 @@ if ($opts{'g'})
 }
 
 if ($opts{'l'})
-{
-    $subsetter->langlist(split(' ', $opts{'l'}));
-}
+{ $subsetter->langlist(split(' ', $opts{'l'})); }
 
 if ($opts{'s'})
-{
-    $subsetter->scriptlist(split(' ', $opts{'s'}));
-}
+{ $subsetter->scriptlist(split(' ', $opts{'s'})); }
 
 my ($canchangegids) = 1;
 my ($numg) = $f->{'maxp'}{'numGlyphs'};
@@ -77,6 +73,7 @@ $f->{'loca'}->subset($subsetter);
 $f->tables_do(sub {$_[0]->subset($subsetter);});
 $f->{'maxp'}{'numGlyphs'} = $subsetter->{'gcount'};
 $f->tables_do(sub {$_[0]->update;});
+ttfname($f, "q" => 1, "n" => $opts{'n'}) if ($opts{'n'});
 $f->out($ARGV[1]);
 
 package Font::TTF::Scripts::SubSetter;
@@ -805,6 +802,7 @@ Opens infont (a .ttf file), subsets it according to the supplied options, then w
   -g listfile	File containing list of glyphs to retain 
   -s tag[,...]	List of OpenType script tags to retain
   -l tag[,...]  List of OpenType language tags to retain
+  -n name       Renames the font to the given name (as per ttfname -n)
 
 =head1 DESCRIPTION
 

@@ -513,7 +513,7 @@ sub out_volt_lookups
         {
             my $comment = $l->{'comment'};
             $comment =~ s/($toescape)/$toescapes{$1}/oge;
-            print "COMMENTS \"$comment\"\n";
+            $res .= "COMMENTS \"$comment\"\n";
         }
         if (scalar @{$l->{'contexts'}})
         {
