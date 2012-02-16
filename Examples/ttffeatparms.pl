@@ -1,0 +1,454 @@
+﻿#! /usr/bin/perl
+use strict;
+use Font::TTF::Font;
+use Font::TTF::Name;
+use Font::TTF::Features::Sset;
+use Font::TTF::Features::Cvar;
+use Getopt::Std;
+use Pod::Usage;
+use XML::Parser;
+
+our ($opt_h,$opt_c,$opt_d, $VERSION);
+
+getopts('hdc:');
+
+$VERSION = '0.1'; # original 
+
+# Check basic syntax, and display help if wrong
+if ($opt_h)             { pod2usage( -verbose => 2, -noperldoc => 1); exit;}
+unless ($#ARGV == 1)      { pod2usage(1); exit;}
+unless ($opt_d || $opt_c) { pod2usage(1); exit;}
+
+my ( $inFont, $outFont) = @ARGV;
+
+# Open font and read the main tables:
+my $f = Font::TTF::Font->open($inFont) || die ("Couldn't open TTF '$inFont'\n");
+my $namet = $f->{'name'}->read;
+my $gsubt = $f->{'GSUB'}->read;
+my $cmapt = $f->{'cmap'}->read;
+
+my ($featname, $nametype,$lastnid, %namestrings, @idlist);
+
+if ($opt_d)
+{
+# Delete all feature parameters
+  my $feat;
+  my $gfeats=$gsubt->{'FEATURES'};
+  
+  foreach $feat (keys $gfeats)
+  {
+    if ($feat ne 'FEAT_TAGS') {$gfeats->{$feat}{'PARMS'}=''}
+  }
+  
+}
+
+if ($opt_c)
+{ 
+# Process the name table and produce index of existing English strings
+# Just records details for the first string per name ID.  Starts at nameID 256
+  
+  my ($nstring,  $nid, $pid, $eid, $lid);
+  
+  $lastnid=$#{$namet->{'strings'}};
+  if ($lastnid < 255) { $lastnid = 255 }
+    
+NID: foreach $nid(256 .. $lastnid){
+    foreach $pid (0 .. $#{$namet->{'strings'}[$nid]})  {
+       foreach $eid (0 .. $#{$namet->{'strings'}[$nid][$pid]}) {        
+         foreach $lid (keys %{$namet->{'strings'}[$nid][$pid][$eid]})
+         {
+           my $ltag=Font::TTF::Name->get_lang($pid,$lid); # Convert platformID/language ID to language tag
+           if ($ltag) { $ltag = substr($ltag,0,index($ltag,"-")) } # Get the root of the language tag
+             else { $ltag="en" }                                   # Default to "en" for invalid lids
+           # If English, add the nameID to %namestrings if not already there
+           if ($ltag="en")
+           {
+             $nstring = $namet->{'strings'}[$nid][$pid][$eid]{$lid};
+             push @{$namestrings{$nstring}}, [$nid,$pid,$eid,$lid];
+             next NID;
+           }          
+  } } } }
+  
+# Process the cmap table to get a list of Platform/Encoding IDs pairs to use when adding name strings
+  @idlist = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmapt->{'Tables'}};
+# Set up mapping from cvar name types to cvar.pm methods
+  my %cvarmap = ("uilabel" => "UINameID", "tooltip" => "TooltipNameID", "sampletest" => "SampleTextNameID" );
+
+# Process the control file. Most validity checking is in thie section
+  my ($ctrl, $fpelement, $lang);
+  $ctrl={};
+  $fpelement="";
+  
+  my ($xml) = XML::Parser->new(Handlers =>
+  {
+    Start => sub
+    {
+      my ($xp, $tag, %attrs) = @_;
+      # Checks to ensure we are in an overall featureparams element
+      if (not $fpelement)
+      {
+        if ($tag eq "featureparams") { $fpelement=1 }
+        return;
+      }
+      # Now process the tags
+      if (not $tag =~ /^cvar$|^sset$|^name$|^nstring$|^npstring$/) { xmlerror($xp, $tag, "Invalid XML element $tag"); return }
+      if ($tag =~ /^cvar$|^sset$/)
+      { 
+        $featname=$attrs{'feat'};
+        $ctrl->{$featname}={};
+        $ctrl->{$featname}{'type'}=$tag;
+        if ($tag eq "cvar" )
+        {
+          if ($attrs{'characters'}) { $ctrl->{$featname}{'characters'}=[split(/\s*,\s*/, $attrs{'characters'})] }
+          if ($attrs{'numparam'}) {$ctrl->{$featname}{'numparam'}=$attrs{'numparam'}};
+          if ($attrs{'firstid'}) {$ctrl->{$featname}{'firstid'}=$attrs{'firstid'}};
+        }
+      }
+      elsif ($tag eq "name")
+      {
+         if (not $featname) { xmlerror($xp, $tag, "Name element outside a cvar or sset element") ; return }
+        $nametype = $attrs{'type'};
+        if (not $nametype) {$nametype="uilabel"}
+        if (not $nametype =~ /^uilabel$|^tooltip$|^sampletext$/) { xmlerror($xp, $tag, "Invalid type attribute of $nametype") ; return }
+        $ctrl->{$featname}{$nametype}{'id'}=$attrs{'id'};
+      }
+      elsif ($tag eq "nstring")
+      {
+        if (not $nametype) { xmlerror($xp, $tag, "nstring element outside a name element") ; return }
+        $lang=$attrs{'lang'};
+        if (not $lang) { $lang="en" }
+      }
+      elsif ($tag eq "npstring")
+      {
+        if (not $featname)  { xmlerror($xp, $tag, "npstring element outside a cvar or sset element") ; return }
+        $lang=$attrs{'lang'};
+        if (not $lang) { $lang="en" }
+      }
+    },
+    
+    Char => sub # Should only reach here within nstring or npstring elements
+    {
+      my ($xp, $str) = @_;
+      $str =~ s/^\s+//; # Remove leading white space    
+      $str =~ s/\s+$//; # Remove trailing white space
+      if  (not $str) { return }
+      
+      # Should only reach here within nstring or npstring elements    
+       if    ($xp->in_element('nstring'))
+       {
+         $ctrl->{$featname}{$nametype}{'nstrings'}{$lang} = $str;
+       }  
+      elsif ($xp->in_element('npstring'))
+      {
+        push ( @{$ctrl->{$featname}{'npstrings'}{$lang}}, $str);
+      }
+      else  { xmlerror($xp,"", 'Raw data out of a string context') }
+    },
+    
+    End => sub
+    {
+      my ($xp, $tag) = @_;
+      if (not $fpelement) {return}
+      if ($tag eq "featureparams") { $fpelement="" ; return }
+        
+      if ($tag eq "sset")
+      {
+        if (not $ctrl->{$featname}{'uilabel'}) { xmlerror($xp,$tag,"No uilabel") }
+        $featname="";  
+      }
+      elsif ($tag eq "cvar")
+      {
+         # Check same number of strings for each language and that there are 'en' lang strings
+        if ($ctrl->{$featname}->{'npstrings'})
+        {
+          my @langs = keys %{$ctrl->{$featname}->{'npstrings'}};
+          my $en="";
+          if ($langs[0] eq "en") { $en=1 }
+          foreach $lang (1 .. $#langs)
+          {
+            if ( $langs[$lang] eq "en" ) { $en=1 }
+            if (not $#{$ctrl->{$featname}{'npstrings'}{$langs[$lang]}} == $#{$ctrl->{$featname}{'npstrings'}{$langs[$lang-1]}} )
+              { xmlerror($xp,$tag, 'Inconsistent number of npstrings per language') }
+          }
+          if (not $en) { xmlerror($xp,$tag, 'No english npstrings') }
+        }  
+        $featname="";
+      }
+      elsif ($tag eq "name")
+      {
+        # Check there is an 'en' language string
+        if ( $ctrl->{$featname}{$nametype}{'nstrings'} )
+        {
+          unless ( $ctrl->{$featname}{$nametype}{'nstrings'}{'en'} )
+            { xmlerror($xp,$tag, 'No english name string') }
+        }  
+        $nametype="";
+      }
+      # (Nothing to do for nstring or npstring)
+    }
+  });
+  
+  $xml->parsefile($opt_c);
+
+# Now ready to start work
+
+   my ($ctrlitem, $gfeat, $ftype, $lang);
+   foreach $featname (sort keys %{$ctrl})
+   {
+     $gfeat=$gsubt->{'FEATURES'}{$featname};
+     if (not $gfeat){ print "No GSUB feature exists for $featname \n"; next }
+     
+     # Read existing feature parameters if they exist, or create a new one
+     $ctrlitem=$ctrl->{$featname};
+     $ftype=$ctrlitem->{'type'};     
+     
+     if ($ftype eq "sset")
+    {
+       if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Sset->new() }
+       # First look for the string based on english name string
+       my $nameid=$ctrlitem->{'uilabel'}{'id'};
+       if (not $nameid ) { $nameid = findstring($ctrlitem->{'uilabel'}{'nstrings'}{'en'} ); }  
+       # Now add or update the strings if needed
+       addstrings ( $nameid, $ctrlitem->{'uilabel'}{'nstrings'});
+       $gfeat->{'PARMS'}{'UINameID'} = $nameid;
+    }
+         
+     else # $ftype must now be "cvar"
+     {
+       if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Cvar->new() }
+       # Process standard name strings
+       foreach $nametype ("uilabel", "tooltip", "sampletext")
+       {
+         if ($ctrlitem->{$nametype})
+         {
+           my $nameid=$ctrlitem->{$nametype}{'id'};
+           if (not $nameid) { $nameid = findstring($ctrlitem->{$nametype}{'nstrings'}{'en'} ) }
+           addstrings ( $nameid, $ctrlitem->{$nametype}{'nstrings'});
+           $gfeat->{'PARMS'}{$cvarmap{$nametype}} = $nameid;
+         }
+       }
+       # Process named parameters.  There should be firstid + numparam, firstid + npstrings or just npstrings
+       # If both numparam and npstrings are there, numparam is overwritten by number of npstrings
+       if ($ctrlitem->{'numparam'} || $ctrlitem->{'npstrings'})
+       {
+         my $firstid=$ctrlitem->{'firstid'};
+         my $numparam=$ctrlitem->{'numparam'};
+         if ($ctrlitem->{'npstrings'}) { $numparam=$#{$ctrlitem->{'npstrings'}{'en'}}+1 }
+         if (not $firstid)
+         { # Match strings if possible; otherwise add to end to name table
+           if ($namestrings{$ctrlitem->{'npstrings'}{'en'}[0]})
+           { # For each name table string that matches the first npstring, see if following name table strings match remainder
+             my @nsitem = @{$namestrings{$ctrlitem->{'npstrings'}{'en'}[0]}};
+             my ($i, $j);
+iloop:       foreach $i (0 .. $#nsitem)
+             {
+               ($nid,$pid,$eid,$lid) = @nsitem[$i];
+               foreach $j (1 .. $numparam)
+               {
+                 if (not $ctrlitem->{'npstrings'}{'en'}[$j] = $namet->{'strings'}[$nid+$j][$pid][$eid]{$lid} )
+                 {
+                   next iloop
+                 }
+               }
+               $firstid=$nid;
+               last;
+             }
+           }
+         }
+         if (not $firstid) {$firstid=$lastnid+1} # Name strings don't match, so need to add at end of name table
+         if ($ctrlitem->{'npstrings'}) { addstrings($firstid, $ctrlitem->{'npstrings'}) }
+         $gfeat->{'PARMS'}{'NumNamedParms'}    = $numparam;
+         $gfeat->{'PARMS'}{'FirstNamedParmID'} = $firstid;
+       }
+       if ($ctrlitem->{'characters'}) { $gfeat->{'PARMS'}{'Characters'}=$ctrlitem->{'characters'}} 
+     }  
+  }
+}
+
+# Write out new font
+$f->out($outFont);
+
+# Print out details of any errors detected in the control file
+sub xmlerror
+{
+  my ($xp, $tag, $errortext) = @_;
+  print "Control file error - $errortext \n  Context: ";
+  my ($i,$j);
+  $j=$#{$xp->{'Context'}};
+  foreach $i ( 0..$j-1 ) { print $xp->{'Context'}[$i].", " }
+  print $xp->{'Context'}[$j],"\n";
+  print "  Element: $tag, Feature: $featname, Nametype, $nametype \n";
+}
+
+# Search for a string within namestrings.  If found return its ID, otherwise return $lastnid+1 for adding new strings 
+sub findstring
+{
+  my $string = $_[0];
+if ($namestrings{$string}) 
+  { return $namestrings{$string}->[0][0] }
+else
+  { return $lastnid+1 }
+}
+
+# add strings to the name table. NameID may have been set to an existing NameID or to $Lastnid+1
+# If there are multiple names strings for the same language increment the nameID for each extra string
+sub addstrings
+{
+  my ($nameid, $strings) = @_;
+  my ($lang, $lstrings, $pid, $eid, $lid, $i, $j);
+  foreach $lang (keys %{$strings})
+  {
+    $lstrings = $strings->{$lang};
+    # Will be string for nstrings and array ref for npstrings, so convert string to array ref
+    if (not ref ($lstrings)) {$lstrings = [$lstrings] }
+    foreach $i (0 .. $#{$lstrings})
+    {
+      # Add strings for each pid/eid pair in cmap table
+      foreach $j (0 .. $#idlist)
+      {
+        $pid=$idlist[$j]->[0];
+        $eid=$idlist[$j]->[1];
+        $lid=Font::TTF::Name->find_lang($pid,$lang);
+        $namet->{'strings'}[$nameid+$i][$pid][$eid]{$lid}= $lstrings->[$i];
+        if ($lang eq "en")
+        { # need to new entry to namestrings if not already there
+          if ( not $namestrings{$lstrings->[$i]} )
+          {
+            $namestrings{$lstrings->[$i]} = [[$nameid+$i,$pid,$eid,$lid]]
+          }
+        }
+      }  
+    }
+  }
+  # Reset $lastnid to reflect any new name IDs added
+  $lastnid=$#{$namet->{'strings'}};
+}
+
+=head1 TITLE
+
+ttfeatparms - adds feature parameters to Opentype stylistic set or character variants features
+
+=head1 SYNOPSIS
+
+ttffeatparms [-d] [-c control.xml] infile.ttf outfile.ttf
+  
+Opens infile.ttf for reading, deletes existing feature parameters and/or adds new ones based
+on control file values, then writes the modified file to outfile.ttf.
+
+=head1 OPTIONS
+
+  -c file    Specifies the xml control file to use
+  -d         Deletes all GSUB feature parameters from the font
+
+If both -c and -d are specified, all existing parameters are deleted prior to applying the 
+control file values.
+
+=head1 DESCRIPTION
+
+ttffeatparms works with existing stylistic set or character variants features within a font.  The 
+features themselves should have been previously added to the font.  Where feature parameters point
+to name strings, it will re-use pre-existing name strings in the font if they exist, or add the name 
+strings in if needed. If feature parameters already exist for a feature, they will be updated to the
+values in the control file.
+
+If there are multiple features with the same name, the same parameters will be used for all those 
+features, eg if there are two ss01 features (for different scripts and/or languages) they will both 
+have the same feature parameters.  
+
+=head1 Control file Format
+
+The DTD for the control file is:
+
+    <!ELEMENT sset (name)>
+        <!ATTLIST sset feat CDATA #REQUIRED
+
+    <!ELEMENT cvar (name*, npstring*)>
+
+        <!ATTLIST cvar 
+            feat CDATA        #REQUIRED
+            characters  CDATA #IMPLIED
+            numparam CDATA    #IMPLIED
+            firstid  CDATA    #IMPLIED>
+
+    <!ELEMENT name (nstring*)>
+        <!ATTLIST name
+            type CDATA "uilabel"
+            id CDATA #IMPLIED>
+
+    <!ELEMENT nstring (#PCDATA)>
+        <!ATTLIST nstring lang  CDATA "en">
+
+    <!ELEMENT npstring (#PCDATA)>
+        <!ATTLIST npstring lang  CDATA "en">
+
+=over 4
+
+=item sset
+
+name elements must be uilabel, which is the default
+
+=item cvar
+
+name elements can be uilabel, tooltip or sampletext
+
+npstrings, if supplied, are for named parameters.  numparam is only used if no npstrings are supplied
+
+characters is a csv list.  The character cound will be based on the number of characters supplied
+
+=item name strings and name IDs
+
+For both nstring and npstring elements, if an id is specified (by either id or firstid) then that id
+is used (without checking existing name strings for the id).  If id and strings are supplied, then 
+any existing name strings will be replaced by those supplied.
+
+If no id is supplied, existing name strings will be reused if they match the supplied strings;
+otherwise new name strings will be added to the name table.
+
+=item name string languages
+
+English language strings must be supplied, and they are used for string matching purposes.  If 
+other language strings are also supplied, they will be inserted using the same nameid of the 
+English string.
+
+=back
+
+=head1 Sample Control File
+
+    <?xml version="1.0" encoding="UTF-8"?>
+
+    <featureparams>
+
+      <sset feat="ss01">
+        <name><nstring>UI string for ss01</nstring></name>
+      </sset>
+
+      <sset feat="ss02">
+        <name>
+          <nstring lang="en">UI string for SS02</nstring>
+          <nstring lang="fr">nom de ss02</nstring>
+        </name>
+      </sset>
+
+      <sset feat="ss03">
+        <name id="1234"/>
+      </sset>
+
+      <cvar feat="cv01">
+        <name><nstring>Jha alternates</nstring></name>
+        <name type="tooltip"><nstring>Tooltip for cv01</nstring></name>
+        <npstring lang="en">First named param for cv01</npstring>
+        <npstring lang="en">Second named param for cv01</npstring>
+        <npstring lang="en">Third named param for cv01</npstring>
+        <npstring lang="fr">Premier paramètre nommé pour cv01</npstring>
+        <npstring lang="fr">Deuxième  paramètre nommé pour cv01</npstring>
+        <npstring lang="fr">Troisième paramètre nommé pour cv01</npstring>
+      </cvar>
+
+    </featureparams>
+
+
+
+
+
+
+=cut
