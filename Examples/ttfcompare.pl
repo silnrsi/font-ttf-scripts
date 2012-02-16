@@ -12,7 +12,7 @@ unless ($#ARGV == 1)
 {
     die <<"EOT";
 
-ttfcompare [-a][-f][-o outputfile] table fontfile1 fontfile2
+ttfcompare [-a][-f][-o outputfile] -t table fontfile1 fontfile2
 
 Compares all values in the specified table between the two fonts and displays differences on screen.
 
@@ -82,7 +82,7 @@ sub namesub {
   		$maxid2 = $#{$table2->{'strings'}[$nid][$pid]};
   		$maxeid = $maxid1 >= $maxid2 ? $maxid1 : $maxid2;
    		foreach $eid (0 .. $maxeid) {
-   			@lkeys = sort (  keys %{$table1->{'strings'}[$nid][$pid][$eid]},  keys %{$table1->{'strings'}[$nid][$pid][$eid]}  );
+   			@lkeys = sort (  keys %{$table1->{'strings'}[$nid][$pid][$eid]},  keys %{$table2->{'strings'}[$nid][$pid][$eid]}  );
    			$prevlid="";
    			foreach $lid (@lkeys) {
    				next if ($lid eq $prevlid); # @keys will have two copies of all keys that are in both name tables
