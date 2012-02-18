@@ -1,0 +1,161 @@
+#!/usr/bin/perl
+
+use strict;
+use Font::TTF::Font;
+use IO::Scalar;
+use Getopt::Std;
+use Pod::Usage;
+use Compress::Zlib;
+
+my %opts;
+our ($if);
+my ($scalar);
+our ($CHAIN_CALL);
+my ($ofh);
+
+unless ($CHAIN_CALL)
+{
+    getopts('hm:p:', \%opts);
+
+    unless (defined $ARGV[1] || defined $opts{'h'})
+    {
+        pod2usage(1);
+        exit;
+    }
+
+    if ($opts{'h'})
+    {
+        pod2usage( -verbose => 2, -noperldoc => 1);
+        exit;
+    }
+
+    $if = Font::TTF::Font->open($ARGV[0]);
+}
+
+if (defined $if->{'DSIG'})
+{
+    # need to make a new font without DSIG and use that to get checksums right
+    my ($tfh) = new IO::Scalar \$scalar;
+    my (@tlist) = sort {$if->{$a}{' OFFSET'} <=> $if->{$b}{' OFFSET'}}
+                    grep(length($_) == 4 && $_ ne 'DSIG', keys %{$if});
+    $if->out($tfh, @tlist);
+    $if = Font::TTF::Font->open($tfh);
+}
+
+$ofh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
+binmode $ofh;
+
+my (%whdr);
+my (@tlist) = sort {$if->{$a}{' OFFSET'} <=> $if->{$b}{' OFFSET'}}
+                    grep(length($_) == 4 && $_ ne 'DSIG', keys %{$if});
+my (@trmap) = sort {$tlist[$a] cmp $tlist[$b]} (0 .. $#tlist);
+my ($t, @tmap);
+foreach (@trmap) { $tmap[$_] = $t++; }
+$whdr{'num'} = scalar @tlist;
+out_whdr($ofh, \%whdr);
+my ($curroffset) = $ofh->tell();
+for (my $i = 0; $i < $whdr{'num'}; $i++)
+{
+    my (%d);
+    my ($n) = $tlist[$i];
+    my ($t) = $if->{$n};
+    my ($idat, $odat);
+
+    $curroffset = align4($ofh, $curroffset);
+    $whdr{'dir'}[$tmap[$i]] = \%d;
+    $d{'tag'} = $n;
+    $d{'offset'} = $curroffset;
+    $d{'orglen'} = $t->{' LENGTH'};
+    $d{'csum'} = $t->{' CSUM'};
+    $t->{' INFILE'}->seek($t->{' OFFSET'}, 0);
+    $t->{' INFILE'}->read($idat, $t->{' LENGTH'});
+    $odat = compress($idat, 9);
+    $d{'len'} = length($odat);
+    $ofh->print($odat);
+    $curroffset = $ofh->tell();
+}
+
+$whdr{'total'} = $if->{$tlist[-1]}{' OFFSET'} + $if->{$tlist[-1]}{' LENGTH'} + 12 + $whdr{'num'} * 16;
+
+if ($opts{'m'})
+{
+    my ($mfh) = IO::File->new("< $opts{'m'}") || die "Can't open $opts{'m'} for reading";
+    local $/;
+    my ($idat) = <$mfh>;
+    my ($odat) = compress($idat, 9);
+    $curroffset = align4($ofh, $curroffset);
+    $whdr{'moffset'} = $curroffset;
+    $whdr{'mlen'} = length($odat);
+    $whdr{'morglen'} = length($idat);
+    $ofh->print($odat);
+    $curroffset = $ofh->tell();
+}
+
+if ($opts{'p'})
+{
+    my ($pfh) = IO::File->new("< $opts{'p'}") || die "Can't open $opts{'p'} for reading";
+    binmode $pfh;
+    local $/;
+    my ($idat) = <$pfh>;
+    $curroffset = align4($ofh, $curroffset);
+    $whdr{'poffset'} = $curroffset;
+    $whdr{'plen'} = length($idat);
+    $ofh->print($idat);
+    $curroffset = $ofh->tell();
+}
+$whdr{'len'} = $curroffset;
+$ofh->seek(0, 0);
+out_whdr($ofh, \%whdr);
+$ofh->close();
+
+sub out_whdr
+{
+    my ($ofh, $whdr) = @_;
+    $ofh->print(pack("NNNnnNnnNNNNN", 0x774F4646, 0x00010000, $whdr->{'len'}, 
+                    $whdr->{'num'}, 0, $whdr->{'total'}, $whdr->{'major'}, $whdr->{'minor'},
+                    $whdr->{'moffset'}. $whdr->{'mlen'}, $whdr->{'morglen'},
+                    $whdr->{'poffset'}, $whdr->{'plen'}));
+    for (my $i = 0; $i < $whdr->{'num'}; $i++)
+    {
+        my ($d) = $whdr->{'dir'}[$i];
+        $ofh->print(pack("A4NNNN", $d->{'tag'}, $d->{'offset'}, $d->{'len'},
+                        $d->{'orglen'}, $d->{'csum'}));
+    } 
+}
+
+sub align4
+{
+    my ($ofh, $curroffset) = @_;
+
+    if (($curroffset & 3) != 0)
+    {
+        $ofh->print("\000" x (4 - $curroffset & 3)) if ($ofh);
+        $curroffset = ($curroffset & ~3) + 4;
+    }
+    return $curroffset;
+}
+
+__END__
+
+=head1 TITLE
+
+ttf2woff - create WOFF file from TTF file
+
+=head1 SYNPOSIS
+
+  ttf2woff [-m metadatafile] [-p privatefile] infile.ttf outfile.woff
+
+Converts a TTF file into a WOFF file appending optional metadata and private data.
+
+=head1 OPTIONS
+
+  -m file       File containing XML WOFF metadata
+  -p file       File containing arbitrary data
+  -h            Prints help
+
+=head1 DESCRIPTION
+
+Does what it says on the tin. The output WOFF will have any DSIG table stripped.
+
+=cut
+
