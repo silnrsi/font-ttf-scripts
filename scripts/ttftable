@@ -31,7 +31,7 @@ our $VERSION = 0.05;	# BH      2011-08-18
 
 our $CHAIN_CALL;
 
-our (@exports, @imports, @deletes, @updates, $textmode, $list);
+our (@exports, @imports, @deletes, @updates, $textmode, $list, $verbose);
 
 my $f;
 
@@ -46,6 +46,7 @@ unless ($CHAIN_CALL)
         'update=s' =>   \@updates,
         'text'  =>      \$textmode,
         'list'  =>      \$list,
+        'verbose'  =>   \$verbose,
         'help|?'   =>   \$help) or pod2usage(2);
         
     pod2usage( -verbose => 2, -noperldoc => 1) if $help;
@@ -85,7 +86,19 @@ foreach my $tag (\@deletes, \@updates, \@exports, \@imports)
 
 if ($list)
 {
-    map {print "$_\n"} (sort grep {length($_) == 4} keys %{$f})
+    foreach (sort grep {length($_) == 4} keys %{$f})
+    {
+    	if ($verbose)
+    	{
+    		printf "%4s  csum = %08X  off = %7d  len = %6d", $_, $f->{$_}{' CSUM'}, $f->{$_}{' OFFSET'}, $f->{$_}{' LENGTH'};
+    		printf "  zlen = %6d", $f->{$_}{' ZLENGTH'} if defined($f->{$_}{' ZLENGTH'}) and $f->{$_}{' ZLENGTH'} != $f->{$_}{' LENGTH'};
+    		print "\n";
+    	}
+    	else
+    	{
+    		print "$_\n";
+    	}
+    }
 }
 
 # Next, read data to be imported and save it for later
@@ -286,6 +299,7 @@ then writes the modified font to outfile.ttf if provided.
   -delete tag[,tag...] List of tables to remove from font
   -update tag[,tag...] Force a re-build of the named tables 
   -list                Write a list of table tags from infile.ttf to STDOUT
+  -verbose             Verbose output
   -text                Use text mode i/o for datafiles 
   -help                Help
 
