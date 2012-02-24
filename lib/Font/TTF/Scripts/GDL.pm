@@ -313,23 +313,26 @@ sub lig_rules
     my ($c, %namemap, $glyph, $name);
 
     return unless (defined $pnum);
-    return unless (scalar %{$self->{'ligclasses'}});
     $fh->print("\ntable(substitution);\npass($pnum);\n");
-    foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
+    if (scalar %$ligclasses)
     {
-        my ($gnum) = $self->{'ligmap'}{$c};
-        my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
-        my ($compstr);
+        foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
+        {
+            my ($gnum) = $self->{'ligmap'}{$c};
+            my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
+            my ($compstr);
 
-        if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'compounds'}{'0'})
-        { $compstr = ' {component.0.reference = @1; component.1.reference = @2}'; }
+            if ($self->{'glyphs'}[$ligclasses->{$c}[0]]{'compounds'}{'0'})
+            { $compstr = ' {component.0.reference = @1; component.1.reference = @2}'; }
 
-        if ($type eq 'first')
-        { $fh->print("$gname cligno_$c > _ clig$c:(1 2)$compstr / _ ^ _;\n"); }
-        else
-        { $fh->print("cligno_$c $gname > clig$c:(1 2)$compstr _ / ^ _ _;\n"); }
+            if ($type eq 'first')
+            { $fh->print("$gname cligno_$c > _ clig$c:(1 2)$compstr / _ ^ _;\n"); }
+            else
+            { $fh->print("cligno_$c $gname > clig$c:(1 2)$compstr _ / ^ _ _;\n"); }
 
+        }
     }
+
     foreach $glyph (@{$self->{'glyphs'}})
     {
         foreach $name (split('/', $glyph->{'post'}))
@@ -353,13 +356,17 @@ sub lig_rules
             }
             $class =~ s/\./_/g;
             $oglyph = $namemap{$base};
-            next if ($oglyph && has($ligclasses->{$class}, $glyph->{'gnum'}) && has($ligclasses->{"no_$class"}, $oglyph->{'gnum'}));
 
             foreach $e (@elem)
             {
                 my ($n) = $e;
+                my ($g);
                 $n =~ s/_//g;
-                $g = $namemap{$n};
+                foreach ($n, "uni$n", "u$n")
+                {
+                    if ($g = $namemap{$_})
+                    { last; }
+                }
                 if (!$g)
                 {
                     $islig = 0;

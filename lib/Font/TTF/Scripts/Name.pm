@@ -26,10 +26,11 @@ sub ttfname
         $fh->close();
     }
 
-    if (defined $opts{'l'})
+    if (defined $opts{'l'} || ($opts{'t'} && !scalar @{$name->{'strings'}[$opts{'t'}]}))
     {
         my ($cmap) = $font->{'cmap'}->read;
         @cover = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmap->{'Tables'}};
+        $opts{'l'} ||= 'en-US';
     }
 
     if (defined $opts{'t'})

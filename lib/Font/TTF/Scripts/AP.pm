@@ -624,7 +624,6 @@ sub make_classes
                 if ($opts{'-ligatures'} eq 'first')
                 { 
                     $class = $elem[0];
-                    $base = "uni$base" if ($class =~ s/^uni//o);
                     $base =~ s/^_//o;
                 }
                 else
@@ -633,9 +632,9 @@ sub make_classes
                     $class =~ s/^_//o;
                 }
 
+                next unless ($i = $namemap{$base});
                 $cname = $class;
                 $cname =~ s/\./_/og;
-                next unless ($i = $namemap{$base});
                 unless (defined $self->{'ligmap'}{$cname})
                 {
                     my ($match) = 0;
