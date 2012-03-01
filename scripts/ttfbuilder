@@ -112,6 +112,7 @@ sub main
         $of->{$t} = bless {%{$table}}, ref $table;
         $of->{$t}{' PARENT'} = $of;
         $of->{$t}->read;
+        $table->read;
         }, @tlist);
 
     my $ifissymbol = $if->{'cmap'}->read->ms_enc;
