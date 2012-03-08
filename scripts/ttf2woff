@@ -15,7 +15,7 @@ my ($ofh);
 
 unless ($CHAIN_CALL)
 {
-    getopts('hm:p:', \%opts);
+    getopts('hm:p:v:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{'h'})
     {
@@ -52,6 +52,10 @@ my (@trmap) = sort {$tlist[$a] cmp $tlist[$b]} (0 .. $#tlist);
 my ($t, @tmap);
 foreach (@trmap) { $tmap[$_] = $t++; }
 $whdr{'num'} = scalar @tlist;
+if ($opts{'v'})
+{
+    ($whdr{'major'}, $whdr{'minor'}) = split('.', $opts{'v'});
+}
 out_whdr($ofh, \%whdr);
 my ($curroffset) = $ofh->tell();
 for (my $i = 0; $i < $whdr{'num'}; $i++)
@@ -149,9 +153,10 @@ Converts a TTF file into a WOFF file appending optional metadata and private dat
 
 =head1 OPTIONS
 
-  -m file       File containing XML WOFF metadata
-  -p file       File containing arbitrary data
-  -h            Prints help
+  -m file           File containing XML WOFF metadata
+  -p file           File containing arbitrary data
+  -v major.minor    WOFF version number
+  -h                Prints help
 
 =head1 DESCRIPTION
 
