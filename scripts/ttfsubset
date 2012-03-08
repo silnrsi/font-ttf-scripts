@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use Font::TTF::Font;
+use Font::TTF::Scripts::Name;
 use Getopt::Std;
 use IO::File;
 use Pod::Usage;
