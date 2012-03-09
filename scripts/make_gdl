@@ -5,8 +5,8 @@ use IO::File;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_a, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_s, $opt_z);
-getopts('a:e:hi:l:n:o:p:s:z:');
+our ($opt_a, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_r, $opt_s, $opt_z);
+getopts('a:e:hi:l:n:o:p:rs:z:');
 
 unless ($ARGV[1] || $opt_h)
 {
@@ -52,20 +52,23 @@ my $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing"
 
 my $comp = $1 if ($opt_l =~ s/(comp)$//oi);
 
-foreach my $g (@{$f->{'glyphs'}})
+if ($opt_r)
 {
-    my ($points) = {};
-    foreach my $p (keys %{$g->{'points'}})
+    foreach my $g (@{$f->{'glyphs'}})
     {
-        my ($pname) = $p;
+        my ($points) = {};
+        foreach my $p (keys %{$g->{'points'}})
+        {
+            my ($pname) = $p;
 
-        if ($pname =~ s/^(.+)M$/_$1/o)
-        { }
-        elsif ($pname =~ s/^(.+)S$/$1/o)
-        { }
-        $points->{$pname} = $g->{'points'}{$p};
+            if ($pname =~ s/^(.+)M$/_$1/o)
+            { }
+            elsif ($pname =~ s/^(.+)S$/$1/o)
+            { }
+            $points->{$pname} = $g->{'points'}{$p};
+        }
+        $g->{'points'} = $points;
     }
-    $g->{'points'} = $points;
 }
 
 $f->{'vecs'} = {};
@@ -110,6 +113,8 @@ Creates font specific GDL from a font and optional attachment point database
   -n num        Add a normalization substitution with the given pass number
   -o "list"     List of AP names to omit
   -p num        Add auto positioning attachment rules with the given pass number
+  -r            Rename point names such that final M gets inital _ and final S
+                is removed. Typically for Fontographer fonts.
   -s num        Add ligature substitution rules with the given pass number
   -z bitfield   Bitfield of various controls:
                     0 - use component properties to set ligature bounding boxes
