@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- © SIL International 2007 -->
+
+<!-- DOCTYPE all_features SYSTEM "feat_all.dtd" --> <!-- put at top of XML file to validate -->
+
+<!ELEMENT all_features (feature+, interactions?, cmd_blocks?, aliases?, old_names?)>
+<!ATTLIST all_features
+	version CDATA #REQUIRED>
+<!ELEMENT feature (value+)>
+<!ATTLIST feature
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+	tag CDATA #REQUIRED>
+<!ELEMENT value (cmd | cmds)+>
+<!ATTLIST value
+	name CDATA #REQUIRED
+	tag CDATA #REQUIRED>
+<!ELEMENT cmd EMPTY>
+<!ATTLIST cmd
+	name CDATA #REQUIRED
+	args CDATA #REQUIRED>
+<!ELEMENT cmds EMPTY>
+<!ATTLIST cmds
+	name CDATA #REQUIRED>
+<!ELEMENT interactions (test*)>
+<!ELEMENT test (cmd | cmds)+>
+<!ATTLIST test
+	select CDATA #REQUIRED>
+<!ELEMENT cmd_blocks (cmd_block*)>
+<!ELEMENT cmd_block (cmd | cmds)+>
+<!ATTLIST cmd_block
+	name CDATA #REQUIRED>
+<!ELEMENT aliases (alias*)>
+<!ELEMENT alias EMPTY>
+<!ATTLIST alias
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED>
+<!ELEMENT old_names (old_feature | old_value)+>
+<!ELEMENT old_feature EMPTY>
+<!ATTLIST old_feature
+	name CDATA #REQUIRED
+	tag CDATA #REQUIRED>
+<!ELEMENT old_value EMPTY>
+<!ATTLIST old_value
+	feature CDATA #REQUIRED
+	name CDATA #REQUIRED
+	tag CDATA #REQUIRED>

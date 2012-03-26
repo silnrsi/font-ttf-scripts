@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE all_features SYSTEM "feat_all.dtd">
+<!-- these tests haven't been updated to reflect the reversed processing order 
+     but they still work well for regression testing -->
+<all_features version="1.0">
+	<feature name="Capital Eng alternates" value="Large eng with descender" tag="EN">
+		<value name="Large eng with descender" tag="d">
+			<cmd name="null" args="null"/>
+		</value>
+		<value name="Large Eng on baseline" tag="b"> <!-- test old_value -->
+			<cmd name="encode" args="014A Eng.BaselineHook"/>
+			<cmd name="gr_feat" args="1024 1"/>
+		</value>
+		<value name="Capital N with tail" tag="t">
+			<cmd name="encode" args="014A Eng.UCStyle"/>
+			<cmd name="gr_feat" args="1024 2"/>
+		</value>
+	</feature>
+	<feature name="Literacy alternates" value="False" tag="LA">
+		<value name="False" tag="f">
+			<cmd name="null" args="null"/>
+		</value>
+		<value name="True" tag="t">
+			<cmds name="LitAltsNI"/>
+			<cmd name="encode" args="01E5 uni01E5.BarBowl.SngBowl"/>
+		</value>
+	</feature>
+	<feature name="Barred-bowl forms" value="False" tag="BB">
+		<value name="False" tag="f">
+			<cmd name="null" args="null"/>
+		</value>
+		<value name="True" tag="t">
+			<cmd name="encode" args="01E5 uni01E5.BarBowl"/>
+		</value>
+	</feature>
+	<feature name="Vietnamese-style diacritics" value="False" tag="VD">
+		<value name="False" tag="f">
+			<cmd name="null" args="null"/>
+		</value>
+		<value name="True" tag="t">
+			<cmd name="feat_del" args="GSUB latn {IPA} {ccmp_latin}"/>
+			<cmd name="feat_add" args="GSUB latn {IPA} {ccmp_vietnamese} 0"/>
+		</value>
+	</feature>
+	<feature name="Romanian-style diacs" value="False" tag="RD"> <!-- test old_feature -->
+		<value name="False" tag="f">
+			<cmd name="null" args="null"/>
+		</value>
+		<value name="True" tag="t">
+			<cmd name="feat_del" args="GSUB latn DEFAULT {ccmp_latin}"/>
+			<cmd name="feat_add" args="GSUB latn DEFAULT {ccmp_romanian} 0"/>
+		</value>
+	</feature>
+	<feature name="Line spacing" value="Normal" tag="LG">
+		<value name="Normal" tag="n">
+			<cmd name="null" args="2324 810"/>
+		</value>
+		<value name="Tight" tag="t">
+			<cmd name="line_metrics" args="1900 750 100 2000 750 2000 749 20"/>
+		</value>
+		<value name="Loose" tag="l">
+			<cmd name="line_gap" args="2500 875"/>
+		</value>
+		<value name="Imported" tag="i">
+			<cmd name="line_metrics_scaled" args="null"/>
+		</value>
+	</feature>
+	<interactions>
+		<test select="LA-t BB-t">
+			<cmds name="LitAltsNI"/>
+			<cmd name="encode" args="01E5 uni01E5.BarBowl.SngBowl"/>
+		</test>
+		<test select="VD-t RD-t">
+			<!-- this is now nonsensical since ccmp will be deactivated by above feature
+			     elements but still useful for testing the lookup_add and lookup_del cmds -->
+			<cmd name="lookup_add" args="GSUB ccmp {viet_decomp}"/>
+			<cmd name="lookup_add" args="GSUB ccmp {viet_precomp}"/>
+			<cmd name="lookup_add" args="GSUB ccmp {rom_decomp}"/>
+			<cmd name="lookup_add" args="GSUB ccmp {rom_precomp}"/>
+			<cmd name="lookup_add" args="GSUB ccmp 100"/> <!-- test -->
+			<cmd name="lookup_del" args="GSUB ccmp 100"/>
+		</test>
+	</interactions>
+	<cmd_blocks>
+		<cmd_block name="LitAltsNI">
+			<cmd name="encode" args="0061 a.SngStory"/>
+			<cmds name="bar"/> <!-- test -->
+			<cmd name="encode" args="0067 g.SngBowl"/>
+		</cmd_block>
+		<cmd_block name="bar"> <!-- test -->
+			<cmd name="xyz" args="1 2"/>
+			<cmd name="fgh" args="4 5"/>
+		</cmd_block>
+	</cmd_blocks>
+	<aliases>
+		<alias name="IPA" value="IPPH"/>
+		<alias name="ROM" value="ROM "/>
+		<alias name="ccmp_latin" value="ccmp"/>
+		<alias name="ccmp_romanian" value="ccmp _0"/>
+		<alias name="ccmp_vietnamese" value="ccmp _1"/>
+		<alias name="viet_decomp" value="4"/>
+		<alias name="viet_precomp" value="5"/>
+		<alias name="rom_decomp" value="6"/>
+		<alias name="rom_precomp" value="7"/>
+	</aliases>
+	<old_names>
+		<old_feature name="Romanian-style diacritics" tag="RD" />
+		<old_value feature="Capital Eng alternates" name="Large eng on baseline" tag="b" />
+	</old_names>
+</all_features>

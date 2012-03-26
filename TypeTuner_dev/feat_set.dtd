@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- © SIL International 2007 -->
+
+<!-- DOCTYPE all_features SYSTEM "feat_all.dtd" --> <!-- put at top of XML file to validate -->
+
+<!ELEMENT features_set (feature+, imported_line_metrics?)>
+<!ATTLIST features_set
+	version CDATA #REQUIRED>
+<!ELEMENT feature (value+)>
+<!ATTLIST feature
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED>
+<!ELEMENT value EMPTY>
+<!ATTLIST value
+	name CDATA #REQUIRED>
+<!ELEMENT imported_line_metrics EMPTY>
+<!ATTLIST imported_line_metrics
+	font CDATA #REQUIRED
+	em-sqr CDATA #REQUIRED
+	metrics CDATA #REQUIRED>
