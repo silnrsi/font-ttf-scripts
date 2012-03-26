@@ -1,0 +1,1306 @@
+# TypeTuner is copyright © 2007-2009 by SIL International and is distributed
+# under the Artistic License 2.0 (http://www.opensource.org/licenses/artistic-license-2.0.php). 
+# TypeTuner is a trademark of SIL International.
+
+#todo: don't die on every error, try to keep going
+
+use strict;
+use warnings;
+
+use Font::TTF::Font;
+use XML::Parser::Expat;
+use Getopt::Std;
+use File::Temp qw(tempfile);
+use Compress::Zlib;
+
+#### global variables & constants ####
+
+my $version = "1.2"; #add old_names section to feat_all.xml
+#1.1 - change processing order
+
+#$opt_h - help via the usage message
+#$opt_d - debug output
+#$opt_f - for add & extract subcommands, don't check whether proper element at start of file
+#$opt_t - output feat_set.xml file with all settings at non-default values for testing TypeTuner
+#$opt_m - maximum length of featset suffix for font name
+#$opt_n - string to use a suffix at end of font name instead of featset string
+#$opt_o - name for output font file instead of generating by appending _tt
+#$opt_v - version number (bypasses adding featset suffix to the version)
+#$opt_x - for simplified command line, call createset
+#The $opt_? vars are initialized in &cmd_line_exec on each call into the package
+#The list of $opt_? vars here MUST match the list in $cmd_line_exec
+use vars qw($opt_h $opt_d $opt_f $opt_t $opt_m $opt_n $opt_o $opt_v $opt_x); #set by &getopts
+my $opt_str = 'hdftm:n:o:v:x';
+                       
+my $family_name_id = 1; #source for family name to modify 
+my $full_font_name_id = 4; #full font name for setmetrics command
+my $version_name_id = 5;
+my $family_name_ids = [1, 3, 4, 16, 18]; #name ids where family might occur
+my $post_family_name_ids = [6];
+my $version_name_ids = [5];
+my $feat_all_elem = "all_features";
+my $feat_set_elem = "features_set";
+my $table_nm = "Silt";
+my $font_nm_len_limit = 31; #maximum length of font name according to TrueType spec
+
+#### subroutines ####
+
+sub Feat_All_parse($\%\%)
+#parse $feat_all_fn to create the $feat_all and $feat_tag structures
+#see "TypeTuner_notes.txt" for description of data structures and XML format
+{
+	my ($feat_all_fn, $feat_all, $feat_tag) = @_;
+	my ($xml_parser, $tag, $tmp, $current, $last);
+	
+	$xml_parser = XML::Parser::Expat->new();
+	
+	$xml_parser->setHandlers('Start' => sub {
+		my ($xml_parser, $elem, %attrs) = @_;
+		if ($elem eq $feat_all_elem)
+		{
+			$feat_all->{'version'} = $attrs{'version'};
+		}
+		elsif ($elem eq $feat_set_elem)
+		{
+			die("$feat_set_elem XML file provided instead of $feat_all_elem XML file\n");
+		}
+		elsif ($elem eq 'features')
+		{}
+		elsif ($elem eq 'feature')
+		{
+			$tag = $attrs{'tag'};
+			if (defined $feat_all->{'features'}{$tag} || $tag =~ /-/)
+				{die("feature tags must be unique and can't contain hyphen(s): $tag\n");}
+			
+			$feat_all->{'features'}{$tag}{'name'} = $attrs{'name'};
+			$feat_all->{'features'}{$tag}{'default'} = $attrs{'value'};
+			
+			if (not defined $feat_all->{'features'}{' tags'})
+				{$feat_all->{'features'}{' tags'} = [];}
+			push(@{$feat_all->{'features'}{' tags'}}, $tag);
+			
+			add_name_tag($feat_tag, $attrs{'name'}, $tag);
+
+			$current = $feat_all->{'features'}{$tag}; #'values' to be added
+		}
+		elsif ($elem eq 'value')
+		{
+			$tag = $attrs{'tag'};
+			if (defined $current->{'values'}{$tag} || $tag =~ /-/)
+				{die("for feature $current->{'name'}, value tags must be unique and can't contain hyphen(s): $tag\n");}
+			
+			$current->{'values'}{$tag}{'name'} = $attrs{'name'};
+			
+			if (not defined $current->{'values'}{' tags'})
+				{$current->{'values'}{' tags'} = [];}
+			push(@{$current->{'values'}{' tags'}}, $tag);
+
+			add_name_tag($feat_tag, $attrs{'name'}, $tag);
+
+			$last = $current;
+			$current = $current->{'values'}{$tag}; #'cmds' to be added
+		}
+		elsif ($elem eq 'interactions')
+		{}
+		elsif ($elem eq 'test')
+		{
+			$tmp = {'test' => $attrs{'select'}};
+			if (not defined $feat_all->{'interactions'})
+				{$feat_all->{'interactions'} = [];}
+			push(@{$feat_all->{'interactions'}}, $tmp);
+			$current = $feat_all->{'interactions'}[-1]; #'cmds' to be added
+		}
+		elsif ($elem eq 'cmd_blocks')
+		{}
+		elsif ($elem eq 'cmd_block')
+		{
+			$tmp = $attrs{'name'};
+			$feat_all->{'cmd_blocks'}{$tmp} = {}; #'cmds' to be added
+			$current = $feat_all->{'cmd_blocks'}{$tmp};
+		}
+		elsif ($elem eq 'cmd') #features, interactions, cmd_blocks
+		{
+			# $current is pointer to a hash
+			$tmp = {'cmd' => $attrs{'name'}, 'args' => $attrs{'args'}};
+			if (not defined $current->{'cmds'})
+				{$current->{'cmds'} = [];} #array of refs to {cmd, args} or {cmd_block}
+			push(@{$current->{'cmds'}}, $tmp);
+		}
+		elsif ($elem eq 'cmds') #features, interactions
+		{
+			# $current is pointer to a hash
+			$tmp = {'cmd_block' => $attrs{'name'}};
+			if (not defined $current->{'cmds'})
+				{$current->{'cmds'} = [];} #array of refs to {cmd, args} or {cmd_block}
+			push(@{$current->{'cmds'}}, $tmp);
+		}
+		elsif ($elem eq 'aliases')
+		{}
+		elsif ($elem eq 'alias')
+		{
+			$tmp = $attrs{'name'};
+			$feat_all->{'aliases'}{$tmp} = $attrs{'value'};
+		}
+		elsif ($elem eq 'old_names')
+		#the below approach (for old_feature & old_value) adds names to the %feat_tag.
+		# this seems like the right place to put the info for later lookup.
+		# the con is that there's no way to tell which feature names come old_names.
+		# an alternative is to store the info in %feat_all since that contains all info
+		#  from the feat_all.xml file (lookup is just unnecessarily harder).
+		#must handle cases where the names for feature or value or both change
+		{}
+		elsif ($elem eq 'old_feature')
+		{
+			add_name_tag($feat_tag, $attrs{'name'}, $attrs{'tag'});
+		}
+		elsif ($elem eq 'old_value')
+		{
+			#must handle the fact that different features can have the same values
+			# (the identical value names would have the same tag)
+			# but only one of the values might change
+			$tmp = $attrs{'feature'} . '|' . $attrs{'name'}; # '|' is not a likely letter for a feature & value name
+			add_name_tag($feat_tag, $tmp, $attrs{'tag'});
+		}
+		else
+		{}
+	}, 'End' => sub {
+		my ($xml_parser, $elem) = @_;
+		if ($elem eq 'value')
+		{
+			$current = $last;
+		}
+		else
+		{}
+	}, 'Char' => sub {
+		my ($xml_parser, $str) = @_;
+		#die ("XML element content not allowed: $str\n");
+	});
+
+	$xml_parser->parsefile($feat_all_fn) or die "Can't read $feat_all_fn";
+}
+
+sub Feat_Set_write($\%)
+#write the $feat_set_fn based on the $feat_all structure
+{
+	my ($feat_set_fn, $feat_all) = @_;
+	my ($feats, $feat_tag, $feat_nm, $feat_val, $val_tag, $val_nm);
+	
+	open OUT_FILE, ">$feat_set_fn" or die("Could not open $feat_set_fn for writing\n");
+	print OUT_FILE "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+	print OUT_FILE "<!DOCTYPE features_set SYSTEM \"feat_set.dtd\">\n";
+	print OUT_FILE "<features_set version=\"$feat_all->{'version'}\">\n";
+	
+	$feats = $feat_all->{'features'};
+	foreach $feat_tag (@{$feats->{' tags'}})
+	{
+		$feat_nm = $feats->{$feat_tag}{'name'};
+		
+		if (not $opt_t)
+			{$feat_val = $feats->{$feat_tag}{'default'};}
+		else #get non-default setting for binary or multi-valued feat
+		{	foreach (@{$feats->{$feat_tag}{'values'}{' tags'}})
+			{
+				$feat_val = $feats->{$feat_tag}{'values'}{$_}{'name'};
+				if ($feat_val ne $feats->{$feat_tag}{'default'}) 
+					{last;}
+			}
+		}
+		print OUT_FILE "\t<feature name=\"$feat_nm\" value=\"$feat_val\">\n";
+		
+		foreach $val_tag (@{$feats->{$feat_tag}{'values'}{' tags'}})
+		{
+			$val_nm = $feats->{$feat_tag}{'values'}{$val_tag}{'name'};
+			print OUT_FILE "\t\t<value name=\"$val_nm\"/>\n";
+		}
+		print OUT_FILE "\t</feature>\n";
+	}
+	
+	print OUT_FILE "</features_set>\n";
+}
+
+sub Feat_Set_parse($\%\$\%)
+#parse the $feat_set_fn to create the $feat_set string and the %line_metrics hash
+{
+	my ($feat_set_fn, $feat_tag, $feat_set, $line_metrics) = @_;
+	
+	my ($xml_parser, $tmp, $feature_tag, $value_tag, $feat_set_str);
+	$feat_set_str = '';
+
+	$xml_parser = XML::Parser::Expat->new();
+	$xml_parser->setHandlers('Start' => sub {
+		my ($xml_parser, $elem, %attrs) = @_;
+		if ($elem eq 'feature')
+		{   
+			$tmp = $attrs{'name'};
+			$feature_tag = $feat_tag->{$tmp} or die("feature name: $tmp is invalid\n");
+			$tmp = $attrs{'name'} . '|' . $attrs{'value'};
+			$value_tag = $feat_tag->{$tmp} || $feat_tag->{$attrs{'value'}} 
+				|| die("feature value: $attrs{'value'} is invalid\n"); # 'or' does NOT work here
+			$feat_set_str .= "$feature_tag-$value_tag ";
+		}
+		elsif ($elem eq $feat_all_elem)
+		{
+			die("$feat_all_elem XML file provided instead of $feat_set_elem XML file\n");
+		}
+		elsif ($elem eq 'imported_line_metrics')
+		{
+			$line_metrics->{'font'} = $attrs{'font'};
+			$line_metrics->{'em-sqr'} = $attrs{'em-sqr'};
+			$line_metrics->{'metrics'} = $attrs{'metrics'};
+		}
+		else
+		{}
+	}, 'End' => sub {
+		my ($xml_parser, $elem) = @_;
+		if ($elem eq '')
+		{}
+		else
+		{}
+	}, 'Char' => sub {
+		my ($xml_parser, $str) = @_;
+		#die ("XML element content not allowed: $str\n");
+	});
+
+	$xml_parser->parsefile($feat_set_fn) or die "Can't read $feat_set_fn";
+	chop $feat_set_str; #remove final space
+	$$feat_set = $feat_set_str;
+}
+
+sub add_name_tag(\%$$)
+{
+	my ($feat_tag, $name, $tag) = @_;
+	
+	if (defined $feat_tag->{$name} 
+			&& $feat_tag->{$name} ne $tag)
+		{die("value name: $name mapped to a second different tag: $tag\n");}
+	$feat_tag->{$name} = $tag;
+}
+
+#forward declaration so recursive call won't be flagged as an error
+sub copy_cmds(\@\@\%);
+
+sub copy_cmds(\@\@\%)
+#copy second array to first array flattening cmd_blocks
+#can be called recursively so cmd_blocks can contain cmd_blocks
+{
+	my ($commands, $cmds, $cmd_blocks) = @_;
+	my ($cmd);
+	foreach $cmd (@{$cmds}){
+		if (defined $cmd->{'cmd_block'}) #flatten cmd_blocks
+			{copy_cmds(@$commands, 
+						@{$cmd_blocks->{$cmd->{'cmd_block'}}{'cmds'}}, 
+						%$cmd_blocks);}
+		else
+			{push(@{$commands}, $cmd);}}
+};
+
+sub sort_tests($$)
+#compare to <interaction> test attribute strings
+#sort such that shorter strings come first
+{
+	#scalar split(/\s/, $a) causes many error msgs
+	my ($a, $b) = @_;
+	my @t = split(/\s/, $a);
+	my $a_ct = scalar @t;
+	@t = split(/\s/, $b);
+	my $b_ct = scalar @t;
+	
+	if ($a_ct > $b_ct)
+		{return 1;}
+	elsif ($a_ct < $b_ct)
+		{return -1;}
+	else #$a_ct == $b_ct
+		{return ($a cmp $b);}
+}
+
+sub Feat_val_tags($)
+#extract feature and value tags from a concatenated string containing them together
+#returns the tags as a list
+{
+	my ($fv) = @_;
+	
+	#print "Feat_val_tags fv: '$fv'\n";
+	if ($fv =~ /(.*)-(.*)/)
+		{return ($1, $2);}
+	else
+		{die("feature-value pair is corrupt: $fv\n");}
+}
+
+sub Feat_Set_cmds(\%$\@)
+#generate a list of commands (cmd-args hashes) to process based on feature settings
+#any cmd_block will be expanded to a list of commands
+#first process feature value cmds then interactions tests
+#the tests with the fewest elements are processed first
+# this way the cmds in tests with the most elements override cmds in tests with fewer elements
+{
+	my ($feat_all, $feat_set, $commands) = @_;
+	
+	my ($features, $interactions, $cmd_blocks);
+	$features = $feat_all->{'features'};
+	$interactions = $feat_all->{'interactions'};
+	$cmd_blocks = $feat_all->{'cmd_blocks'};
+	
+	#process feat-value setting based on feature value cmds
+	my (@feat_val, $feat, $val, $cmds);
+	@feat_val = split(/\s+/, $feat_set); 
+	foreach my $fv (@feat_val)
+	{
+		next if (not $fv);
+		($feat, $val) = Feat_val_tags($fv);
+		$cmds = $features->{$feat}{'values'}{$val}{'cmds'};
+		copy_cmds(@$commands, @$cmds, %$cmd_blocks);
+	}
+
+	#create hash for working with sorted test attributes
+	my ($interact, %test_str_to_ix, $ix);
+	$ix = 0;
+	foreach $interact (@{$interactions})
+		{$test_str_to_ix{$interact->{'test'}} = $ix++;}
+
+	#test feature settings against interaction tests
+	my ($test_str, @tests, $test, $test_passed);
+	foreach $test_str (sort sort_tests keys %test_str_to_ix)
+	{
+		@tests = split(/\s+/, $test_str);
+		
+		$test_passed = 1;
+		foreach $test (@tests)
+		{ #test if all feat-value settings in an interaction test are set
+			if (not $feat_set =~ /$test/)
+			{
+				$test_passed = 0;
+				last;
+			}
+		}
+		if ($test_passed)
+		{ #add to list of commands to process
+			if ($opt_d) {print "interaction matched: $test_str\n";}
+			my $cmds = $interactions->[$test_str_to_ix{$test_str}]->{'cmds'};
+			copy_cmds(@$commands, @$cmds, %$cmd_blocks);
+		}
+		else
+		{
+			if ($opt_d) {print "interaction not matched: $test_str\n";}
+		}
+	}
+	
+	if ($opt_d) {print "\n";}
+};
+
+sub Cmds_exec($\@\%\%)
+#execute commands (cmd-args hash) in commands array against the font
+#the args string is split into one string for each arg
+# Perl handles the conversion from string to number automatically 
+# where numbers are needed as args in called sub
+#args can be surrounded by braces, which means they are looked up in aliases
+#args that contain spaces MUST be handled using an alias
+{
+	my ($font, $commands, $feat_all, $line_metrics) = @_;
+	my ($command, $cmd, $args, @args, $arg);
+	
+	foreach $command (@$commands)
+	{
+		($cmd, $args) = ($command->{'cmd'}, $command->{'args'});
+		@args = split(/\s+/, $args);
+		
+		foreach $arg (@args)
+		{ #handle args in braces
+			if ($arg =~ /\{(.*)\}/)
+			{
+				$arg = $feat_all->{'aliases'}{$1}; #$arg is a ref so this changes @args
+				if (not defined $arg)
+					{die('invalid alias: $1\n');}
+			}
+		}
+		
+		if ($cmd eq 'null')
+		{}
+		elsif ($cmd eq 'gr_feat')
+		{
+			if (scalar @args != 2)
+				{die ("invalid args for gr_feat cmd: @args\n");}
+			Gr_feat($font, $args[0], $args[1]);
+		}
+		elsif ($cmd eq 'encode')
+		{
+			if (scalar @args != 2)
+				{die ("invalid args for encode cmd: @args\n");}
+			Encode($font, $args[0], $args[1]);
+		}
+		elsif ($cmd eq 'feat_add')
+		{
+			if (scalar @args != 5)
+				{die ("invalid args for feat_add cmd: @args\n");}
+			Feat_add($font, $args[0], $args[1], $args[2], $args[3], $args[4]);
+		}
+		elsif ($cmd eq 'feat_del')
+		{
+			if (scalar @args != 4)
+				{die ("invalid args for feat_del cmd: @args\n");}
+			Feat_del($font, $args[0], $args[1], $args[2], $args[3]);
+		}
+		elsif ($cmd eq 'lookup_add')
+		{
+			if (scalar @args != 3)
+				{die ("invalid args for lookup_add cmd: @args\n");}
+			Lookup_add($font, $args[0], $args[1], $args[2]);
+		}
+		elsif ($cmd eq 'lookup_del')
+		{
+			if (scalar @args != 3)
+				{die ("invalid args for lookup_del cmd: @args\n");}
+			Lookup_del($font, $args[0], $args[1], $args[2]);
+		}
+		elsif ($cmd eq 'line_gap')
+		{
+			if (scalar @args != 2)
+				{die ("invalid args for line_gap cmd: @args\n");}
+			Line_gap_mod($font, $args[0], $args[1]);
+		}
+		elsif ($cmd eq 'line_metrics')
+		{
+			if (scalar @args != 8)
+				{die ("invalid args for line_metric cmd: @args\n");}
+			Line_metrics_mod($font, $args[0], $args[1], $args[2], 
+								$args[3], $args[4], 
+								$args[5], $args[6], $args[7]);
+		}
+		elsif ($cmd eq 'line_metrics_scaled')
+		{
+			if ($args[0] ne 'null')
+				{die ("invalid args for line_metrics_scaled cmd: @args\n");}
+			Line_metrics_scaled_mod($font, $line_metrics);
+		}
+		else
+		{
+			print "WARNING - unrecognized cmd: $cmd\n";
+		}
+	}
+};
+
+sub Font_ids_update($\%$\%)
+#update various identifying information in the font based on feature settings
+{
+	my ($font, $feat_all, $feat_set, $feat_tag) = @_;
+	
+	#create user-readable feature-value tags
+	my ($feats, @feat_val, $feat, $val, $feat_set_active, $true_tag);
+	$feats = $feat_all->{'features'};
+	$feat_set_active = '';
+	
+	#if there are no binary valued features, a True tag may not exist
+	$true_tag = defined $feat_tag->{'True'} ? $feat_tag->{'True'} : 'T';
+	@feat_val = split(/\s+/, $feat_set);
+	foreach my $fv (@feat_val)
+	{ #feat_set_active can be empty string if all settings are at defaults
+		next if (not $fv);
+		($feat, $val) = Feat_val_tags($fv);
+		if ($feats->{$feat}{'default'} ne $feats->{$feat}{'values'}{$val}{'name'})
+		{#concatenate non-default feature value settings
+			$feat_set_active .= " " if $feat_set_active;
+			if ($val ne $true_tag)
+				{$feat_set_active .= $feat . $val;} #remove hyphen
+			else
+				{$feat_set_active .= $feat;} #don't display True value
+		}
+	}
+	if ($opt_d) {print "Font_ids_update: feat_set_active = \'$feat_set_active\'\n";}
+    
+    #modify font name
+	my ($family_nm_old, $family_nm_new, $version_str_old, $version_str_new);	
+	$family_nm_old = Name_get($font, $family_name_id);
+	
+	if (length($family_nm_old) >= $font_nm_len_limit)
+	{ #handle bizarre case where the original font family name is too long
+		$family_nm_new = $family_nm_old . ' XT';
+	}
+	else
+	{
+		my $font_nm_suffix_len = $font_nm_len_limit - length($family_nm_old) - 1; #-1 for space
+		$font_nm_suffix_len = $opt_m ? $opt_m : $font_nm_suffix_len;
+	
+		if (length($feat_set_active) <= $font_nm_suffix_len || $opt_n)
+		{
+			$family_nm_new = $family_nm_old . 
+								($feat_set_active || $opt_n ? ' ' : '') . 
+								($opt_n ? $opt_n : $feat_set_active);
+		}
+		else
+		{
+			$family_nm_new = $family_nm_old . ' ' . 
+								substr($feat_set_active, 0, $font_nm_suffix_len - 3) . ' XT';
+		}
+	}
+	
+	Name_mod($font, $family_name_ids, $family_nm_old, $family_nm_new);
+	if (length($family_nm_new) > $font_nm_len_limit)
+		{print "WARNING - the font name ($family_nm_new) is longer than allowed by the TrueType spec ($font_nm_len_limit).\n";}
+	
+	#handle name id 6: PS name, which shouldn't contain spaces
+	$family_nm_old =~ s/ //g;
+	$family_nm_new =~ s/ //g;
+	Name_mod($font, $post_family_name_ids, $family_nm_old, $family_nm_new);
+		
+	#modify version
+	$version_str_old = Name_get($font, $version_name_id);
+	if (not $opt_v)
+	{
+		$version_str_new = $version_str_old . ($feat_set_active ? ' ; ' : '') . 
+								$feat_set_active;
+	}
+	else
+	{
+		if ($version_str_old =~ '(.*Version\s+)(\d+\.\d+)(.*)')
+		{
+			$version_str_new = $1 . $opt_v . $3;
+		}
+		else
+		{
+			print "WARNING - the version string ($version_str_old) is invalid and won't be changed.\n";
+			$version_str_new = $version_str_old;
+		}
+	}
+	Name_mod($font, $version_name_ids, $version_str_old, $version_str_new);
+	
+	#modify modification date
+	$font->{'head'}->read;
+	if ($opt_d) {printf ("old date: %d  ", $font->{'head'}->getdate());}
+	my $time_cur = time();
+	$font->{'head'}->setdate($time_cur);
+	if ($opt_d) {printf ("new date: %d\n", $time_cur);}
+}
+
+sub Gr_feat($$$)
+#modify the Feat table so that the specified setting becomes the default
+# for the given feature
+{
+	my ($font, $gr_feat_id, $gr_set_id) = @_;
+	my ($grfeat_tbl, $feature, $feat_found, $set_found);
+	
+	$grfeat_tbl = $font->{'Feat'}->read;
+	#$grfeat_tbl->print;
+	
+	($feat_found, $set_found) = (0, 0);
+	foreach $feature (@{$grfeat_tbl->{'features'}})
+	{
+		if ($feature->{'feature'} == $gr_feat_id)
+		{
+			$feat_found = 1;
+			if (defined($feature->{'settings'}{$gr_set_id}))
+			{
+				if ($opt_d) {print "Gr_feat: feat_id: $gr_feat_id old_default: $feature->{'default'} new_default: $gr_set_id\n";}
+				$set_found = 1;
+				$feature->{'default'} = $gr_set_id;
+			}
+			last;
+		}
+	}
+
+	if (not $feat_found)
+		{die("feature id not found in TTF: feat_id: $gr_feat_id set_id: $gr_set_id\n");}
+	if (not $set_found)
+		{die("set id not availabe for feature in TTF: feat_id: $gr_feat_id set_id: $gr_set_id\n");}
+}
+
+sub Encode($$$)
+#modify the cmap subtables to encode the glyph indicated by ps_nm at usv_str
+{
+	my ($font, $usv_str, $ps_nm) = @_;
+	my ($post_tbl, $glyph_id);
+
+	#lookup $ps_nm in the post table to get $glyph_id
+	$post_tbl = $font->{'post'}->read;
+	$glyph_id = $post_tbl->{'STRINGS'}{$ps_nm};
+	if (not defined $glyph_id)
+		{die("PostScript name $ps_nm is not defined in the font.")};
+	
+	#convert USV string (U+0105) to a number (0x0105)
+	my ($usv);
+	$usv = hex($usv_str);
+		
+	#loop thru cmap subtables
+	my ($cmap_tbl, $cmap_ct, $i, $cmap_subtbl);
+	$cmap_tbl = $font->{'cmap'}->read;
+	$cmap_ct = $cmap_tbl->{'Num'};
+	if ($opt_d) {printf("Encode: ps_nm: %s glyph_id: %d usv: 0x%04x cmap_ct: %d\n", $ps_nm, $glyph_id, $usv, $cmap_ct);}
+	for ($i = 0; $i < $cmap_ct; ++$i)
+	{
+		#lookup $usv and point to $glyph_id 
+		#print "Encode: remapping cmap $i\n";
+		$cmap_subtbl = $cmap_tbl->{'Tables'}[$i];
+		#allow creation of new USVs but protect subtables that can't handle large ones
+		$cmap_subtbl->{'val'}{$usv} = $glyph_id unless $usv > 0xFFFF && $cmap_subtbl->{'Format'} < 8;
+	}
+	
+	#handle $usv_str greater than current max char in OS/2
+	my ($os2_tbl, $max_char);
+	$os2_tbl = $font->{'OS/2'}->read;
+	$max_char = $os2_tbl->{'usLastCharIndex'};
+	if ($usv > $max_char)
+	{
+		$os2_tbl->{'usLastCharIndex'} = $usv;
+		if ($opt_d) {print "Encode: OS/2 table max char adjusted to $usv\n";}
+	}
+	
+	#todo: may need to handle Unicode range bits
+}
+
+sub Feat_add($$$$$$)
+#adds the named feature to the list of features for the given script and lang
+#at the given pos
+#though order of features should not matter. (order in lookup table does matter.)
+{
+	my ($font, $tbl_type, $script, $lang, $feat, $pos) = @_;
+	
+	my ($feats);
+	$feats = Feats_find($font, $tbl_type, $script, $lang); 
+	if ($opt_d) {print "Feat_add $feat: orig feats = @$feats\n";}
+	foreach ($feats)
+		{if ($_ eq $feat)
+			{print "Feat_add: ***feature already exists: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}}
+	#push(@$feats, $feat); #add element to array
+	splice(@$feats, $pos, 0, $feat);
+	if ($opt_d) {print "Feat_add $feat: chng feats = @$feats\n";}
+}
+
+sub Feat_del($$$$$)
+#deletes the named feature from the list of features for the given script and lang
+{
+	my ($font, $tbl_type, $script, $lang, $feat) = @_;
+	
+	my ($feats, $ct, $ix, $found);
+	$feats = Feats_find($font, $tbl_type, $script, $lang);
+	if ($opt_d) {print "Feat_del $feat: orig feats = @$feats\n";}
+	$ct = scalar @$feats;
+	$found = 0;
+	for ($ix = 0; $ix < $ct; ++$ix)
+	{
+		if (@$feats[$ix] eq $feat)
+		{
+			splice(@$feats, $ix, 1); #remove element from array
+			$found = 1;
+			last;
+		}
+	}
+	if (not $found)
+		{print "Feat_del: ***feature not found: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}
+	if ($opt_d) {print "Feat_del $feat: chng feats = @$feats\n";}
+}
+
+sub Feats_find($$$$)
+#returns reference to array of feature names for a given script and lang
+{
+	my ($font, $tbl_type, $script, $lang) = @_;
+	if ($tbl_type ne 'GSUB' and $tbl_type ne 'GPOS')
+		{die("invalid table type: $tbl_type\n")};
+
+	my($tbl, $feats, $reftag);
+	$tbl = $font->{$tbl_type}->read;
+	$reftag = $tbl->{'SCRIPTS'}{$script}{$lang}{' REFTAG'};
+	if (not defined $reftag)
+		{$feats = $tbl->{'SCRIPTS'}{$script}{$lang}{'FEATURES'};}
+	else
+		{$feats = $tbl->{'SCRIPTS'}{$script}{$reftag}{'FEATURES'};}
+	if (not defined $feats)
+		{die("Feats_find: could not find features: table = $tbl_type script = $script lang = $lang\n")};
+	
+	return $feats;
+}
+
+sub Lookup_add($$$$)
+#adds the lookup index to the list of lookups for a given feature
+#assumes the lookup indexes are sorted numerically
+{
+	my ($font, $tbl_type, $feat, $lookup) = @_;
+	
+	my ($lookups, $ct, $ix);
+	$lookups = Lookups_find($font, $tbl_type, $feat);
+	if ($opt_d) {print "Lookup_add $lookup: orig lookups = @$lookups\n";}
+	$ct = scalar @$lookups;
+	for ($ix = 0; $ix < $ct; $ix++)
+	{
+		if (@$lookups[$ix] < $lookup)
+		{
+			next;
+		}
+		elsif (@$lookups[$ix] == $lookup)
+		{
+			print "Lookup_add: ***lookup already exists: tbl_type = $tbl_type feat = $feat lookup = $lookup\n";
+			return;
+		}
+		else
+		{
+			splice(@$lookups, $ix, 0, $lookup); #add element to array
+			last;
+		}
+	}
+	if ($ix == $ct) #$lookup is greater than all in @$lookups
+	{
+		push (@$lookups, $lookup)
+	}
+	if ($opt_d) {print "Lookup_add $lookup: chng lookups = @$lookups\n";}
+}
+
+sub Lookup_del($$$$)
+#deletes the lookup index from the list of lookups for the given feature
+{
+	my ($font, $tbl_type, $feat, $lookup) = @_;
+	
+	my ($lookups, $ct, $ix, $found);
+	$lookups = Lookups_find($font, $tbl_type, $feat);
+	if ($opt_d) {print "Lookup_del $lookup: orig lookups = @$lookups\n";}
+	$ct = scalar @$lookups;
+	$found = 0;
+	for ($ix = 0; $ix < $ct; $ix++)
+	{
+		if (@$lookups[$ix] == $lookup)
+		{
+			splice (@$lookups, $ix, 1); #remove element from array
+			$found = 1;
+			last;
+		}
+	}
+	if (not $found)
+		{print "Lookup_del: ***lookup not found: tbl_type = $tbl_type feat = $feat lookup = $lookup\n"; return;}
+	if ($opt_d) {print "Lookup_del $lookup: chng lookups = @$lookups\n";}
+}
+
+sub Lookups_find($$$)
+#returns reference to array of lookup indexes for the given feature
+{
+	my ($font, $tbl_type, $feat) = @_;	
+	if ($tbl_type ne 'GSUB' and $tbl_type ne 'GPOS')
+		{die("invalid table type: $tbl_type\n")};
+		
+	my($tbl, $lookups);
+	$tbl = $font->{$tbl_type}->read;
+	$lookups = $tbl->{'FEATURES'}{$feat}{'LOOKUPS'};
+	if (not defined $lookups)
+		{die("could not find lookups: table = $tbl_type feature = $feat")};
+
+	return $lookups;	
+}
+
+sub Line_gap_get($)
+#returns the ascent and descent from the OS/2 table
+#desc will be positive
+{
+	my ($font) = @_;
+	
+	my ($tbl, $asc, $dsc);
+	$tbl = $font->{'OS/2'}->read;
+	$asc = $tbl->{'usWinAscent'};
+	$dsc = $tbl->{'usWinDescent'};
+	
+	return ($asc, $dsc);
+}
+
+sub Line_gap_mod($$$)
+#set the various ascent and descent values in OS/2 and hhea tables
+#descent should normally be positive
+{
+	my ($font, $asc, $dsc) = @_;
+
+	my ($tbl);
+	$tbl = $font->{'OS/2'}->read;
+	if ($opt_d) {print "Line_gap_mod: orig asc = $tbl->{'usWinAscent'} dsc = $tbl->{'usWinAscent'}\n";}
+	$tbl->{'sTypoAscender'} = $asc;
+	$tbl->{'sTypoDescender'} = $dsc * -1;
+	$tbl->{'usWinAscent'} = $asc;
+	$tbl->{'usWinDescent'} = $dsc;
+	if ($opt_d) {print "Line_gap_mod: chng asc = $tbl->{'usWinAscent'} dsc = $tbl->{'usWinAscent'}\n";}
+
+	$tbl = $font->{'hhea'}->read;
+	$tbl->{'Ascender'} = $asc;
+	$tbl->{'Descender'} = $dsc * -1;
+}
+
+sub Line_metrics_mod($$$$$$$$$)
+#set all the line metrics in the O2/2 and hhea table individually
+#descents should all normally be positive
+{
+	my ($font, $TypoAsc, $TypoDsc, $TypoGap, $WinAsc, $WinDsc, 
+			$hheaAsc, $hheaDsc, $hheaGap) = @_;
+	
+	my ($tbl);
+	$tbl = $font->{'OS/2'}->read;
+	if ($opt_d)
+	{
+		print "Line_metrics_mod orig: ";
+		print "TypoAsc = $tbl->{'sTypoAscender'} TypoDsc = $tbl->{'sTypoDescender'} TypoGap = $tbl->{'sTypoLineGap'} ";
+		print "WinAsc = $tbl->{'usWinAscent'} WinDsc = $tbl->{'usWinDescent'} ";
+	}
+	$tbl->{'sTypoAscender'} = $TypoAsc;
+	$tbl->{'sTypoDescender'} = $TypoDsc * -1;
+	$tbl->{'sTypoLineGap'} = $TypoGap;
+	$tbl->{'usWinAscent'} = $WinAsc;
+	$tbl->{'usWinDescent'} = $WinDsc;
+
+	$tbl = $font->{'hhea'}->read;
+	if ($opt_d)
+	{
+		print "hheaAsc = $tbl->{'Ascender'} hheaDsc = $tbl->{'Descender'} hheaGap = $tbl->{'LineGap'}\n";
+	}
+	$tbl->{'Ascender'} = $hheaAsc;
+	$tbl->{'Descender'} = $hheaDsc * -1;
+	$tbl->{'LineGap'} = $hheaGap;
+	
+	if ($opt_d)
+	{
+		$tbl = $font->{'OS/2'};
+		print "Line_metrics_mod chng: ";
+		print "TypoAsc = $tbl->{'sTypoAscender'} TypoDsc = $tbl->{'sTypoDescender'} TypoGap = $tbl->{'sTypoLineGap'} ";
+		print "WinAsc = $tbl->{'usWinAscent'} WinDsc = $tbl->{'usWinDescent'} ";
+		$tbl = $font->{'hhea'};
+		print "hheaAsc = $tbl->{'Ascender'} hheaDsc = $tbl->{'Descender'} hheaGap = $tbl->{'LineGap'}\n";
+	}
+}
+
+sub Line_metrics_scaled_mod($$)
+#set all the line metrics in the O2/2 and hhea table individually
+#descents should all normally be positive
+#the line metrics are scaled based the em-sqr they are specified with 
+# and the em-sqr of the target font
+{
+	my ($font, $line_metrics) = @_;
+	my (@metrics, $em_sqr, $scale, $TypoAsc, $TypoDsc, $TypoGap, $WinAsc, $WinDsc, 
+			$hheaAsc, $hheaDsc, $hheaGap);
+
+	#test %line_metrics (possibly no imported_line_metrics element in feat_set.xml)
+	if (not defined $line_metrics->{'font'} or not defined $line_metrics->{'em-sqr'}
+		or not defined $line_metrics->{'metrics'})
+		{die("ERROR - imported_line_metrics element missing or invalid in Settings file\n *use the setmetrics command*\n")};
+	@metrics = split(/\s+/, $line_metrics->{'metrics'});                         
+	if (scalar @metrics != 8)
+		{die("ERROR - imported_line_metrics element contains wrong number of metrics\n *use the setmetrics command*\n")};
+		
+	$em_sqr = $line_metrics->{'em-sqr'};
+	($TypoAsc, $TypoDsc, $TypoGap, $WinAsc, $WinDsc, 
+		$hheaAsc, $hheaDsc, $hheaGap) = @metrics;
+
+	#find scaling factor for line metrics based on $line_metrics->em-sqr and $font's em-sqr
+	my ($head_tbl) = $font->{'head'}->read;
+	$scale = $head_tbl->{'unitsPerEm'} / $em_sqr;
+	if ($opt_d) {print "Line_metrics_scaled_mod: scale = $scale\n"};
+
+	#apply scaling factor to line metrics
+	foreach (\$TypoAsc, \$TypoDsc, \$TypoGap, \$WinAsc, \$WinDsc, 
+		\$hheaAsc, \$hheaDsc, \$hheaGap) {$$_ *= $scale;}
+		
+	if ($opt_d) {print "Line_metrics_scaled_mod calling Line_metrics_mod\n"};
+	Line_metrics_mod($font, $TypoAsc, $TypoDsc, $TypoGap, $WinAsc, $WinDsc, 
+		$hheaAsc, $hheaDsc, $hheaGap);
+}
+
+sub Name_get($$)
+#returns the name for a given name id
+{	
+	my ($font, $name_id) = @_;
+	
+	my ($name_tbl, $name);
+	$name_tbl = $font->{'name'}->read;
+	$name = $name_tbl->find_name($name_id);
+	if (not $name)
+		{die("could not find name in font for id: $name_id\n")};
+	
+	return $name;
+}
+
+sub Name_mod($\@$$)
+#modifies the name for a given name ids
+{
+	my ($font, $name_ids, $old_name, $new_name) = @_;
+	my ($name_tbl, $nid, $pid, $eid, $lid, $name);
+	
+	$name_tbl = $font->{'name'}->read;
+#    foreach $nid (0 .. $#{$name_tbl->{'strings'}})
+	foreach $nid (@$name_ids)
+	{
+		foreach $pid (0 .. $#{$name_tbl->{'strings'}[$nid]})
+		{
+			foreach $eid (0 .. $#{$name_tbl->{'strings'}[$nid][$pid]})
+			{
+				foreach $lid (keys %{$name_tbl->{'strings'}[$nid][$pid][$eid]})
+				{
+					$name = $name_tbl->{'strings'}[$nid][$pid][$eid]{$lid};
+					if ($name =~ s/$old_name/$new_name/)
+					{
+						$name_tbl->{'strings'}[$nid][$pid][$eid]{$lid} = $name;
+						if ($opt_d) {print "Name_mod: name = $name nid = $nid pid = $pid eid = $eid lid = $lid\n";}
+					}
+				}
+			}
+		}
+	}
+}
+
+sub Table_extract($$$)
+#extract our table from the $font to the specified file name
+#$feat_set_test insures that $feat_set_elem is at the start of the data to be extracted
+{
+	my ($font, $fn, $feat_set_test) = @_;
+	
+	open FEAT, ">$fn";
+	binmode(FEAT);
+	if (not defined $font->{$table_nm})
+		{die("no $table_nm table in font\n");}
+	else
+	{
+		$font->{$table_nm}->read;
+    	my $tmp = Compress::Zlib::memGunzip($font->{$table_nm}{' dat'});
+		if ($feat_set_test)
+			{if (not $tmp =~ /$feat_set_elem/)
+				{die("table $table_nm does not contain $feat_set_elem\n");}}
+    	print FEAT $tmp;
+		close FEAT;
+	}
+}
+
+sub Table_add($$$)
+#add our table to the $font from the specified file
+#$feat_all_test insures that $feat_all_elem is at the start of the file
+{
+	my ($font, $fn, $feat_all_test) = @_;
+	
+	#read the whole feat_all XML file into memory
+	my($feat_xml, $tmp);
+	open FEAT, "<$fn" or die "Can't open XML file\n";
+	binmode(FEAT);
+	$tmp = read(FEAT, $feat_xml, 1000000) or die "Can't read XML file\n";
+	if ($tmp == 1000000)
+		{die("XML file is too big\n");}
+	
+	#die if $feat_all_fn does not start with <all_features>, override test with -f switch
+	if ($feat_all_test)
+		{if (not $feat_xml =~ /$feat_all_elem/)
+			{die("XML file does not contain $feat_all_elem\n");}}
+	
+	#compress the XML before putting in the font table
+    $tmp = Compress::Zlib::memGzip($feat_xml);
+    
+	#add our XML table $table_nm to the ttf
+	#the instance variables were taken from where Font.pm creates its Tables
+	$font->{$table_nm} = Font::TTF::Table->new(PARENT  => $font,
+		                                    NAME    => "$table_nm",
+		                                    INFILE  => 0,
+		                                    OFFSET  => 0,
+		                                    LENGTH  => 0,
+		                                    CSUM    => 0);  
+    $font->{$table_nm}{' dat'} = $tmp;
+}
+
+sub Usage_print()
+{
+	print <<END;
+TypeTuner ver $version copyright (c) SIL International 2007-2009
+see http://scripts.sil.org/TypeTuner
+
+usage: 
+	TypeTuner -x <xml> <ttf> (create settings xml file from ttf)
+	TypeTuner <xml> <ttf> (apply settings xml file to ttf)
+	
+	or TypeTuner [<switches>] <command> [files, ...]
+	
+switches:
+	-m	specify maximum length of generated font name suffix
+	-n	specify font name suffix instead of using generated one
+	-o	specify output font.ttf file name
+
+commands:
+	createset <font.ttf | feat_all.xml> feat_set.xml 
+	
+	setmetrics font_old.ttf feat_set.xml
+	
+	applyset     feat_set.xml font.ttf
+	applyset_xml feat_all.xml feat_set.xml font.ttf
+	
+	extract font.ttf feat_set.xml
+	add     feat_all.xml font.ttf
+	delete  font.ttf
+END
+	exit();
+};
+
+#### main processing ####
+
+sub cmd_line_exec(@)
+{
+	#define these here so they are intialized on each call
+	my ($font, %feat_all, $feat_set, %feat_tag, @commands, %line_metrics);
+	my ($feat_all_fn, $feat_set_fn, $font_fn, $font_out_fn);
+    
+    #the $opt_? vars are declared above as globals
+    #initialize them here on each call
+    #the list of $opt_? vars here MUST match the list above!!!
+	foreach ($opt_h, $opt_d, $opt_f, $opt_t, $opt_m, $opt_n, $opt_o, $opt_v, $opt_x)
+		{$_ = undef;}
+	local (@ARGV) = @_; #use 'local' instead of 'my' so &getopts works right
+	getopts($opt_str); #sets $opt_?'s and removes the switches from @ARGV
+	
+	if (scalar @ARGV == 0 || $opt_h)
+		{Usage_print;}
+	
+	my ($cmd);
+	$cmd = $ARGV[0];
+	if (not $cmd =~ /^(createset|applyset|applyset_xml|delete|extract|add)$/)
+	{ #no subcommands were given, use simplified command line
+		if (scalar @ARGV == 2)
+		{
+			my ($ext1, $ext2);
+			($ext1, $ext2) = map {lc(substr($_,-3,3))} ($ARGV[0], $ARGV[1]);
+			if ($ext1 ne 'xml' || $ext2 ne 'ttf')
+				{Usage_print;}
+			
+			if ($opt_x)
+			{ #createset
+				$cmd = 'createset';
+				($ARGV[0], $ARGV[1]) = ($ARGV[1], $ARGV[0]); #swap args
+				unshift (@ARGV, 'createset'); #shift args to correct positions for this cmd
+			}
+			else
+			{ #applyset
+				$cmd = 'applyset';
+				unshift (@ARGV, 'applyset');
+			}
+		}
+	}
+	
+	if ($cmd eq 'createset')
+	{ #create feat_set from feat_all either embedded in font or in separate XML file
+		if (scalar @ARGV != 3)
+			{Usage_print;}
+			
+		if ($opt_d) {print "creating feat_set XML file from font\n";}		
+		my ($fn, $ext, $flag, $fh);
+		$fn = $ARGV[1];
+		$ext = lc(substr($ARGV[1], -3, 3));
+		$flag = 0;
+		
+		if ($ext eq 'ttf') #set $feat_all_fn
+		{ #extract XML from font into a temp file 
+			$font = Font::TTF::Font->open($fn) or die "Can't open font";
+			
+			$flag = 1;
+			($fh, $feat_all_fn) = tempfile(); $fh->close;
+			if ($opt_d) {print "feat_all_fn: $feat_all_fn\n"}
+			#$feat_all_fn = substr($fn, 0, -4) . "_feat_all.xml";
+			Table_extract($font, $feat_all_fn, 0);
+			$font->release;
+		}
+		elsif ($ext eq 'xml')
+		{
+			$feat_all_fn = $fn
+		}
+		else
+			{Usage_print;}
+		
+		$feat_set_fn = $ARGV[2];	
+		Feat_All_parse($feat_all_fn, %feat_all, %feat_tag);
+		Feat_Set_write($feat_set_fn, %feat_all);
+		
+		if ($flag)
+			{unlink($feat_all_fn);}
+	}
+	elsif ($cmd eq 'setmetrics')
+	{ #import line metrics from a legacy font into the feat_set.xml file
+		if (scalar @ARGV != 3)
+			{Usage_print;}
+		if ($opt_d) {print "setting line metrics in feat_set XML file from font\n";}		
+		
+		($font_fn, $feat_set_fn) = ($ARGV[1], $ARGV[2]);
+		my($line_metric_str, $font_nm, $em_sqr, $tbl);
+		
+		$font = Font::TTF::Font->open($font_fn) or die "Can't open font\n";
+		
+	    $font_nm = Name_get($font, $full_font_name_id);
+	    
+	    $tbl = $font->{'head'}->read;
+	    $em_sqr = $tbl->{'unitsPerEm'};
+	    
+		$tbl = $font->{'OS/2'}->read;
+		$line_metric_str = "\t<imported_line_metrics font=\"$font_nm\" em-sqr=\"$em_sqr\" ";
+		$line_metric_str .= "metrics=\"$tbl->{'sTypoAscender'} " . $tbl->{'sTypoDescender'} * -1;
+		$line_metric_str .= " $tbl->{'sTypoLineGap'} ";
+		$line_metric_str .= "$tbl->{'usWinAscent'} $tbl->{'usWinDescent'} ";
+		$tbl = $font->{'hhea'}->read;
+		$line_metric_str .= "$tbl->{'Ascender'} " . $tbl->{'Descender'} * -1 . " $tbl->{'LineGap'}\"/>\n";
+	
+		if ($opt_d) {print "line_metric_str = $line_metric_str";}  #already contains \n
+		
+		open FILE, "+<$feat_set_fn" or die("Could not open $feat_set_fn\n");
+		my @feat_data;
+		while (not eof) {push(@feat_data, <FILE>)};
+	
+		my ($line_spacing_found, $imported_found, $imported_line_metrics_found) = (0, 0, 0);	
+		foreach my $i (0 .. (scalar @feat_data + 1)) # + 1 because two elements could be added to array
+		{
+			last if (not defined $feat_data[$i]); # exit early if two elements aren't added to array
+			
+			#set the "Line spacing" feature to the "Imported" setting
+			if ($feat_data[$i] =~ s/(^.*<feature name="Line spacing" value=")(.*)(">.*$)/$1Imported$3/)
+			{
+				if ($opt_d) {print "Line spacing changed to Imported\n";}
+				$line_spacing_found = 1;
+			}
+				
+			#add the "Imported" settings if needed
+			if ($line_spacing_found)
+			{
+				if ($feat_data[$i] =~ /<value name="Imported"\/>/)
+					{$imported_found = 1;}
+				if ($feat_data[$i] =~ /<\/feature>/)
+				{
+					if (not $imported_found)
+					{
+						splice(@feat_data, $i, 0, "\t\t<value name=\"Imported\"/>\n");
+						if ($opt_d) {print "Imported setting added\n";}
+					}
+					$line_spacing_found = 0;
+				}
+			}		
+			
+			#replace the imported_line_metrics element
+			if ($feat_data[$i] =~ /<imported_line_metrics/)
+			{
+				$feat_data[$i] = $line_metric_str;
+				$imported_line_metrics_found = 1;
+				if ($opt_d) {print "Imported_line_metrics element replaced\n";}	
+			}
+			
+			#add the imported_line_metrics element if needed
+			if ($feat_data[$i] =~ /<\/features_set>/ && not $imported_line_metrics_found) 
+			{
+				splice(@feat_data, $i, 0, $line_metric_str);
+				$imported_line_metrics_found = 1;
+				if ($opt_d) {print "Imported_line_metrics element added\n";}
+			}
+		}
+	    
+	    if ($opt_o)
+	    	{close FILE; open FILE, ">$opt_o" or die("Could not open $opt_o\n");}
+	    else
+	    	{seek(FILE, 0, 0);}
+	    	
+		foreach (@feat_data) {print FILE $_};
+		close FILE;
+	}
+	elsif ($cmd eq 'applyset' || $cmd eq 'applyset_xml')
+	{ #apply feat_set to font based on feat_all either embedded in font or in separate XML file
+		if (scalar @ARGV != 3 && scalar @ARGV != 4)
+			{Usage_print;}
+		
+		if ($opt_d) {print "applying feat_set XML file to font\n";}		
+	
+		my ($flag) = 0;
+		if ($cmd eq 'applyset')
+		{
+			($feat_set_fn, $font_fn) = ($ARGV[1], $ARGV[2]);
+			my ($fh);
+			
+			#extract XML from font into a temp file
+			$font = Font::TTF::Font->open($font_fn) or die "Can't open font";
+			
+			$flag = 1;
+			($fh, $feat_all_fn) = tempfile(); $fh->close;
+			if ($opt_d) {print "feat_all_fn: $feat_all_fn\n"}
+			#$feat_all_fn = substr($font_fn, 0, -4) . "_feat_all.xml";
+			Table_extract($font, $feat_all_fn, 0);
+			$font->release;
+		} else #applyset_xml
+		{
+			($feat_all_fn, $feat_set_fn, $font_fn) = ($ARGV[1], $ARGV[2], $ARGV[3]);
+		}
+		
+		Feat_All_parse($feat_all_fn, %feat_all, %feat_tag);
+		Feat_Set_parse($feat_set_fn, %feat_tag, $feat_set, %line_metrics);
+		if ($opt_d) {print "feat_set = $feat_set\n";}
+		if ($opt_d && defined $line_metrics{'metrics'}) 
+			{print "line_metrics = \'$line_metrics{'font'}\' $line_metrics{'em-sqr'} $line_metrics{'metrics'}\n";}
+		Feat_Set_cmds(%feat_all, $feat_set, @commands);
+		if ($opt_d) {print "commands: \n"; foreach (@commands) {print "$_->{'cmd'}: $_->{'args'}\n"}; print "\n";}
+		$font = Font::TTF::Font->open($font_fn) or die "Can't open font";
+		Cmds_exec($font, @commands, %feat_all, %line_metrics);
+		Font_ids_update($font, %feat_all, $feat_set, %feat_tag);
+		
+		#delete feat_all and embed feat_set file in font
+		if (defined $font->{$table_nm})
+		{
+			delete $font->{$table_nm};
+		}
+		Table_add($font, $feat_set_fn, 0);
+		
+		$font_out_fn = $opt_o ? $opt_o : substr($font_fn, 0, -4) . '_tt.ttf';
+		$font->out($font_out_fn);
+		$font->release;
+		
+		if ($flag)
+			{unlink($feat_all_fn);}
+	}
+	elsif ($cmd eq 'add')
+	{ #add feat_all XML (or feat_set XML with -f option) to font
+		if (scalar @ARGV != 3)
+			{Usage_print;}
+		
+		if ($opt_d) {print "adding $table_nm table to font\n";}		
+	    ($feat_all_fn, $font_fn) = ($ARGV[1], $ARGV[2]);
+	    my ($feat_all_test);
+	
+		$font = Font::TTF::Font->open($font_fn) or die "Can't open font\n";
+		if (not defined $opt_f)
+			{$feat_all_test = 1;}
+		else
+			{$feat_all_test = 0;}
+		Table_add($font, $feat_all_fn, $feat_all_test);	
+	
+		$font_out_fn = $opt_o ? $opt_o : substr($font_fn, 0, -4) . '_tt.ttf';
+		$font->out($font_out_fn);
+		$font->release;
+	}
+	elsif ($cmd eq 'extract')
+	{ #write feat_all or feat_set XML embedded in font to an XML file
+		if (scalar @ARGV != 3)
+			{Usage_print;}
+		if ($opt_d) {print "extracting $table_nm table from font\n";}		
+		
+		my ($feat_fn, $feat_set_test);
+		($font_fn, $feat_fn) = ($ARGV[1], $ARGV[2]);
+	
+		$font = Font::TTF::Font->open($font_fn) or die "Can't open font";
+		if (not defined $opt_f)
+			{$feat_set_test = 1;}
+		else
+			{$feat_set_test = 0;}
+		Table_extract($font, $feat_fn, $feat_set_test);
+		$font->release;
+	}
+	elsif ($cmd eq 'delete')
+	{ #delete feat_all or feat_set XML from a font
+		if (scalar @ARGV != 2)
+			{Usage_print;}
+	
+		if ($opt_d) {print "deleting $table_nm table from font\n";}		
+		$font_fn = $ARGV[1];
+		
+		$font = Font::TTF::Font->open($font_fn) or die "Can't open font";
+		
+		#delete our XML table $table_nm from the ttf
+		if (not defined $font->{$table_nm})
+			{print "no $table_nm table in font\n";}
+		else 
+			{delete $font->{$table_nm};}
+			
+		$font_out_fn = $opt_o ? $opt_o : substr($font_fn, 0, -4) . '_tt.ttf';
+		$font->out($font_out_fn);
+		$font->release;
+	}
+	else
+	{
+		Usage_print;
+	}
+	
+	if ($opt_d) {print "All operations completed\n";}
+}
+
+cmd_line_exec(@ARGV);
+
+1;
