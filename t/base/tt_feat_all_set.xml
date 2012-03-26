@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE features_set SYSTEM "feat_set.dtd">
+<features_set version="1.0">
+	<feature name="Capital Eng alternates" value="Large eng with descender">
+		<value name="Large eng with descender"/>
+		<value name="Large Eng on baseline"/>
+		<value name="Capital N with tail"/>
+	</feature>
+	<feature name="Literacy alternates" value="False">
+		<value name="False"/>
+		<value name="True"/>
+	</feature>
+	<feature name="Barred-bowl forms" value="False">
+		<value name="False"/>
+		<value name="True"/>
+	</feature>
+	<feature name="Vietnamese-style diacritics" value="False">
+		<value name="False"/>
+		<value name="True"/>
+	</feature>
+	<feature name="Romanian-style diacs" value="False">
+		<value name="False"/>
+		<value name="True"/>
+	</feature>
+	<feature name="Line spacing" value="Normal">
+		<value name="Normal"/>
+		<value name="Tight"/>
+		<value name="Loose"/>
+		<value name="Imported"/>
+	</feature>
+</features_set>
