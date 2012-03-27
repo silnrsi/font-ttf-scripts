@@ -13,35 +13,39 @@ use Test::Simple tests => 7;
 use File::Compare;
 use File::Copy; #move func
 
-#@run_tt = ("$^X", "scripts/typetuner", "-d"); #run with debug output
-@run_tt = ("$^X", "scripts/typetuner");
+# set $debug to true to run TypeTuner in debug mode and visually separate test output
+my $debug = 0;
+if ($debug) 
+	{@run_tt = ("$^X", "scripts/typetuner", "-d");}
+else
+	{@run_tt = ("$^X", "scripts/typetuner");}
              
 # add Features file to font to make a Tuner-ready font
 #system($^X, "scripts/typetuner", "-d", "add", "t/tt_feat_all.xml", "t/tt_font.ttf");
 system(@run_tt, "add", "t/tt_feat_all.xml", "t/tt_font.ttf");
 $res = compare("t/tt_font_tt.ttf", "t/base/tt_font_tt.ttf");
 ok(!$res, "added Feature file to font");
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # create Settings file from a Tuner-ready font
 system(@run_tt, "createset", "t/tt_font_tt.ttf", "t/tt_feat_all_set.xml");
 $res = compare("t/tt_feat_all_set.xml", "t/base/tt_feat_all_set.xml");
 ok(!$res, "created Settings file from font");
 unlink "t/tt_feat_all_set.xml" unless ($res);
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # add line metrics from a legacy font to a Settings file
 system(@run_tt, "-o", "t/tt_feat_set_1_metrics.xml", "setmetrics", "t/tt_metric_font.ttf", "t/tt_feat_set_1.xml");
 $res = compare("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml");
 ok(!$res, "imported metrics into Settings file");
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # apply a Settings file (with imported line metrics) to a Tuner-ready font
 #     processing the settings exercises the cmds in the Features file
 system(@run_tt, "-o", "t/tt_font_tt_1_metrics.ttf", "applyset", "t/tt_feat_set_1_metrics.xml", "t/tt_font_tt.ttf");
 # $res = compare("t/tt_font_tt_1.ttf", "t/base/tt_font_tt_1_metrics.ttf"); ### fails because of internal time stamp
 # system($^X, "scripts/ttftable", "-export", "Feat,GSUB,GPOS,cmap,name", "t/tt_font_tt_1_metrics.ttf"); ### '/' is removed in output file
-foreach my $tag qw(Feat GSUB GPOS cmap name) {
+foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/tt_font_tt_1_metrics.ttf");
 	move("ttt_font_tt_1_metrics.ttf.$tag.dat", "t/tt_font_tt_1_metrics.ttf.$tag.dat");
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/base/tt_font_tt_1_metrics.ttf");
@@ -57,19 +61,18 @@ if (!$res) {
 	unlink "t/tt_font_tt.ttf";
 	unlink "t/tt_feat_set_1_metrics.xml";
 	unlink "t/tt_font_tt_1_metrics.ttf";
-	foreach my $tag qw(Feat GSUB GPOS cmap name) {
+	foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 		unlink("t/tt_font_tt_1_metrics.ttf.$tag.dat");
 		unlink("t/base/tt_font_tt_1_metrics.ttf.$tag.dat");
 	}
 }
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # apply a Settings file to a non-Tuner-ready font using a Features file
 #     processing the settings exercises some different cmds in the Features file
 system(@run_tt, "-o", "t/tt_font_2.ttf", "applyset_xml", "t/tt_feat_all.xml", "t/tt_feat_set_2.xml", "t/tt_font.ttf");
 # $res = compare("t/tt_font_tt_1.ttf", "t/base/tt_font_tt_1.ttf"); ### fails because of internal time stamp
-# system($^X, "scripts/ttftable", "-export", "Feat,GSUB,GPOS,cmap,name", "t/tt_font_tt_1_metrics.ttf");
-foreach my $tag qw(Feat GSUB GPOS cmap name) {
+foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/tt_font_2.ttf");
 	move("ttt_font_2.ttf.$tag.dat", "t/tt_font_2.ttf.$tag.dat");
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/base/tt_font_2.ttf");
@@ -82,19 +85,19 @@ $res = compare("t/tt_font_2.ttf.Feat.dat", "t/base/tt_font_2.ttf.Feat.dat") ||
 	compare("t/tt_font_2.ttf.name.dat", "t/base/tt_font_2.ttf.name.dat");
 ok(!$res, "applied different Settings to standard font using Features files. five warnings expected.");
 if (!$res) {
-	foreach my $tag qw(Feat GSUB GPOS cmap name) {
+	foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 		unlink("t/tt_font_2.ttf.$tag.dat");
 		unlink("t/base/tt_font_2.ttf.$tag.dat");
 	}
 }
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # extract the Settings file from a tuned font
 system(@run_tt, "extract", "t/tt_font_2.ttf", "t/tt_feat_set_2_extract.xml");
 $res = compare("t/tt_feat_set_2_extract.xml", "t/base/tt_feat_set_2_extract.xml");
 ok(!$res, "extracted the Settings file from a tuned font");
 unlink "t/tt_feat_set_2_extract.xml" unless ($res); # tt_feat_set_2_extract.xml should be the same as tt_feat_set_2.xml
-print "****\n\n";
+print "****\n\n" if $debug;
 
 # delete the Settings file from a tuned font
 system(@run_tt, "delete", "t/tt_font_2.ttf");
