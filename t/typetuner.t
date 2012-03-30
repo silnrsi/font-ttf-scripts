@@ -83,7 +83,7 @@ $res = compare("t/tt_font_2.ttf.Feat.dat", "t/base/tt_font_2.ttf.Feat.dat") ||
 	compare("t/tt_font_2.ttf.GPOS.dat", "t/base/tt_font_2.ttf.GPOS.dat") ||
 	compare("t/tt_font_2.ttf.cmap.dat", "t/base/tt_font_2.ttf.cmap.dat") ||
 	compare("t/tt_font_2.ttf.name.dat", "t/base/tt_font_2.ttf.name.dat");
-ok(!$res, "applied different Settings to standard font using Features files. five warnings expected.");
+ok(!$res, "applied different Settings to standard font using Features files. four warnings and one error expected.");
 if (!$res) {
 	foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 		unlink("t/tt_font_2.ttf.$tag.dat");
