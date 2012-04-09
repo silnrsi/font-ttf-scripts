@@ -44,12 +44,10 @@ print "****\n\n" if $debug;
 #     processing the settings exercises the cmds in the Features file
 system(@run_tt, "-o", "t/tt_font_tt_1_metrics.ttf", "applyset", "t/tt_feat_set_1_metrics.xml", "t/tt_font_tt.ttf");
 # $res = compare("t/tt_font_tt_1.ttf", "t/base/tt_font_tt_1_metrics.ttf"); ### fails because of internal time stamp
-# system($^X, "scripts/ttftable", "-export", "Feat,GSUB,GPOS,cmap,name", "t/tt_font_tt_1_metrics.ttf"); ### '/' is removed in output file
+# system($^X, "scripts/ttftable", "-export", "Feat,GSUB,GPOS,cmap,name", "t/tt_font_tt_1_metrics.ttf"); ### '/' used to be removed in output file
 foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/tt_font_tt_1_metrics.ttf");
-	move("ttt_font_tt_1_metrics.ttf.$tag.dat", "t/tt_font_tt_1_metrics.ttf.$tag.dat");
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/base/tt_font_tt_1_metrics.ttf");
-	move("tbasett_font_tt_1_metrics.ttf.$tag.dat", "t/base/tt_font_tt_1_metrics.ttf.$tag.dat");		
 }
 $res = compare("t/tt_font_tt_1_metrics.ttf.Feat.dat", "t/base/tt_font_tt_1_metrics.ttf.Feat.dat") ||
 	compare("t/tt_font_tt_1_metrics.ttf.GSUB.dat", "t/base/tt_font_tt_1_metrics.ttf.GSUB.dat") ||
@@ -74,9 +72,7 @@ system(@run_tt, "-o", "t/tt_font_2.ttf", "applyset_xml", "t/tt_feat_all.xml", "t
 # $res = compare("t/tt_font_tt_1.ttf", "t/base/tt_font_tt_1.ttf"); ### fails because of internal time stamp
 foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/tt_font_2.ttf");
-	move("ttt_font_2.ttf.$tag.dat", "t/tt_font_2.ttf.$tag.dat");
 	system($^X, "scripts/ttftable", "-export", "$tag", "t/base/tt_font_2.ttf");
-	move("tbasett_font_2.ttf.$tag.dat", "t/base/tt_font_2.ttf.$tag.dat");		
 }
 $res = compare("t/tt_font_2.ttf.Feat.dat", "t/base/tt_font_2.ttf.Feat.dat") ||
 	compare("t/tt_font_2.ttf.GSUB.dat", "t/base/tt_font_2.ttf.GSUB.dat") ||
