@@ -53,9 +53,14 @@ sub fret
 
     getopts("d:fgh:m:p:qrs:", \%opt);
 
+    $package = $opt{p} || $package || 'Font::Fret::Default';
+
     unless (defined $ARGV[0])
     {
-        die <<'EOT';
+    	# See if $package provides its own usage info:
+    	eval {$package->usage()};
+    	# else do ours:
+    	die <<'EOT';
 FRET [-f] [-g] [-r] [-s size] [-p package] [-q] font_file [out_file]
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
@@ -75,12 +80,13 @@ if present)
   -r            Don't output report lines, fill the page with glyph boxes
   -s size       paper size: a4, ltr, legal
 EOT
+						# ' quote matching for above here-doc.
+
     }
 
     $opt{s} = lc($opt{s}) || 'ltr';
     $opt{s} = 'ltr' unless defined $sizes{$opt{s}};
     ($maxx, $maxy) = @{$sizes{$opt{s}}};
-    $package = $opt{p} || $package || 'Font::Fret::Default';
 
     unless (defined $ARGV[1])
     {

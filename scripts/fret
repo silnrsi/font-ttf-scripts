@@ -7,6 +7,7 @@ fret('Attach', @ARGV);
 package Attach;
 
 use XML::Parser::Expat;
+use Pod::Usage;
 
 BEGIN {
     @ISA = qw(Font::Fret::Default);
@@ -131,20 +132,32 @@ sub row2
     if (!defined $xml_dat[$gid]{'points'})
     { return (@res); }
     
-    $glyph->get_points;
+    $glyph->get_points if defined $glyph;
     foreach $p (sort keys %{$xml_dat[$gid]{'points'}})
     {
         $pc = $xml_dat[$gid]{'points'}{$p};
-        $pnum = $glyph->{'endPoints'}[$pc->{'cont'}];
-        $res = "$p($pc->{'cont'}:";
-#        $res = "$p($pc->{'cont'},$pnum)($pc->{'loc'}[0],$pc->{'loc'}[1])";
-        $res .= "$glyph->{'x'}[$pnum],$glyph->{'y'}[$pnum])";
-#        $res = "$p($pc->{'cont'},$pnum)";
+        if (exists $pc->{'cont'})
+        {
+	        $pnum = $glyph->{'endPoints'}[$pc->{'cont'}];
+	        $res = "$p($pc->{'cont'}:";
+#	        $res = "$p($pc->{'cont'},$pnum)($pc->{'loc'}[0],$pc->{'loc'}[1])";
+	        $res .= "$glyph->{'x'}[$pnum],$glyph->{'y'}[$pnum])";
+#	        $res = "$p($pc->{'cont'},$pnum)";
+		}
+		elsif (exists $pc->{'loc'})
+		{
+			$res = "$p($pc->{'loc'}[0],$pc->{'loc'}[1])";
+		}
         push (@res, $res);
     }
     return (@res);
 }
 
+sub usage
+{
+	pod2usage (-verbose => 2, -noperldoc => 1, -exitval => 2);
+}
+	
 __END__
 
 =head1 TITLE
