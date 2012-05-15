@@ -75,7 +75,7 @@ sub ttfname
         {
             $name->{'strings'}[6][1][0]{0} = $post;
             $name->{'strings'}[6][3][1]{1033} = $post;
-            $name->set_name(6, $post, $post, @cover);
+            $name->set_name(6, $post, $opts{'l'}, @cover);
         }
 
 # now update all the interesting name fields
