@@ -361,7 +361,7 @@ sub subset_lookup
     foreach $s (@{$lookup->{'SUB'}})
     {
         if (!$self->subset_subtable($subsetter, $s, $lookup, $lkvec)
-            || !@{$s->{'RULES'}})
+            || !defined $s->{'RULES'} || !@{$s->{'RULES'}})
         { next; }
         $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
         # remove unused coverage indices
