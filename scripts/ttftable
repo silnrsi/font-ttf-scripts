@@ -40,7 +40,7 @@ unless ($CHAIN_CALL)
     my $help;
     
     GetOptions (
-        'export=s' =>  \@exports,
+        'export|xport=s' =>  \@exports,
         'import=s' =>  \@imports,
         'delete|remove=s' => \@deletes,
         'update=s' =>   \@updates,
@@ -68,6 +68,10 @@ foreach my $tag (\@deletes, \@updates, \@exports, \@imports)
             # if any filename included (i.e there is an '=') then split only on semicolon or pipe,
             # allowing filename to include space and comma.
             push @newtag, split(/[;|]+/);
+        }
+        elsif (m/^all$/oi)
+        {
+        	push @newtag, map {s/ //og; $_} sort grep {length($_) == 4} keys %{$f};
         }
         else
         {
@@ -115,7 +119,12 @@ for (@imports)
         warn "Do not understand \"-import $_\" -- ignoring\n";
         next;
     }
-    $fname = "$ARGV[0].$tag.dat" unless $fname;
+    unless ($fname)
+    {
+    	$fname = $tag;
+    	$fname =~ s/[^a-zA-Z0-9]/_/og;	# In particular this maps OS/2 to OS_2
+    	$fname = "$ARGV[0].$fname.dat";
+    }
     $fname =~ s/[*?"<>|]//oig;      # "Characters disallowed in filenames
     
     # Pad and trim table tag
@@ -142,7 +151,12 @@ for (@exports)
         next;
     }
 
-    $fname = "$ARGV[0].$tag.dat" unless $fname;
+    unless ($fname)
+    {
+    	$fname = $tag;
+    	$fname =~ s/[^a-zA-Z0-9]/_/og;	# In particular this maps OS/2 to OS_2
+    	$fname = "$ARGV[0].$fname.dat";
+    }
     $fname =~ s/[*?"<>|]//oig;      # "Characters disallowed in filenames
     
     # Pad and trim table tag
@@ -300,10 +314,11 @@ then writes the modified font to outfile.ttf if provided.
   -update tag[,tag...] Force a re-build of the named tables 
   -list                Write a list of table tags from infile.ttf to STDOUT
   -verbose             Verbose output
-  -text                Use text mode i/o for datafiles 
+  -text                Use text mode i/o for datafiles
+  -xport               alias for -export (thus permitting -x) 
   -help                Help
 
-Option names may be abbreviated; -export, -import, -delete and -update options may be repeated.
+Option names may be abbreviated as much as you like; -export, -import, -delete and -update options may be repeated.
     
 =head1 DESCRIPTION
 
@@ -318,7 +333,8 @@ insensitive) pseudo tags can also be used:
 
   graphite  all SIL Graphite tables (Silf Feat Gloc Glat Sill Sile)
   volt      all Microsoft VOLT tables (TSIV TSID TSIP TSIS)
-  opentype  all OpenTYpe tables (GDEF GSUB GPOS)
+  opentype  all OpenType tables (GDEF GSUB GPOS)
+  all       all tables in the font (use with caution!)
 
 The parameter to -export and -import is a table tag optionally followed by
 equals sign and a filename. If the filename is not provided, ttftable
@@ -337,13 +353,34 @@ During -export, the -text option will convert any line-endings in the font data 
 your platform. During -import, the -text option simply converts your platform line endings
 to newline (\n) character, which may not be what you want, so use with caution.
 
-Arrangements of command lines options that import and export the same
+Arrangements of command line options that import and export the same
 table and/or the same data file will "do the right thing" except that
 external files can contain only one table.
 
+=head1 EXAMPLES
+
+  # list of tables in a font
+  ttftable -l myfont.ttf
+  
+  # list of tables and their details such as offset, size, checksum
+  ttftable -l -v myfont.ttf
+  
+  # extract VOLT source from a font:
+  ttftable -e "TSIV=myfont.vtp" -t myfont.ttf
+  
+  # extract all tables into separate binary files
+  ttftable -e all myfont.ttf
+  
+  # Create a new font by deleting all OpenType tables
+  ttftable -d opentype myfont.ttf newfont.ttf
+   
+
 =head1 BUGS
 
-The pseudo tags C<graphite>, C<volt>, and C<opentype> cannot be used in conjunction
+Deleting Graphite or OpenType tables does not remove name table strings that are used for feature
+names and values. 
+
+The pseudo tags C<graphite>, C<volt>, C<opentype> and C<all> cannot be used in conjunction
 with the C<=fname> capability.
 
 =cut
