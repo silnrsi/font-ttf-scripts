@@ -23,8 +23,8 @@ else
 # add Features file to font to make a Tuner-ready font
 #system($^X, "scripts/typetuner", "-d", "add", "t/tt_feat_all.xml", "t/tt_font.ttf");
 system(@run_tt, "add", "t/tt_feat_all.xml", "t/tt_font.ttf");
-$res = compare("t/tt_font_tt.ttf", "t/base/tt_font_tt.ttf");
-ok(!$res, "added Feature file to font");
+$res_ttf = compare("t/tt_font_tt.ttf", "t/base/tt_font_tt.ttf");
+ok(!$res_ttf, "added Feature file to font");
 print "****\n\n" if $debug;
 
 # create Settings file from a Tuner-ready font
@@ -36,8 +36,8 @@ print "****\n\n" if $debug;
 
 # add line metrics from a legacy font to a Settings file
 system(@run_tt, "-o", "t/tt_feat_set_1_metrics.xml", "setmetrics", "t/tt_metric_font.ttf", "t/tt_feat_set_1.xml");
-$res = compare("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml");
-ok(!$res, "imported metrics into Settings file");
+$res_xml = compare("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml");
+ok(!$res_xml, "imported metrics into Settings file");
 print "****\n\n" if $debug;
 
 # apply a Settings file (with imported line metrics) to a Tuner-ready font
@@ -56,8 +56,8 @@ $res = compare("t/tt_font_tt_1_metrics.ttf.Feat.dat", "t/base/tt_font_tt_1_metri
 	compare("t/tt_font_tt_1_metrics.ttf.name.dat", "t/base/tt_font_tt_1_metrics.ttf.name.dat");
 ok(!$res, "applied Settings with metrics to Tuner-ready font. four warnings expected.");
 if (!$res) {
-	unlink "t/tt_font_tt.ttf";
-	unlink "t/tt_feat_set_1_metrics.xml";
+	unlink "t/tt_font_tt.ttf" unless $res_ttf;
+	unlink "t/tt_feat_set_1_metrics.xml" unless $res_xml;
 	unlink "t/tt_font_tt_1_metrics.ttf";
 	foreach my $tag (qw(Feat GSUB GPOS cmap name)) {
 		unlink("t/tt_font_tt_1_metrics.ttf.$tag.dat");

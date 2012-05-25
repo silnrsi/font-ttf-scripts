@@ -674,6 +674,7 @@ sub main
         {
         
             $glyph = Font::TTF::Glyph->new(PARENT => $of, read => 2);
+            $glyph->{' isDirty'} = 1;
             $glyph->{'xMin'} = $g->{'bbox'}[0];
             $glyph->{'yMin'} = $g->{'bbox'}[1];
             $glyph->{'xMax'} = $g->{'bbox'}[2];
