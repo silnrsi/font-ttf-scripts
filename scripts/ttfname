@@ -10,7 +10,7 @@ our ($if, $of, %opts);
 
 unless ($CHAIN_CALL)
 {
-    getopts('f:hl:n:pqs:t:', \%opts);
+    getopts('f:hl:n:pqr:s:t:w:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -55,7 +55,10 @@ out.ttf.
   -n "name"   specifies new font family name (not optional)
   -p          Don't update postscript font name
   -q          disable signon message
+  -r num      Removes all strings of the given id
   -s filename overrides -n and gets string from file. Useful for -t
   -t num      overrides the normal naming areas to change another
               string -f becomes inactive. Use -l as well to create entry.
+  -w "name"   overrides subfamily in the font (think weight). So a full name
+              may be made from -n and -w together.
 

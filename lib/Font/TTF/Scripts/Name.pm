@@ -13,6 +13,12 @@ sub ttfname
     my ($name) = $font->{'name'}->read;
     my (@cover);
 
+    if (defined $opts{'r'})
+    {
+        delete $name->{'strings'}[$opts{'r'}];
+        return $font;
+    }
+
     foreach $k (qw(n f))
     {
         $opts{$k} = decode('utf-8', $opts{$k}) if (defined $opts{$k});
@@ -39,13 +45,14 @@ sub ttfname
     }
     else
     {
-        my ($subfamily) = $name->find_name(2);
+        my ($subfamily) = $opts{'w'} || $name->find_name(2);
         my ($family, $full, $post, $unique, @time);
 
         if ($opts{'f'})
         {
             $full = $opts{'f'};
             $family = $opts{'f'};
+            
             unless (lc($subfamily) eq 'regular' || lc($subfamily) eq 'standard')
             {
                 unless ($family =~ s/\s+$subfamily$//i)
