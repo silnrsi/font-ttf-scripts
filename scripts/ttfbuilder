@@ -1406,6 +1406,7 @@ The DTD for an attachment point database is:
     <!ATTLIST font
         name    CDATA #IMPLIED
         upem    CDATA #IMPLIED
+        producer    CDATA #IMPLIED>
 
     <!ELEMENT glyph (property* | (point | compound)* | note)>
     <!ATTLIST glyph

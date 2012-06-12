@@ -122,7 +122,7 @@ sub out_gdl
 
 sub out_classes
 {
-    my ($self, $fh) = @_;
+    my ($self, $fh, %opts) = @_;
     my ($f) = $self->{'font'};
     my ($lists) = $self->{'lists'};
     my ($classes) = $self->{'classes'};
@@ -142,6 +142,7 @@ sub out_classes
         else
         { $name =~ s/^_//o; }
 
+        $fh->print("#define HAS_c${name}Dia 1\n") if ($opts{'-defines'} && $name !~ m/^Takes/o);
         $fh->print("c${name}Dia = (");
         $count = 0; $sep = '';
         foreach $cl (@{$lists->{$l}})
@@ -177,6 +178,7 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$classes})
     {
+        $fh->print("#define HAS_c$cl 1\n") if ($opts{'-defines'} && $cl !~ m/^no_/o);
         $fh->print("c$cl = ($glyphs->[$classes->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$classes->{$cl}}; $i++)
         { $fh->print($i % 8 ? ", $glyphs->[$classes->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$classes->{$cl}[$i]]{'name'}"); }
@@ -185,6 +187,7 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$ligclasses})
     {
+        $fh->print("#define HAS_clig$cl 1\n") if ($opts{'-defines'} && $cl !~ m/^no_/o);
         $fh->print("clig$cl = ($glyphs->[$ligclasses->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$ligclasses->{$cl}}; $i++)
         { $fh->print($i % 8 ? ", $glyphs->[$ligclasses->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$ligclasses->{$cl}[$i]]{'name'}"); }

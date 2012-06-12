@@ -5,8 +5,8 @@ use IO::File;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_a, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_r, $opt_s, $opt_z);
-getopts('a:e:hi:l:n:o:p:rs:z:');
+our ($opt_a, $opt_d, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_r, $opt_s, $opt_z);
+getopts('a:de:hi:l:n:o:p:rs:z:');
 
 unless ($ARGV[1] || $opt_h)
 {
@@ -76,7 +76,7 @@ $f->{'vecs'} = {};
 $f->start_gdl($outfh);
 $f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
 $f->out_gdl($outfh, -split_ligs => ($opt_z & 1), -psnames => ($opt_z & 4));
-$f->out_classes($outfh);
+$f->out_classes($outfh, -defines => $opt_d);
 $f->endtable($outfh);
 $f->normal_rules($outfh, $opt_n, ($opt_z & 2)) if ($opt_n);
 $f->lig_rules($outfh, $opt_s, $opt_l) if ($opt_l);
@@ -101,6 +101,7 @@ Creates font specific GDL from a font and optional attachment point database
 =head1 OPTIONS
 
   -a file       Attachment point database
+  -d            Output per class #defines for key classes
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 
   -h            print manpage

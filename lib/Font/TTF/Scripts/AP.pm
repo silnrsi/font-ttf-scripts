@@ -624,12 +624,12 @@ sub make_classes
                 if ($opts{'-ligatures'} eq 'first')
                 { 
                     $class = $elem[0];
-                    $base =~ s/^_//o;
+                    $base =~ s/^_u?//o;
                 }
                 else
                 { 
                     $class = $elem[-1];
-                    $class =~ s/^_//o;
+                    $class =~ s/^_u?//o;
                 }
 
                 next unless ($i = $namemap{$base});
