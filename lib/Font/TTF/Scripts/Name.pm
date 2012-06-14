@@ -34,8 +34,9 @@ sub ttfname
 
     if (defined $opts{'l'} || ($opts{'t'} && !scalar @{$name->{'strings'}[$opts{'t'}]}))
     {
-        my ($cmap) = $font->{'cmap'}->read;
-        @cover = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmap->{'Tables'}};
+        ## my ($cmap) = $font->{'cmap'}->read;
+        ## @cover = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmap->{'Tables'}};
+    	@cover = $name->pe_list();
         $opts{'l'} ||= 'en-US';
     }
 
