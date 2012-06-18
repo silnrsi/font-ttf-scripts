@@ -69,8 +69,11 @@ NID: foreach $nid(256 .. $lastnid){
            }          
   } } } }
   
-# Process the cmap table to get a list of Platform/Encoding IDs pairs to use when adding name strings
-  @idlist = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmapt->{'Tables'}};
+### Process the cmap table to get a list of Platform/Encoding IDs pairs to use when adding name strings
+### @idlist = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmapt->{'Tables'}};
+
+# Get list of Platform/Encoding IDs pairs to use when adding name strings
+  @idlist = $namet->pe_list();
 # Set up mapping from cvar name types to cvar.pm methods
   my %cvarmap = ("uilabel" => "UINameID", "tooltip" => "TooltipNameID", "sampletest" => "SampleTextNameID" );
 
