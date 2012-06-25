@@ -1,0 +1,5 @@
+author: [ 'Martin Hosken <martin_hosken@sil.org>' ]
+version: '0.45'
+description:  "various scripts using the Font::TTF module"
+license: 'artistic2'
+homepage: "http://scripts.sil.org/FontUtils"
