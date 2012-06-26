@@ -990,9 +990,6 @@ sub Table_add($$$)
 sub Usage_print()
 {
 	print <<END;
-TypeTuner ver $version copyright (c) SIL International 2007-2009
-see http://scripts.sil.org/TypeTuner
-
 usage: 
 	TypeTuner -x <xml> <ttf> (create settings xml file from ttf)
 	TypeTuner <xml> <ttf> (apply settings xml file to ttf)
