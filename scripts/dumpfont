@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 # Dump a font table structure
 
 use strict;

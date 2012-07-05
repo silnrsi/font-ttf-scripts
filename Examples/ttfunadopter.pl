@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 use Mac::Resources;
 use Mac::Memory;
 

@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 
 #   Title:          MAKEMONO.BAT
 #   Author:         M. Hosken

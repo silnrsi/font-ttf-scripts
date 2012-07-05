@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 # 1.0   RMH    2007-09-26 Strip Graphite tables from a font
 
 use Font::TTF::Font;

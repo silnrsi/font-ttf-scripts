@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 
 #   Title:      TTFWIDTH.PL
 #   Author:     M. Hosken

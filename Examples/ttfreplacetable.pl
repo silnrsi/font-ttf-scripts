@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 # 1.0   RMH    14-Feb-00     Insert a raw TTF table into a font file
 
 use Font::TTF::Font;

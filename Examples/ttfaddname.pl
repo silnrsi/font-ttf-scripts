@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 use Font::TTF::Font;
 use IO::File;
 use Getopt::Std;

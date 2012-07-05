@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 require 'getopts.pl';
 use Font::TTF::Font;
 

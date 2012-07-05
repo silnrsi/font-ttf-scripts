@@ -1,3 +1,4 @@
+#! /usr/bin/perl
 # 1.1   RMH    06-Feb-00     Extract a raw TTF table to a file
 
 use Font::TTF::Font;
