@@ -38,7 +38,7 @@ unlink "t/tt_feat_all_set.xml" unless ($res);
 print "****\n\n" if $debug;
 
 # add line metrics from a legacy font to a Settings file
-system(@run_tt, "-o", "t/tt_feat_set_1_metrics.xml", "setmetrics", "t/tt_metric_font.ttf", "t/tt_feat_set_1.xml");
+system(@run_tt, "-o", "t/tt_feat_set_1_metrics.xml", "setmetrics", "t/testfont.ttf", "t/tt_feat_set_1.xml");
 $res_xml = compare("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml");
 ok(!$res_xml, "imported metrics into Settings file");
 print "****\n\n" if $debug;

@@ -28,5 +28,5 @@
 		<value name="Loose"/>
 		<value name="Imported"/>
 	</feature>
-	<imported_line_metrics font="Test Test SILDoulos" em-sqr="1000" metrics="943 225 0 943 225 943 225 0"/>
+	<imported_line_metrics font="FontUtils Test" em-sqr="2048" metrics="2250 750 0 2250 750 2250 750 0"/>
 </features_set>
