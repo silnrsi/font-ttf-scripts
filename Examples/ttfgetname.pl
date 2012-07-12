@@ -4,9 +4,6 @@ use open OUT=>':utf8';
 use Font::TTF::Font;
 use Getopt::Std;
 
-#use Data::Dumper;
-#print Dumper($n1) , "\n";
-
 our ($opt_a,$opt_o,$VERSION);
 
 getopts('ao:');

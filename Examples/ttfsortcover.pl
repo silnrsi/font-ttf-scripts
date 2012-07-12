@@ -1,7 +1,5 @@
 #! /usr/bin/perl
 use Font::TTF::Font;
-use Font::TTF::Useall;
-use Data::Dumper;
 
 unless (defined $ARGV[1])
 {

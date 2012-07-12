@@ -2,7 +2,6 @@
 
 use strict;
 use Font::TTF::Scripts::Volt;
-use Data::Dumper;
 use Pod::Usage;
 use Getopt::Std;
 

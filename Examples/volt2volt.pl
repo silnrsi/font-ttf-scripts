@@ -2,7 +2,6 @@
 use Font::TTF::Font;
 use Getopt::Std;
 use Parse::RecDescent;
-use Data::Dumper;
 
 %dat = ();
 
