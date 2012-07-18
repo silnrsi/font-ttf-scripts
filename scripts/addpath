@@ -34,12 +34,10 @@ if (Win32::IsWinNT())
     
     warn "Couldn't set PATH\n" unless defined $Registry->{$regKey};	# Might not have permission
  
-# tell everyone that life has changed (0x1A = WM_SETTINGCHANGED) (-1 = HWND_TOPWINDOW)
-# note we post and not send otherwise we hang everything!
-    # user32::SendMessage_NNNP(-1, 0x1A, 0, "Environment");
-    my $PostMessage = Win32::API->new('user32', 'PostMessage', [qw(N N N P)], 'N'); # 'LRESULT PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPSTR lParam)');
-    die "Can't create PostMessage" unless defined $PostMessage;
-    $PostMessage->Call(-1, 0x1A, 0, "Environment");  #  0x1A = WM_WININICHANGE
+    # tell everyone that life has changed (0x1A = WM_SETTINGCHANGED) (-1 = HWND_TOPWINDOW)
+    # The following from http://www.perlmonks.org/?node=171505
+    my $SendMessage = new Win32::API("user32", "SendMessage", 'NNNP', 'N')  or die "Couldn't create SendMessage: $!\n";
+    my $RetVal = $SendMessage->Call(-1,0x1a,0,'Environment');
 }
 
 
