@@ -7,8 +7,8 @@ use IO::File;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_h, $opt_l, $opt_t, $opt_v);
-getopts('hlt:v');
+our ($opt_h, $opt_l, $opt_t, $opt_v, $opt_x);
+getopts('hlt:vx');
 
 unless (defined $ARGV[0] || defined $opt_h)
 {
@@ -47,23 +47,23 @@ my @FlagDetail = (
 	[0x0010, "UseMarkFilteringSet"],
 );
 
-foreach (@ARGV)
+foreach my $filename (@ARGV)
 {
-	my $if = Font::TTF::Scripts::Volt->read_font($_);
+	my $if = Font::TTF::Scripts::Volt->read_font($filename);
 	unless ($if)
 	{
-		warn "Can't read font $_";
+		warn "Can't read font '$filename'";
 		next;
 	}
 	my $font = $if->{'font'};
 	
-	print "Font file: '$_'\n" if $#ARGV > 0;
+	print "Font file: '$filename'\n" if $#ARGV > 0;
 	
 	my %lookupNames = (GSUB => [], GPOS => []);
 	
 	# See if any VOLT source:
 	my $volt_text = defined $font->{'TSIV'} ? $font->{'TSIV'}->read->{' dat'} : $opt_t;
-	if (defined ($volt_text))
+	if (defined $volt_text)
 	{
 		# Parse the VOLT text and extract lookup names:
 		my $volt = $if->parse_volt($volt_text);
@@ -77,13 +77,32 @@ foreach (@ARGV)
 			push @{$lookupNames{$type}}, $name unless $lookupNames{$type}[-1] eq $name;
 		}
 	}
+	
+	if ($opt_x)
+	{
+		unless (defined $volt_text)
+		{
+			warn "No VOLT source for '$filename' -- cannot output lookup aliases.\n";
+			next;
+		}
+		print "\t<aliases>\n";
+	}	
 			
 	foreach my $t (qw(GSUB GPOS))
 	{
 		next unless exists $font->{$t};
-		print "$t:\n";
 		my $g = $font->{$t}->read;
-		print "  Scripts:\n";
+		if ($opt_x)
+		{
+			print "\t\t<!-- $t lookups -->\n";
+			foreach my $il (0 .. scalar(@{$g->{'LOOKUP'}})-1)
+			{
+				print "\t\t\t<alias name='$lookupNames{$t}[$il]' value='$il'/>\n" if $lookupNames{$t}[$il];
+			}
+			next;
+		}
+			
+		print "$t:\n  Scripts:\n";
 		foreach my $s (sort {$a cmp $b} keys (%{$g->{'SCRIPTS'}}))
 		{
 			print "    <$s> ", $ttnames{'SCRIPT'}{$s};
@@ -156,6 +175,8 @@ foreach (@ARGV)
 		
 	}
 	
+	print "\t</aliases>\n" if $opt_x;
+	
 	$font->release;
 }
 
@@ -166,7 +187,7 @@ ttfprintot - prints the Script/Language/Feat hierarchy of OpenType files
 
 =head1 SYNOPSIS
 
-  ttfprintot [-l] [-t volt.txt] [-v] infile.ttf ...
+  ttfprintot [-l] [-t volt.txt] [-v] [-x] infile.ttf ...
   ttfprintot -h
 
 Prints to STDOUT information about the Script, Language, and Feature structure of one or more OpenType font files.
@@ -176,6 +197,7 @@ Prints to STDOUT information about the Script, Language, and Feature structure o
   -l   enumerate Lookups as well as Scripts, Languages and Features
   -t   Volt source file to use instead of what is in the font
   -v   include debugging entries added by Microsoft VOLT
+  -x   output xml formatted alias list suitable for TypeTuner feature file
   -h   print help message
 
 =head1 DESCRIPTION
@@ -215,6 +237,10 @@ If -l is provided, the lookups are also enumerated, e.g:
 
 Note that lookup names will be output only if the VOLT source project is included in the font
 or supplied by -t parameter.
+
+As a special aid to font developers programming for SIL TypeTuner, specifying -x 
+alters the output to be an xml excerpt defining aliases for the font's lookups (requires
+VOLT project either inside the font or supplied with -t).
 
 When a font has been compiled, but not shipped, by Microsoft VOLT, the OpenType tables contain
 additional languages and features used by VOLT's Proofing Tool. These are not included
