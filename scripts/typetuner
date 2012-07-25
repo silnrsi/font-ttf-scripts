@@ -407,7 +407,7 @@ sub Cmds_exec($\@\%\%)
 			{
 				$arg = $feat_all->{'aliases'}{$1}; #$arg is a ref so this changes @args
 				if (not defined $arg)
-					{die('invalid alias: $1\n');}
+					{die("invalid alias: $1\n");}
 			}
 		}
 		
