@@ -1,5 +1,12 @@
-Copyright (c) 2005-2007, M. Hosken and SIL International,
-with Reserved Font Name FontUtils Test
+testfont.ttf is copyright (c) SIL International, 2005-2012,
+with Reserved Font Names "Gentium" and "FontUtils".
+
+tt_font.ttf is copyright (c) SIL International, 1997-2009,
+with Reserved Font Names "Doulos" and "SIL".
+
+schtest.ttf is copyright (c) SIL International, 1994-2012,
+with Reserved Font Name "Scheherazade".
+
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
