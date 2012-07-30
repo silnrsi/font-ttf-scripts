@@ -93,7 +93,7 @@ EOT
 	    
 	    $res .= "scripts\\fontutils.par : ";
 	    $res .= join(' ', @scripts);
-	    $res .= "\n\tpp -B -p -o scripts\\fontutils.par -M Font::TTF::Useall " . join(' ', @scripts);
+	    $res .= "\n\tpp -B -p -c -o scripts\\fontutils.par -M Font::TTF::Useall " . join(' ', @scripts);
 	    $res .= "\n\n";
 	    
 	    $res;

@@ -79,9 +79,9 @@ use vars qw(%FUNC);
 
    'glyph'   => sub { $_[0]->{'post'}{'STRINGS'}{$_[1]}; },
    'advance' => sub { $_[0]->{'hmtx'}{'advance'}[$_[1]]; },
-   'xMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMin'}; } 
-   'yMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'yMin'}; } 
-   'xMax'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMax'}; } 
+   'xMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMin'}; },
+   'yMin'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'yMin'}; },
+   'xMax'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'xMax'}; },
    'yMax'    => sub { $_[0]->{'loca'}{'glyphs'}[$_[1]]{'yMax'}; } 
   );
 
@@ -237,6 +237,7 @@ sub start_element
 }
 
 __END__
+
 =head1 TITLE
 
 apexpr - evaluate expressions within an attachment point database
@@ -245,3 +246,4 @@ apexpr - evaluate expressions within an attachment point database
 
   apexpr infile.xml infile.ttf
 
+=cut
