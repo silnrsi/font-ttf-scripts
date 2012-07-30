@@ -2,14 +2,14 @@
 
 use strict;
 use Font::TTF::Font;
-use IO::Scalar;
+use IO::String;
 use Getopt::Std;
 use Pod::Usage;
 use Compress::Zlib;
 
 my %opts;
 our ($if);
-my ($scalar);
+my ($string);
 our ($CHAIN_CALL);
 my ($ofh);
 
@@ -35,7 +35,7 @@ unless ($CHAIN_CALL)
 if (defined $if->{'DSIG'})
 {
     # need to make a new font without DSIG and use that to get checksums right
-    my ($tfh) = new IO::Scalar \$scalar;
+    my ($tfh) = IO::String->new($string);
     my (@tlist) = sort {$if->{$a}{' OFFSET'} <=> $if->{$b}{' OFFSET'}}
                     grep(length($_) == 4 && $_ ne 'DSIG', keys %{$if});
     $if->out($tfh, @tlist);
@@ -75,7 +75,14 @@ for (my $i = 0; $i < $whdr{'num'}; $i++)
     $t->{' INFILE'}->read($idat, $t->{' LENGTH'});
     $odat = compress($idat, 9);
     $d{'len'} = length($odat);
-    $ofh->print($odat);
+    if ($d{'len'} < $d{'orglen'})
+    { $ofh->print($odat);}
+    else
+    { 
+    	# Compression doesn't save space -- mustn't use it:
+    	$d{'len'} = $d{'orglen'};
+    	$ofh->print($idat);
+    }
     $curroffset = $ofh->tell();
 }
 
@@ -145,7 +152,7 @@ __END__
 
 ttf2woff - create WOFF file from TTF file
 
-=head1 SYNPOSIS
+=head1 SYNOPSIS
 
   ttf2woff [-m metadatafile] [-p privatefile] infile.ttf outfile.woff
 

@@ -14,11 +14,12 @@
 # 1.7.1 MJPH    27-APR-2006     Add docs for man pages, up version report
 # 1.8   MJPH     8-NOV-2007     Support v3 OS/2 tables and some handling of those beyond
 
-require 'ttfmod.pl';
-require 'getopts.pl';
-do Getopts("c:d:f:n:p:qt:u:v:x:w:");
+use Getopt::Std;
 
-$[ = 0;
+require 'ttfmod.pl';
+
+getopts("c:d:f:n:p:qt:u:v:x:w:");
+
 if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[1]))
     {
     die 'HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
