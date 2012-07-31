@@ -287,13 +287,28 @@ sub lookups_ttf
 
         if ($l->{'all'} and $l->{'all'} ne 'ALL')
         {
-            if (!defined $self->{'alls'}{$l->{'all'}})
+            if ($l->{'marks'} =~ m/GLYPH_SET/oi)
             {
-                $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
-                foreach $g (@{$self->or_context_glyphs(@{$dat->{'groups'}{$l->{'all'}}})})
-                { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
+            	# Use mark filter sets
+            	if (!defined $self->{'alls'}{'*'.$l->{'all'}})	# '*', as in VOLT UI, used here to differentiate marksets from mark classes (below)
+	            {
+					push @{$self->{'marksets'}}, $self->make_coverage(@{$dat->{'groups'}{$l->{'all'}}});
+					$self->{'alls'}{'*'.$l->{'all'}} = $#{$self->{'marksets'}};
+				}
+				$flags |= 0x10;
+				$font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'} = $self->{'alls'}{$l->{'all'}};
             }
-            $flags |= $self->{'alls'}{$l->{'all'}} << 8;
+            else
+            {
+            	# Use mark classes
+	            if (!defined $self->{'alls'}{$l->{'all'}})
+	            {
+	                $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
+	                foreach $g (@{$self->or_context_glyphs(@{$dat->{'groups'}{$l->{'all'}}})})
+	                { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
+	            }
+	            $flags |= $self->{'alls'}{$l->{'all'}} << 8;
+	        }
         }
 
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FLAG'} = $flags;
@@ -664,9 +679,10 @@ sub add_gdef
     }
 
     $font->{'GDEF'} = Font::TTF::GDEF->new('parent' => $font, 'read' => 1);
-    $font->{'GDEF'}{'Version'} = 1.0;
+    # $font->{'GDEF'}{'Version'} = 1.0;  # Let GDEF.pm figure out version
     $font->{'GDEF'}{'GLYPH'} = $gdc;
     $font->{'GDEF'}{'MARKS'} = $gdm if ($gdm->{'max'} > 0);
+    $font->{'GDEF'}{'MARKSETS'} = [ @{$self->{'marksets'}} ] if exists $self->{'marksets'};
     $font->{'GDEF'}->dirty;
 }
 

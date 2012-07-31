@@ -146,7 +146,7 @@ Contains PROCESS_BASE if that is in the lookup
 
 =item marks
 
-Contains either PROCESS_MARKS or SKIP_MARKS
+Contains one of SKIP_MARKS, PROCESS_MARKS, or MARK_GLYPH_SET
 
 =item all
 
@@ -730,6 +730,9 @@ if (0)
 {
 # VOLT parsing code
 
+# NB: This grammar is no longer being used and though there have been some 
+#     efforts to keep it maintained it does not necessarily work or, in fact,
+#     agree with the RE-based parsing now being used (see below)
 %dat = ();
 
 $volt_grammar = <<'EOG';
@@ -760,10 +763,10 @@ $volt_grammar = <<'EOG';
     glyph_component : 'COMPONENTS' num
             { $return = $item[-1]; }
 
-    script : 'DEF_SCRIPT' <commit> name? tag langsys(s?) 'END_SCRIPT'
+    script : 'DEF_SCRIPT' <commit> name(?) tag langsys(s?) 'END_SCRIPT'
             { $dat{'scripts'}{$item[4]} = {'name' => $item[3], 'tag' => $item[4], 'langs' => $item[5]}; }
 
-    langsys : 'DEF_LANGSYS' name? tag feature(s?) 'END_LANGSYS'
+    langsys : 'DEF_LANGSYS' name(?) tag feature(s?) 'END_LANGSYS'
             { $return = { 'name' => $item[2], 'tag' => $item[3], 'features' => { map {$_->{'tag'} => $_} @{$item[4]}}}; }
 
     feature : 'DEF_FEATURE' name tag lookup_ref(s?) 'END_FEATURE'
@@ -788,7 +791,7 @@ $volt_grammar = <<'EOG';
     lk_comment : /COMMENTS/ qid
             { 
                 my $comment = $item[-1];
-                $comment =~ s/\\($unescape)/$unescapes{$1}/oge;
+                $comment =~ s/\\($Font::TTF::Scripts::Volt::unescape)/$Font::TTF::Scripts::Volt::unescapes{$1}/oge;
                 $return = $comment; 
             }
             
@@ -870,7 +873,8 @@ $volt_grammar = <<'EOG';
 
     lk_procbase : /SKIP_BASE|PROCESS_BASE/
 
-    lk_procmarks : /PROCESS_MARKS|SKIP_MARKS/
+    lk_procmarks : 'PROCESS_MARKS' <commit> 'MARK_GLYPH_SET'(?) {return $item[2] || $item[1];}
+    		| 'SKIP_MARKS' 
 
     lk_all : 'ALL' | qid
             { $return = $item[1] || $item[2]; }
@@ -1049,7 +1053,8 @@ sub parse_volt
 #                                          'lookup' => $item[9] }); }
 #    lk_procbase : /SKIP_BASE|PROCESS_BASE/
 #
-#    lk_procmarks : /PROCESS_MARKS|SKIP_MARKS/
+#    lk_procmarks : 'PROCESS_MARKS' <commit> 'MARK_GLYPH_SET'(?) {return $item[2] || $item[1];}
+#   		| 'SKIP_MARKS' 
 #
 #    lk_all : 'ALL' | qid
 #            { $return = $item[1] || $item[2]; }
@@ -1057,14 +1062,15 @@ sub parse_volt
 #    lk_direction : 'DIRECTION' /LTR|RTL/            # what about RTL here?
 #            { $return = $item[2]; }
 #
-    while ($str =~ m/\GDEF_LOOKUP\s+"([^"]+)"\s+(?:(SKIP_BASE|PROCESS_BASE)\s+)?(?:(SKIP_MARKS|PROCESS_MARKS)\s+)?(?:(?:(ALL)|"([^"]+)")\s+)?(?:DIRECTION\s+(LTR|RTL)\s+)?/ogc)
+#                                    1             2                               3                                 4                          5      6                            7
+    while ($str =~ m/\GDEF_LOOKUP\s+"([^"]+)"\s+(?:(SKIP_BASE|PROCESS_BASE)\s+)?(?:(SKIP_MARKS|PROCESS_MARKS)\s+)?(?:(MARK_GLYPH_SET)\s+)?(?:(?:(ALL)|"([^"]+)")\s+)?(?:DIRECTION\s+(LTR|RTL)\s+)?/ogc)
     {
         my ($name) = $1;
         push (@{$res->{'lookups'}}, {'id' => $1,
                 'base' => $2,
-                'marks' => $3,
-                'all' => $4 || $5,
-                'dir' => $6});
+                'marks' => $4 || $3,
+                'all' => $5 || $6,
+                'dir' => $7});
 
 #    lk_comment : 'COMMENTS' qid
         while ($str =~ m/\GCOMMENTS\s+"([^"]+)"\s+/ogc)     # " 
