@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use strict;
 use Font::Fret;
 use Font::TTF::Useall;
 
@@ -7,17 +8,22 @@ fret('Attach', @ARGV);
 package Attach;
 
 use XML::Parser::Expat;
+use Getopt::Std;
 use Pod::Usage;
+
+our (@ISA, $VERSION);
 
 BEGIN {
     @ISA = qw(Font::Fret::Default);
     $VERSION = "1.000";
       }
 
+my ($gid, @xml_dat, $fontname, $fontupem, @rev, @macrev);
+
 sub make_cids
 {
     my ($class, $font) = @_;
-    my (@map, @res, $m);
+    my (@map, @res, $m, $pname);
     my ($c) = $font->{'cmap'}->read->find_ms;
 
     if (defined $ARGV[2])
@@ -85,7 +91,7 @@ sub topdat
 {
     my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
 
-    return ($gid, "r,r|" . join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} @{$rev[$gid]}));
+    return ($gid, "r,r|" . join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} (defined $rev[$gid] ? @{$rev[$gid]} : ())));
 }
 
 sub row1hdr
@@ -110,7 +116,7 @@ sub row1
     my ($rsb) = $aw - $glyph->{'xMax'};
 
     return ($font->{'post'}{'VAL'}[$gid], $gid, 
-            join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} @{$rev[$gid]}), $macrev[$gid],
+            join(',', map {sprintf("|U+%04X", $_)} sort {$a <=> $b} (defined $rev[$gid] ? @{$rev[$gid]} : ())), $macrev[$gid],
             "r,b|$aw", "r,i|$glyph->{'xMax'}",
             "r,i|$glyph->{'xMin'}", "r,i|$glyph->{'yMax'}",
             "r,i|$glyph->{'yMin'}");
@@ -135,10 +141,11 @@ sub row2
     $glyph->get_points if defined $glyph;
     foreach $p (sort keys %{$xml_dat[$gid]{'points'}})
     {
+    	my $res;
         $pc = $xml_dat[$gid]{'points'}{$p};
         if (exists $pc->{'cont'})
         {
-	        $pnum = $glyph->{'endPoints'}[$pc->{'cont'}];
+	        my $pnum = $glyph->{'endPoints'}[$pc->{'cont'}];
 	        $res = "$p($pc->{'cont'}:";
 #	        $res = "$p($pc->{'cont'},$pnum)($pc->{'loc'}[0],$pc->{'loc'}[1])";
 	        $res .= "$glyph->{'x'}[$pnum],$glyph->{'y'}[$pnum])";
@@ -153,20 +160,30 @@ sub row2
     return (@res);
 }
 
-sub usage
+sub process_argv
 {
-	pod2usage (-verbose => 2, -noperldoc => 1, -exitval => 2);
+	my ($self, $opts) = @_;
+	getopts("d:fgh:m:p:qrs:?", $opts);
+	
+	if ($opts->{'?'})
+    {
+        pod2usage( -verbose => 2, -noperldoc => 1);
+    }
+    unless ($ARGV[0])
+    {
+		pod2usage (1);
+	}
 }
 	
 __END__
 
 =head1 TITLE
 
-FRET - Font REporting Tool
+fret - Font REporting Tool
 
 =head1 SYNOPSIS
 
-  FRET [-f] [-g] [-r] [-s size] [-p package] [-q] font_file [out_file] [ap.xml]
+  fret [-p package] [-f] [-g] [-r] [-s size] [-q] font_file [out_file] [ap.xml]
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
 
@@ -185,6 +202,7 @@ if present)
   -q            quiet mode
   -r            Don't output report lines, fill the page with glyph boxes
   -s size       paper size: a4, ltr, legal
+  -?            longer help
 
 =head1 DESCRIPTION
 
@@ -199,6 +217,8 @@ a large outline of each glyph perhaps with the drawn points.
 If the optional ap.xml file is specified on the command line then attachment
 point information is included in the report. See ttfbuilder for details of
 the ap.xml file format.
+
+If supplied, -p must be the first option.
 
 =head1 SEE ALSO
 

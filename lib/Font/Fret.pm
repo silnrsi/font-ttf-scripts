@@ -46,22 +46,31 @@ BEGIN {
 
 sub fret
 {
-    my ($package) = @_;
+    my ($package);
+    ($package, @ARGV) = @_;
     my ($font, $maxx, $maxy, $pdf, $root);
     my (%opt);
     my ($fh, $fdat);
+    
+    if ($ARGV[0] =~ /^-p(.*)$/oi)
+    {
+    	$package = $1;
+    	shift @ARGV;
+    	$package = shift @ARGV unless $package;
+    }
 
-    getopts("d:fgh:m:p:qrs:", \%opt);
+	$package = 'Font::Fret::Default' unless $package;
+	
+	if ($package->can('process_argv'))
+	{	$package->process_argv (\%opt); }
+	else
+	{   getopts("d:fgh:m:p:qrs:", \%opt); }
 
-    $package = $opt{p} || $package || 'Font::Fret::Default';
 
     unless (defined $ARGV[0])
     {
-    	# See if $package provides its own usage info:
-    	eval {$package->usage()};
-    	# else do ours:
     	die <<'EOT';
-FRET [-f] [-g] [-r] [-s size] [-p package] [-q] font_file [out_file]
+fret [-p package] [-f] [-g] [-r] [-s size] [-q] font_file [out_file]
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
 
@@ -79,6 +88,8 @@ if present)
   -q            quiet mode
   -r            Don't output report lines, fill the page with glyph boxes
   -s size       paper size: a4, ltr, legal
+
+If supplied, -p must be the first option.
 EOT
 						# ' quote matching for above here-doc.
 
