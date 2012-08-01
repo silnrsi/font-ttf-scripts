@@ -18,6 +18,8 @@ BEGIN {
     $VERSION = "1.000";
       }
 
+my ($opts, $apRE);
+
 my ($gid, @xml_dat, $fontname, $fontupem, @rev, @macrev);
 
 sub make_cids
@@ -26,7 +28,7 @@ sub make_cids
     my (@map, @res, $m, $pname);
     my ($c) = $font->{'cmap'}->read->find_ms;
 
-    if (defined $ARGV[2])
+    if ($opts->{'a'} || defined $ARGV[2])
     {
         my ($xml) = XML::Parser::Expat->new();
         $xml->setHandlers('Start' => sub {
@@ -42,13 +44,13 @@ sub make_cids
                 $xml_dat[$gid]{'UID'} = $attrs{'UID'};
             } elsif ($tag eq 'point')
             {
-                $pname = $attrs{'type'};
+                $pname = $attrs{'type'} =~ /$apRE/oi ? $attrs{'type'} : undef;;
             } elsif ($tag eq 'contour')
             {
-                $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'};
+                $xml_dat[$gid]{'points'}{$pname}{'cont'} = $attrs{'num'} if $pname;
             } elsif ($tag eq 'location')
             {
-                $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}];
+                $xml_dat[$gid]{'points'}{$pname}{'loc'} = [$attrs{'x'}, $attrs{'y'}] if $pname;
             } elsif ($tag eq 'font')
             {
                 $fontname = $attrs{'name'};
@@ -62,7 +64,7 @@ sub make_cids
             }
         });
 
-        $xml->parsefile($ARGV[2]) || die "Can't parse $ARGV[2]";
+        $xml->parsefile($opts->{'a'} || $ARGV[2]) || die "Can't parse " . ($opts->{'a'} || $ARGV[2]);
     }
 
     @rev = $font->{'cmap'}->read->reverse('array' => 1);
@@ -162,8 +164,9 @@ sub row2
 
 sub process_argv
 {
-	my ($self, $opts) = @_;
-	getopts("d:fgh:m:p:qrs:?", $opts);
+	my ($self);
+	($self, $opts) = @_;
+	getopts("a:d:fgh:i:m:p:qrs:?", $opts);
 	
 	if ($opts->{'?'})
     {
@@ -172,6 +175,10 @@ sub process_argv
     unless ($ARGV[0])
     {
 		pod2usage (1);
+	}
+	if ($opts->{'i'})
+	{
+		$apRE = qr/$opts->{'i'}/;
 	}
 }
 	
@@ -183,7 +190,7 @@ fret - Font REporting Tool
 
 =head1 SYNOPSIS
 
-  fret [-p package] [-f] [-g] [-r] [-s size] [-q] font_file [out_file] [ap.xml]
+  fret [-p package] [-a ap.xml] [-f] [-g] [-i re] [-r] [-s size] [-q] font_file [out_file]
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
 
@@ -192,13 +199,17 @@ contexts the package may be over-ridden. Paper size may also be specified.
 If no out_file is given then out_file becomes font_file.pdf (removing .ttf
 if present)
 
+  -a ap.xml     Attachment point database file
   -f            Don't try to save memory on large fonts (>1000 glyphs)
   -g            Add one glyph per page report following summary report
   -h            Mode for glyph per page output. Bitfield:
                 1 = bit 0       don't output point positions
+  -i re         Regular expression that identifies what attachment points
+                to include in the report
   -m points     Sets glyph size in the box regardless of what is calculated
                 Regardless of the consequences for clashes
   -p package    Perl package specification to use for report information
+                (must be first option)
   -q            quiet mode
   -r            Don't output report lines, fill the page with glyph boxes
   -s size       paper size: a4, ltr, legal
@@ -216,7 +227,8 @@ a large outline of each glyph perhaps with the drawn points.
 
 If the optional ap.xml file is specified on the command line then attachment
 point information is included in the report. See ttfbuilder for details of
-the ap.xml file format.
+the ap.xml file format. Only attachment points that match the regular
+expression supplied via the -i option will be included.
 
 If supplied, -p must be the first option.
 
