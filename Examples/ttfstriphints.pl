@@ -2,6 +2,7 @@
 use strict;
 use Font::TTF::Font;
 use Getopt::Std;
+use Font::TTF::Dumper;
 
 our $opt_g;
 getopt('g');
@@ -33,13 +34,14 @@ sub DoOneGlyph
 	$g->read_dat;
 	undef $g->{'hints'};
 	$g->{'instLen'} = 0;
+	$g->{' isDirty'} = 1;
 }
 
 if ($opt_g)
 {
 	my $numGlyphs = $f->{'maxp'}->read->{'numGlyphs'} || die "Cannot find out number of glyphs in '$ARGV[0]'.\n";
 	my $glyphs = $f->{'loca'}{'glyphs'};
-	map { DoOneGlyph ($glyphs->[$_]) unless $_ >= $numGlyphs } split (',', $opt_g);
+	map { DoOneGlyph ($glyphs->[$_]) unless ($_ < 0 || $_ >= $numGlyphs) } split (',', $opt_g);
 }
 else
 {
@@ -48,6 +50,10 @@ else
 	{	delete $f->{$_};}
 	# remove all individual glyph hints:
 	$f->{'loca'}->glyphs_do(\&DoOneGlyph);
+	foreach (qw(maxZones maxTwilightPoints maxStorage maxFunctionDefs maxInstructionDefs maxStackElement maxSizeOfInstructions))
+	{
+		$f->{'maxp'}{$_} = 0;
+	}	
 }
-	
+
 $f->out($ARGV[1]);
