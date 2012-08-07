@@ -1,0 +1,87 @@
+0.17
+
+* New utilities:
+*    ttf2woff
+*    ttfascent
+*    ttffeatparams
+*    ttflang2tuner
+*    ttfsubset
+* Integrated SIL TypeTuner into Font-TTF-Scripts
+* Bug fixes and/or new capabilities in
+*    add_clases
+*    addfont
+*    addpath
+*    Examples/ttfgetname.pl
+*    Examples/ttfprintot.pl
+*    Examples/ttfstriphints.pl
+*    fret
+*    make_gdl
+*    make_volt
+*    sfd2ap
+*    ttf2volt
+*    ttfbuilder
+*    ttfname
+*    ttfname
+*    ttfsetver
+*    ttftable
+*    volt2ap
+*    volt2ttf
+* New Examples
+*    ttfcompare.pl
+*    ttfmetrics.pl
+*    ttfsortcover.pl
+* EOL and executable SVN properties cleaned up
+* Copyright and licensing updated to CPAN requirements
+
+0.16.1  (r693, 2010-12-14)
+
+* Release with working tests
+
+0.16  (r691, 2010-12-14)
+
+* ttfname now expects/returns utf8 strings.
+* Bug fixes and/or new capabilities in
+*    sfd2ap
+*    ttfbuilder
+*    ttfeval
+*    ttfname
+*    ttfremap
+* New Examples
+*    ttfdiff
+
+0.15.1  (r672, 2009-11-27)
+
+* New utilities:
+*    sdfmerge
+* Bug fixes and/or new capabilities in
+*    sdfmeld
+
+0.15  (r665, 2009-11-16)
+
+* Support debian packaging
+* New utilities:
+*    sdfmeld
+* Bug fixes and/or new capabilities in
+*    ttfbuilder
+*    volt2ttf
+
+0.14  (r639, 2009-07-27)
+
+* New utilities:
+*    sdfaddap
+*    ttfeval
+* Bug fixes and/or new capabilities in
+*    ttfbuilder
+
+0.13  (r586, 2009-02-12)
+
+* New utilities:
+*    ttfdeflang
+
+0.12  (r574, 2009-01-05)
+
+
+0.11  (r.518, 2008-05-25)
+
+* New utilities:
+*    dumpfont
