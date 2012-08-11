@@ -77,7 +77,7 @@ NID: foreach $nid(256 .. $lastnid){
 # Set up mapping from cvar name types to cvar.pm methods
   my %cvarmap = ("uilabel" => "UINameID", "tooltip" => "TooltipNameID", "sampletest" => "SampleTextNameID" );
 
-# Process the control file. Most validity checking is in thie section
+# Process the control file. Most validity checking is in this section
   my ($ctrl, $fpelement, $lang);
   $ctrl={};
   $fpelement="";
@@ -209,8 +209,7 @@ NID: foreach $nid(256 .. $lastnid){
     {
        if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Sset->new() }
        # First look for the string based on english name string
-       my $nameid=$ctrlitem->{'uilabel'}{'id'};
-       if (not $nameid ) { $nameid = findstring($ctrlitem->{'uilabel'}{'nstrings'}{'en'} ); }  
+       my $nameid=$ctrlitem->{'uilabel'}{'id'} || findstring($ctrlitem->{'uilabel'}{'nstrings'}{'en'} ); 
        # Now add or update the strings if needed
        addstrings ( $nameid, $ctrlitem->{'uilabel'}{'nstrings'});
        $gfeat->{'PARMS'}{'UINameID'} = $nameid;
@@ -224,8 +223,7 @@ NID: foreach $nid(256 .. $lastnid){
        {
          if ($ctrlitem->{$nametype})
          {
-           my $nameid=$ctrlitem->{$nametype}{'id'};
-           if (not $nameid) { $nameid = findstring($ctrlitem->{$nametype}{'nstrings'}{'en'} ) }
+           my $nameid=$ctrlitem->{$nametype}{'id'} || findstring($ctrlitem->{$nametype}{'nstrings'}{'en'} );
            addstrings ( $nameid, $ctrlitem->{$nametype}{'nstrings'});
            $gfeat->{'PARMS'}{$cvarmap{$nametype}} = $nameid;
          }
@@ -245,7 +243,7 @@ NID: foreach $nid(256 .. $lastnid){
              my ($i, $j);
 iloop:       foreach $i (0 .. $#nsitem)
              {
-               ($nid,$pid,$eid,$lid) = @nsitem[$i];
+               ($nid,$pid,$eid,$lid) = @{$nsitem[$i]};
                foreach $j (1 .. $numparam)
                {
                  if (not $ctrlitem->{'npstrings'}{'en'}[$j] = $namet->{'strings'}[$nid+$j][$pid][$eid]{$lid} )
@@ -342,6 +340,7 @@ on control file values, then writes the modified file to outfile.ttf.
 
   -c file    Specifies the xml control file to use
   -d         Deletes all GSUB feature parameters from the font
+  -h         Help
 
 If both -c and -d are specified, all existing parameters are deleted prior to applying the 
 control file values.

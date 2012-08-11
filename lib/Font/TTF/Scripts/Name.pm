@@ -73,10 +73,10 @@ sub ttfname
         }
 
         @time = gmtime($font->{'head'}->getdate);
-        $unique = $name->find_name(8) . ":$full:$time[3]-$time[4]-$time[5]";
+        $unique = sprintf('%s:%04d-%02d-%02d', $name->find_name(8) . $full, $time[5]+1900, $time[4]+1, $time[3]);
         $post = $family;
-        $post =~ s/[\s\[\](){}<>\/%]//og;
         $post .= "-$subfamily" if ($subfamily);
+        $post =~ s/[\s\[\](){}<>\/%]//og;
 
 # make sure post name set
         unless ($opts{'p'})
