@@ -11,7 +11,6 @@
 *    add_clases
 *    addfont
 *    addpath
-*    Examples/ttfgetname.pl
 *    Examples/ttfprintot.pl
 *    Examples/ttfstriphints.pl
 *    fret
@@ -28,6 +27,7 @@
 *    volt2ttf
 * New Examples
 *    ttfcompare.pl
+*    ttfgetname.pl
 *    ttfmetrics.pl
 *    ttfsortcover.pl
 * EOL and executable SVN properties cleaned up
@@ -47,7 +47,7 @@
 *    ttfname
 *    ttfremap
 * New Examples
-*    ttfdiff
+*    ttfdiff.pl
 
 0.15.1  (r672, 2009-11-27)
 
@@ -72,11 +72,17 @@
 *    ttfeval
 * Bug fixes and/or new capabilities in
 *    ttfbuilder
+* New Examples
+*    apexpr.pl
+*    fixmaxcontext.pl
+*    volt2ps.pl
 
 0.13  (r586, 2009-02-12)
 
 * New utilities:
 *    ttfdeflang
+* New Examples
+*    ttfprintot.pl
 
 0.12  (r574, 2009-01-05)
 
