@@ -10,7 +10,7 @@ $opt_v ||= 1;
 
 my ($VERSION, $fversion, @extras, @scripts, @theselibs, $fhi, $fho, $perlbin);
 
-$VERSION = "0.16.1";
+$VERSION = "1.00";
 
 # Fix up inno script by substituting {perl: $var}
 
