@@ -35,7 +35,7 @@ if ($opt_d)
   my $feat;
   my $gfeats=$gsubt->{'FEATURES'};
   
-  foreach $feat (keys $gfeats)
+  foreach $feat (keys %{$gfeats})
   {
     if ($feat ne 'FEAT_TAGS') {$gfeats->{$feat}{'PARMS'}=''}
   }
