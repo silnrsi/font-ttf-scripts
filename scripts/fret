@@ -20,7 +20,7 @@ BEGIN {
 
 my ($opts, $apRE);
 
-my ($gid, @xml_dat, $fontname, $fontupem, @rev, @macrev);
+my ($gid, @xml_dat, $fontname, $fontupem, @rev, @macrev, $usort, $psort);
 
 sub make_cids
 {
@@ -71,7 +71,7 @@ sub make_cids
     @map = $font->{'cmap'}->read->reverse;
     $map[$font->{'maxp'}{'numGlyphs'}] = 0;
     foreach $m (@map) { $m = 65536 if $m == 0; }
-    @res = (sort {$map[$a] <=> $map[$b] || $font->{'post'}{'VAL'}[$a] cmp $font->{'post'}{'VAL'}[$b] || $a <=> $b}
+    @res = (sort {($usort && $map[$a] <=> $map[$b]) || ($psort && $font->{'post'}{'VAL'}[$a] cmp $font->{'post'}{'VAL'}[$b]) || $a <=> $b}
             (0 .. $font->{'maxp'}{'numGlyphs'} - 1));
 
     return ("Glyph ID", @res);
@@ -166,7 +166,7 @@ sub process_argv
 {
 	my ($self);
 	($self, $opts) = @_;
-	getopts("a:d:fgh:i:m:p:qrs:?", $opts);
+	getopts("a:d:fgh:i:m:o:p:qrs:?", $opts);
 	
 	if ($opts->{'?'})
     {
@@ -180,6 +180,10 @@ sub process_argv
 	{
 		$apRE = qr/$opts->{'i'}/;
 	}
+	$opts->{'o'} ||= 'up';
+	$usort = 1 if $opts->{'o'} =~ /u/;  # enable Unicode sort
+	$psort = 1 if $opts->{'o'} =~ /p/;  # enable Postname sort
+			# gid sort is always last resort
 }
 	
 __END__
@@ -208,6 +212,9 @@ if present)
                 to include in the report
   -m points     Sets glyph size in the box regardless of what is calculated
                 Regardless of the consequences for clashes
+  -o sort       Define sort order. Can be combinations of u (Unicode),
+                p (postname), or i (glyph index). When supplied, priority
+                is u, then p, then i. Default upi.
   -p package    Perl package specification to use for report information
                 (must be first option)
   -q            quiet mode
