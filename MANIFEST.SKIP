@@ -18,13 +18,12 @@ Makefile$
 debian/
 pm_to_blib
 \~$
-dev/
+(?<!TypeTuner_)dev/
 build/
 ^build
 dists/
 ^libfont-
 description-pak
-^doc
 ^doc-pak
 \.swp
 ^\.hg/

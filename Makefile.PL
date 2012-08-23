@@ -158,7 +158,7 @@ WriteMakefile (
         ABSTRACT => "TTF font support scripts for Perl",
 		PREREQ_PM => {
 			'Algorithm::Diff' => 0,
-			'Font::TTF' => 0.44,
+			'Font::TTF' => 1.00,
 			'Text::PDF::File' => 0,
             'XML::Parser' => 0
 			},
