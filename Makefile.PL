@@ -156,6 +156,7 @@ WriteMakefile (
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
         AUTHOR => "martin_hosken\@sil.org",
         ABSTRACT => "TTF font support scripts for Perl",
+        LICENSE => "artistic_2",
 		PREREQ_PM => {
 			'Algorithm::Diff' => 0,
 			'Font::TTF' => 1.00,
