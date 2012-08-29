@@ -1,3 +1,9 @@
+libfont-ttf-scripts-perl (1.0-1precise1) precise; urgency=low
+
+  * Release 1.0 
+
+ -- Martin Hosken <martin_hosken@sil.org>  Wed, 29 Aug 2012 10:29:05 +0700
+
 libfont-ttf-scripts-perl (0.14-1ubuntu1.1) jaunty; urgency=low
 
   * Add sfdmeld 
