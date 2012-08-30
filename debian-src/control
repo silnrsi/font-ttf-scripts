@@ -7,7 +7,7 @@ Maintainer: Martin Hosken <martin_hosken@sil.org>
 Standards-Version: 3.7.2
 
 Package: libfont-ttf-scripts-perl
-Depends: ${perl:Depends}, libfont-ttf-perl (>= 1.0), libalgorithm-diff-perl, libtext-pdf-perl, libxml-parser-perl
+Depends: ${perl:Depends}, libfont-ttf-perl (>= 1.0), libalgorithm-diff-perl, libtext-pdf-perl, libxml-parser-perl, libio-string-perl
 Architecture: all
 Description:  Perl module for TrueType Font hacking
  This module allows you to do almost anything to a TrueType/OpenType Font

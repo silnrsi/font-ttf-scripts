@@ -1,3 +1,9 @@
+libfont-ttf-scripts-perl (1.01-1precise1) precise; urgency=low
+
+  * add IO::String prerequisite
+
+ -- Martin Hosken <martin_hosken@sil.org>  Thu, 30 Aug 2012 10:05:22 +0700
+
 libfont-ttf-scripts-perl (1.0-1precise1) precise; urgency=low
 
   * Release 1.0 
