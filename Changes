@@ -1,3 +1,7 @@
+1.02  (r863, 2012-08-28)
+
+* Add Text::Unicode::Equivalents dependency
+
 1.01  (r861, 2012-08-28)
 
 * Add IO::String prerequisite to keep BSD and testing environments happy

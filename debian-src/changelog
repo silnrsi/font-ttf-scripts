@@ -1,3 +1,9 @@
+libfont-ttf-scripts-perl (1.02-1precise1) precise; urgency=low
+
+  * add Text::Unicode::Equvalents dependency (needs a package) 
+
+ -- Martin Hosken <martin_hosken@sil.org>  Thu, 30 Aug 2012 15:36:41 +0700
+
 libfont-ttf-scripts-perl (1.01-1precise1) precise; urgency=low
 
   * add IO::String prerequisite
