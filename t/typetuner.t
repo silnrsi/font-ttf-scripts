@@ -10,7 +10,7 @@
 # %TT% delete foo.ttf
 
 use Test::Simple tests => 7;
-use File::Compare;
+use File::Compare qw( compare compare_text );
 use File::Copy; #move func
 
 # set $debug to true to run TypeTuner in debug mode and visually separate test output
@@ -32,14 +32,14 @@ print "****\n\n" if $debug;
 
 # create Settings file from a Tuner-ready font
 system(@run_tt, "createset", "t/tt_font_tt.ttf", "t/tt_feat_all_set.xml");
-$res = compare("t/tt_feat_all_set.xml", "t/base/tt_feat_all_set.xml");
+$res = compare_text("t/tt_feat_all_set.xml", "t/base/tt_feat_all_set.xml", \&cmptxtline);
 ok(!$res, "created Settings file from font");
 unlink "t/tt_feat_all_set.xml" unless ($res);
 print "****\n\n" if $debug;
 
 # add line metrics from a legacy font to a Settings file
 system(@run_tt, "-o", "t/tt_feat_set_1_metrics.xml", "setmetrics", "t/testfont.ttf", "t/tt_feat_set_1.xml");
-$res_xml = compare("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml");
+$res_xml = compare_text("t/tt_feat_set_1_metrics.xml", "t/base/tt_feat_set_1_metrics.xml", \&cmptxtline);
 ok(!$res_xml, "imported metrics into Settings file");
 print "****\n\n" if $debug;
 
@@ -104,3 +104,9 @@ $res = (($tbl_list_1 =~ /Silt/) && ($tbl_list_2 !~ /Silt/));
 ok($res, "deleted the Settings file from a tuned font");
 unlink "t/tt_font_2.ttf" unless (!$res);
 unlink "t/tt_font_2_tt.ttf" unless (!$res);
+
+sub cmptxtline { 
+	foreach(@_) 
+	{s/\r?\n?$//o;} 
+	return $_[0] ne $_[1]; 
+}
