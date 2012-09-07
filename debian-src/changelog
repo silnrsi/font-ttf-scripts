@@ -1,3 +1,9 @@
+libfont-ttf-scripts-perl (1.03-1~precise1) precise; urgency=low
+
+  * Fix tests on windows 
+
+ -- Martin Hosken <martin_hosken@sil.org>  Fri, 07 Sep 2012 15:26:42 +0700
+
 libfont-ttf-scripts-perl (1.02-1precise1) precise; urgency=low
 
   * add Text::Unicode::Equvalents dependency (needs a package) 
