@@ -386,8 +386,19 @@ sub main
         }
         elsif ($tag eq 'scale')
         {
-            $curbase->{'scale'}[0] = $attrs{'x'};
-            $curbase->{'scale'}[3] = $attrs{'y'};
+            my (@r, @s, $angle, $res);
+            if (defined $attrs{'rotate'})
+            {
+                $angle = $attrs{'rotate'} * 3.141592535 / 180;
+                @r = (cos($angle), -sin($angle), sin($angle), cos($angle))
+            }
+            else
+            { @r = (1, 0, 0, 1); }
+            @s = (1, 0, 0, 1);
+            $s[0] = $attrs{'x'} if (defined $attrs{'x'});
+            $s[3] = $attrs{'y'} if (defined $attrs{'y'});
+            $res = mat_mult(\@s, \@r);
+            $curbase->{'scale'} = $res;
         }
         elsif ($tag eq 'string')
         {
@@ -719,8 +730,7 @@ sub main
                                 my (@m) = @{$cg->{'scale'}};
                                 if ($m[0] != 0 || $m[1] != 0 || $m[2] != 0 || $m[3] != 0)
                                 {
-                                    $x = $x * $m[0] + $y * $m[1];
-                                    $y = $x * $m[2] + $y * $m[3];
+                                    ($x, $y) = ($x * $m[0] + $y * $m[1], $x * $m[2] + $y * $m[3]);
                                 }
                             }
                             
