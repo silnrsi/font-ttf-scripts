@@ -2,31 +2,33 @@
 use strict;
 use Font::TTF::Scripts::GDL;
 use IO::File;
-use Getopt::Std;
+use Getopt::Long;
 use Pod::Usage;
 
-our ($opt_a, $opt_d, $opt_e, $opt_h, $opt_i, $opt_l, $opt_n, $opt_o, $opt_p, $opt_r, $opt_s, $opt_z);
-getopts('a:de:hi:l:n:o:p:rs:z:');
+our(%opts);
+GetOptions(\%opts, 'ap|a=s', 'autodefines|d', 'excludes|e=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
+                'normalize|n=i', 'omitaps|o=s', 'positions|p=i', 'renameaps|r', 'substitutions|s=i',
+                'z=i', 'define|D=s%');
 
-unless ($ARGV[1] || $opt_h)
+unless ($ARGV[1] || $opts{'help'})
 {
     pod2usage(1);
     exit;
 }
 
-if ($opt_h)
+if ($opts{'help'})
 {
     pod2usage(-verbose => 2, -noperldoc => 1);
     exit;
 }
 
-my %opts;
+my %options;
 
 # Parse -e file if supplied
-if ($opt_e) 
+if ($opts{'excludes'}) 
 {
     my @glist;
-	open (IN, "<$opt_e") or die "Couldn't open '$opt_e' for reading.";
+	open (IN, "<$opts{'excludes'}") or die "Couldn't open '$opts{'excludes'}' for reading.";
 	while (<IN>)
 	{
 		s/[\r\n]*$//o;      # platform-safe chomp
@@ -35,12 +37,12 @@ if ($opt_e)
 		push (@glist, $_) unless $_ eq '';
 	}
     close IN;
-	$opts{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
-$opts{'-omittedAPs'} = $opt_o if $opt_o;
+$options{'-omittedAPs'} = $opts{'omitaps'} if ($opts{'omitaps'});
 
-my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opt_a, %opts) || die "Can't read font information";
+my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
 if (exists $f->{'WARNINGS'})
 {
@@ -50,9 +52,9 @@ if (exists $f->{'WARNINGS'})
 
 my $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
-my $comp = $1 if ($opt_l =~ s/(comp)$//oi);
+my $comp = $1 if ($opts{'ligatures'} =~ s/(comp)$//oi);
 
-if ($opt_r)
+if ($opts{'renameaps'})
 {
     foreach my $g (@{$f->{'glyphs'}})
     {
@@ -74,14 +76,14 @@ if ($opt_r)
 $f->{'vecs'} = {};
 
 $f->start_gdl($outfh);
-$f->make_classes(-ligatures => $opt_l, -ligtype => $comp);
-$f->out_gdl($outfh, -split_ligs => ($opt_z & 1), -psnames => ($opt_z & 4));
-$f->out_classes($outfh, -defines => $opt_d);
+$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp);
+$f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
+$f->out_classes($outfh, -defines => $opts{'autodefines'});
 $f->endtable($outfh);
-$f->normal_rules($outfh, $opt_n, ($opt_z & 2)) if ($opt_n);
-$f->lig_rules($outfh, $opt_s, $opt_l) if ($opt_l);
-$f->pos_rules($outfh, $opt_p) if ($opt_p);
-$f->end_gdl($outfh, $opt_i);
+$f->normal_rules($outfh, $opts{'normalize'}, ($opts{'z'} & 2)) if ($opts{'normalize'});
+$f->lig_rules($outfh, $opts{'subsitutions'}, $opts{'ligatures'}) if ($opts{'ligatures'});
+$f->pos_rules($outfh, $opts{'positions'}) if ($opts{'positions'});
+$f->end_gdl($outfh, $opts{'include'}, $opts{'define'});
 
 $outfh->close();
 
@@ -102,6 +104,7 @@ Creates font specific GDL from a font and optional attachment point database
 
   -a file       Attachment point database
   -d            Output per class #defines for key classes
+  -D name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 
   -h            print manpage

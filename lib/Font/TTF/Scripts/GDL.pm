@@ -216,10 +216,18 @@ sub endtable
 
 sub end_gdl
 {
-    my ($self, $fh, $include) = @_;
+    my ($self, $fh, $include, $defines) = @_;
+    my ($k, $v);
 
+    while (($k, $v) = each %$defines)
+    {
+        $fh->print("\n#define $k $v");
+    }
     $fh->print("\n#define MAXGLYPH " . ($self->{'font'}{'maxp'}{'numGlyphs'} - 1) . "\n");
-    $fh->print("\n#include \"$include\"\n") if ($include);
+    foreach (@$include)
+    {
+        $fh->print("\n#include \"$_\"\n");
+    }
 }
 
 sub make_name
