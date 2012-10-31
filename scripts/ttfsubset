@@ -29,7 +29,7 @@ if ($opts{'d'})
     # Split generously (spaces, comma, colon, semicolon)
     foreach my $tag (grep {length($_) == 4} split(/[\s,:;]+/, $opts{'d'}))
     {
-    	delete $f->{$tag} if exists $f->{$tag};
+        delete $f->{$tag} if exists $f->{$tag};
     }
 }
 
@@ -42,18 +42,49 @@ if ($opts{'g'})
     my ($fh) = IO::File->new($opts{'g'}, "r") || die "Can't open $opts{'g'} for reading";
     while (<$fh>)
     {
+        s/[\r\n]+$//o;
         foreach my $g (split)
         {
-            my ($n, $u) = split(/=/, $g);
-            if ($n =~ m/^U\+/oi)
-            { $n = $cmap->{'val'}{hex($')}; }
-            elsif ($n !~ m/^\d/o)
-            { $n = $post->{'STRINGS'}{$n}; }
-            if ($n)
+            my ($n1, $n2, $u);
+            ($n1, $n2, $u) = ($g =~ m/^([^=]+?)(?:\.\.([^=]+?))?(?:=([a-f0-9]{4,6}))?$/oi);
+            $u = hex($u);
+            if ($n1 =~ m/^U\+/oi)
             {
-                $subsetter->add_glyph($n);
+                # Process Unicode or Unicode range
+                $n1 = hex($');  #'
+                $n2 = defined($n2) ? hex($n2) : $n1;
+                if ($n1 == 0 || $n1 > $n2)
+                { warn "Can't parse $g"; next;}
+                while ($n1 <= $n2)
+                {
+                    my $n = $cmap->{'val'}{$n1};
+                    $subsetter->add_glyph($n);
+                    if ($u)
+                    { $subsetter->remap($u++, $n); }
+                    $n1++;
+                }
+                next;
+            }
+            # Process postscript or GID range
+            $n1 = $post->{'STRINGS'}{$n1} unless $n1 =~ m/^\d+$/o;
+            if (!defined $n1 || $n2 >= $numg)
+            { warn "Can't parse $g"; next;}
+            if (defined $n2)
+            {
+                $n2 = $post->{'STRINGS'}{$n1} unless $n2 =~ m/^\d+$/o;
+                if ($n1 > $n2 || $n2 >= $numg)
+                { warn "Can't parse $g"; next;}
+            }
+            else
+            {
+                $n2 = $n1;
+            }
+            while ($n1 <= $n2)
+            {
+                $subsetter->add_glyph($n1);
                 if ($u)
-                { $subsetter->remap(hex($u), $n); }
+                { $subsetter->remap($u++, $n1); }
+                $n1++;
             }
         }
     }
@@ -1173,9 +1204,9 @@ Opens infont (a .ttf file), subsets it according to the supplied options, then w
 =head1 OPTIONS
 
   -h            Get full help
-  -d tag[,...]	List of font tables to remove.
-  -g listfile	File containing list of glyphs to retain 
-  -s tag[,...]	List of OpenType script tags to retain
+  -d tag[,...]  List of font tables to remove.
+  -g listfile   File containing list of glyphs to retain 
+  -s tag[,...]  List of OpenType script tags to retain
   -l tag[,...]  List of OpenType language tags to retain
   -n name       Renames the font to the given name (as per ttfname -n)
 
@@ -1196,8 +1227,9 @@ The C<-g> option specifies a file that lists glyphs to be retained in the
 subset font -- ttfsubset will remove all other glyphs and then do what it can to simplify
 remaining features.  Glyphs are identified in the file using space-separated indentifiers which
 can be decimal numeric glyph IDs, postscript glyph names, or hexidecimal Unicode scalar values in the format
-of U+xxxx. Numeric or postscript glyph identifiers can be followed immediately by equals sign and 4 to 6 hex digits to
-indicate the glyph should be encoded.
+of U+xxxx. Ranges of glyphs (specified by either glyph ID or postscript name) and of Unicode scalar values
+can be specified using '..' between the values. Glyph identifiers or ranges may be followed immediately by 
+equals sign and 4 to 6 hex digits to indicate the glyph(s) should be encoded.
 
 The C<-s> and C<-l> options identify OpenType script and language (respectively) tags
 to retain in the font. The Default language is always retained, so specify C<-l ''> to remove all but the default language. 
