@@ -15,7 +15,13 @@ sub ttfname
 
     if (defined $opts{'r'})
     {
-        delete $name->{'strings'}[$opts{'r'}];
+        foreach (split(/[\s,]+/, $opts{'r'}))
+        {
+            my ($n1, $n2) = split('\.\.');
+            $n2 = $n1 unless defined $n2;
+            while ($n1 <= $n2)
+            { delete $name->{'strings'}[$n1++]; }
+        }
         return $font;
     }
 
@@ -36,7 +42,7 @@ sub ttfname
     {
         ## my ($cmap) = $font->{'cmap'}->read;
         ## @cover = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmap->{'Tables'}};
-    	@cover = $name->pe_list();
+        @cover = $name->pe_list();
         $opts{'l'} ||= 'en-US';
     }
 

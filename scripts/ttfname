@@ -55,7 +55,8 @@ out.ttf.
   -n "name"   specifies new font family name (not optional)
   -p          Don't update postscript font name
   -q          disable signon message
-  -r num      Removes all strings of the given id
+  -r num      Removes all strings of the given ids. Space- or comma-separated
+              ids or id ranges (denoted by "..") may be specified.
   -s filename overrides -n and gets string from file. Useful for -t
   -t num      overrides the normal naming areas to change another
               string -f becomes inactive. Use -l as well to create entry.
