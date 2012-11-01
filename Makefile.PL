@@ -70,7 +70,15 @@ foreach \$f (qw($files))
     else
     {
         open(FH, "> \$ARGV[0]\\\\\$f.bat") || die \$@;
-        print FH "\@\\"\$ARGV[0]\\\\parl.exe\\" \\"\$ARGV[0]\\\\fontutils.par\\" \$f %1 %2 %3 %4 %5 %6 %7 %8 %9\\n";
+        print FH <<\"EOB\";
+\\\@echo off
+if "%OS%" == "Windows_NT" goto WinNT
+"\$ARGV[0]\\\\parl.exe" "\$ARGV[0]\\\\fontutils.par" \$f %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto end
+:WinNT
+"\$ARGV[0]\\\\parl.exe" "\$ARGV[0]\\\\fontutils.par" \$f %*
+:end
+EOB
         close(FH);
     }
 }
