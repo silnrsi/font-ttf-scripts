@@ -1003,7 +1003,7 @@ sub markdels
     for (my $i = 0; $i < $pass->{'numRows'}; $i++)
     {
         # next unless (grep($_ == $i, @{$pass->{'startStates'}}));    # this should go, but needs special handling
-        if (    (!scalar keys %{$cinfo->{'rowfwdrefs'}[$i]} and $i < $pass->{'numTransitional'})
+        if (    (!scalar keys %{$cinfo->{'rowfwdrefs'}[$i]} and $i < $pass->{'numTransitional'} and !$self->isFinal($pass, $cinfo, $i))
             or  (!scalar keys %{$cinfo->{'rowbackrefs'}[$i]} and !$self->isStart($pass, $i)))
         { $self->delrow($pass, $cinfo, $i); }
     }
@@ -1085,7 +1085,7 @@ sub finalise_pass
         my ($c) = 0;
         foreach my $r (@rinfo)
         {
-            if ($r->[0] eq 'next')
+            if ($r->[0] eq 'next' or $r->[0] eq 'copy_next')
             { $c++; }
             elsif ($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')    # need to handle upsizing to 16-bit and perhaps downsizing
             {
@@ -1266,7 +1266,7 @@ sub finalise_pass
     my (@rowrules);
     if ($numSuccess < 0)
     {
-        print "No success states, so no rules\n";
+        print "No success states, so no rules in $pass->{'id'}\n";
         return 0;
     }
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
@@ -1334,24 +1334,12 @@ sub findmappedrow
 sub delrule
 {
     my ($self, $pass, $subsetter, $cinfo, $num) = @_;
-#    my (@rinfo) = $self->unpack_code($pass->{'actionCode'}[$num]);
 
-#    foreach my $r (@rinfo)
-#    {
-#        if ($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')
-#        { $subsetter->{'silf'}{'numclass_pairs'}{$r->[2]}{$r->[3]}--; }
-#        elsif ($r->[0] eq 'put_glyph_8bit_obs' or $r->[0] eq 'put_glyph')
-#        { $subsetter->{'silf'}{'numclasses'}{$r->[1]}--; }
-#    }
-
-#    print "Deleting rule $num in pass $pass->{'id'}\n";
     foreach my $r (@{$cinfo->{'rules'}[$num]})
     {
         $cinfo->{'rulemap'}[$r] = [grep ($_ != $num, @{$cinfo->{'rulemap'}[$r]})];
         if (!scalar @{$cinfo->{'rulemap'}[$r]})    # and $r < $pass->{'numTransitional'})
         { $self->delrow($pass, $cinfo, $r); }
-#        else
-#        { print join(",", @{$cinfo->{'rulemap'}[$r]}) . "\n"; }
     }
     $cinfo->{'rules'}[$num] = [];
 }
@@ -1359,10 +1347,18 @@ sub delrule
 sub isStart
 {
     my ($self, $pass, $row) = @_;
-    if (grep ($_ == $row, @{$pass->{'startStates'}}))
+    if (grep {$_ == $row} @{$pass->{'startStates'}})
     { return 1; }
     else
     { return 0; }
+}
+
+sub isFinal
+{
+    my ($self, $pass, $cinfo, $row) = @_;
+    return 0 if ($row < $pass->{'nomRows'} - $pass->{'numSuccess'});
+    return 0 if ($row > $pass->{'numRows'} and (!defined $cinfo->{'rulemap'}[$row] or !@{$cinfo->{'rulemap'}[$row]}));
+    return 1;
 }
 
 sub delrow
@@ -1378,7 +1374,7 @@ sub delrow
     foreach my $k (keys %{$cinfo->{'rowbackrefs'}[$row]})
     {
         delete $cinfo->{'rowfwdrefs'}[$k]{$row};
-        $self->delrow($pass, $cinfo, $k) unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$k]});
+        $self->delrow($pass, $cinfo, $k) unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$k]} or $self->isFinal($pass, $cinfo, $k));
     }
     $cinfo->{'rowbackrefs'}[$row] = {};
     foreach my $r (@{$cinfo->{'rulemap'}[$row]})
@@ -1611,9 +1607,6 @@ sub mergerow
     }
     $self->delrow($pass, $cinfo, $from);
 }
-
-
-
 
 sub arraycmp
 {
