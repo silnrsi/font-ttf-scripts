@@ -13,6 +13,8 @@ our $CHAIN_CALL;
 our %opts;
 our $f;
 
+our $DEBUG = 1;
+
 unless($CHAIN_CALL)
 {
     pod2usage(-verbose => 1) unless (getopts('d:g:hl:n:s:', \%opts) && $#ARGV == 1) || $opts{'h'};
@@ -20,12 +22,15 @@ unless($CHAIN_CALL)
     $f = Font::TTF::Font->open($ARGV[0]) || die "Can't open file '$ARGV[0]'";
 }
 
+$opts{'d'} = 'default' unless (defined $opts{'d'});
 if ($opts{'d'})
 {
     # expand magic words.
+    $opts{'d'} =~ s/\bdefault\b/ hdmx vdmx aat kern /oi;        # shame about kern, we should support that.
     $opts{'d'} =~ s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
     $opts{'d'} =~ s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
     $opts{'d'} =~ s/\bopentype\b/ GDEF GSUB GPOS /oi;
+    $opts{'d'} =~ s/\baat\b/ morx feat /oi;
     # Split generously (spaces, comma, colon, semicolon)
     foreach my $tag (grep {length($_) == 4} split(/[\s,:;]+/, $opts{'d'}))
     {
@@ -39,10 +44,11 @@ my $numg = $f->{'maxp'}{'numGlyphs'};
 my $subsetter = Font::TTF::Scripts::SubSetter->new($numg);
 if ($opts{'g'})
 {
-    my ($fh) = IO::File->new($opts{'g'}, "r") || die "Can't open $opts{'g'} for reading";
+    my ($fh) = IO::File->new($opts{'g'}, "<:utf8") || die "Can't open $opts{'g'} for reading";
     while (<$fh>)
     {
         s/[\r\n]+$//o;
+        s/^\x{FEFF}?\s*//o;
         foreach my $g (split)
         {
             my ($n1, $n2, $u);
@@ -169,6 +175,13 @@ sub creategidmap
     $self->{'gcount'} = 0;
     foreach my $i (0 .. $numg - 1)
     { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $self->{'gcount'}++ : 0); }
+    if ($DEBUG)
+    {
+        my (@list);
+        foreach (0 .. $#{$self->{'gidmap'}})
+        { push (@list, "$_=$self->{'gidmap'}[$_]") if ($self->{'gidmap'}[$_] > 0); }
+        print join(", ", @list) . "\n";
+    }
     return $self->{'gcount'};
 }
 
@@ -179,7 +192,7 @@ sub map_glyph
     if ($self->{'gidmap'})
     { return $self->{'gidmap'}[$g]; }
     else
-    { return $g; }
+    { return -1; }
 }
 
 package Font::TTF::Table;
@@ -886,6 +899,8 @@ sub subset_silf
                     push (@subother, $b);
                     push (@subthis, $a);
                 }
+                elsif ($subsetter->keep_glyph($a))
+                { push (@{$subsetter->{'silf'}{'class_pairs_removed'}{$i}{$k}}, $a); }
             }
             if (!scalar @subthis)
             { $subsetter->{'silf'}{'numclass_pairs'}{$i}{$k} = -1; }
@@ -916,6 +931,11 @@ sub subset_silf
             my ($i) = 0;
             push (@{$subsetter->{'silf'}{'classes'}}, {map {$_ => $i++} @newclass});
             push (@{$subsetter->{'silf'}{'classmap'}}, $#{$subsetter->{'silf'}{'classes'}});
+            if ($DEBUG)
+            {
+                print "class(".($#{$subsetter->{'silf'}{'classes'}}).") ";
+                print join(",", @newclass)."\n";
+            }
         }
         else
         { push (@{$subsetter->{'silf'}{'classmap'}}, -1); }
@@ -950,7 +970,10 @@ sub markdels
     for (my $i = 0; $i < $subsetter->{'numg'}; ++$i)
     {
         if (defined $pass->{'colmap'}{$i} and $subsetter->keep_glyph($i))
-        { vec($cinfo->{'cols'}, $pass->{'colmap'}{$i}, 1) = 1; }
+        {
+            vec($cinfo->{'cols'}, $pass->{'colmap'}{$i}, 1) = 1;
+            push (@{$cinfo->{'glyphcols'}[$pass->{'colmap'}{$i}]}, $i);
+        }
     }
 
     # prepare back references to allow easy row deletion
@@ -959,8 +982,8 @@ sub markdels
     $cinfo->{'rowbackrefs'} = [];
     for (my $i = 0; $i < $pass->{'numRows'}; $i++)
     {
-        $cinfo->{'rowfwdrefs'}[$i] = [];
-        $cinfo->{'rowbackrefs'}[$i] = [];
+        $cinfo->{'rowfwdrefs'}[$i] = {};
+        $cinfo->{'rowbackrefs'}[$i] = {};
     }
     for (my $i = 0; $i < scalar @{$pass->{'fsm'}}; $i++)
     {
@@ -971,8 +994,8 @@ sub markdels
             my ($t) = $fsm->[$j];
             if ($t)
             {
-                push(@{$cinfo->{'rowfwdrefs'}[$i]}, $t);
-                push(@{$cinfo->{'rowbackrefs'}[$t]}, $i);;
+                $cinfo->{'rowfwdrefs'}[$i]{$t} = 1;
+                $cinfo->{'rowbackrefs'}[$t]{$i} = 1;
             }
         }
     }
@@ -980,8 +1003,8 @@ sub markdels
     for (my $i = 0; $i < $pass->{'numRows'}; $i++)
     {
         # next unless (grep($_ == $i, @{$pass->{'startStates'}}));    # this should go, but needs special handling
-        if (    (!scalar @{$cinfo->{'rowfwdrefs'}[$i]} and $i < $pass->{'numTransitional'})
-            or  (!scalar @{$cinfo->{'rowbackrefs'}[$i]} and !$self->isStart($pass, $i)))
+        if (    (!scalar keys %{$cinfo->{'rowfwdrefs'}[$i]} and $i < $pass->{'numTransitional'})
+            or  (!scalar keys %{$cinfo->{'rowbackrefs'}[$i]} and !$self->isStart($pass, $i)))
         { $self->delrow($pass, $cinfo, $i); }
     }
 
@@ -989,7 +1012,7 @@ sub markdels
     # row value can be 0, 1, 3; never is 2, since how can you have outgoing if you aren't reached.
     for (my $i = $pass->{'numRows'} - $pass->{'numSuccess'}; $i < $pass->{'numRows'}; ++$i)
     {
-        if (scalar @{$cinfo->{'rowbackrefs'}[$i]})
+        if (scalar keys %{$cinfo->{'rowbackrefs'}[$i]})
         {
             my (@rlist) = @{$pass->{'rulemap'}[$i - $pass->{'numRows'} + $pass->{'numSuccess'}]};
             foreach (@rlist)
@@ -1037,63 +1060,7 @@ sub testrules
 sub finalise_pass
 {
     my ($self, $pass, $subsetter, $cinfo) = @_;
-
-    # 5.3 create rowmap
-    my (@rowmap);
-    my ($numrows, $i);
-
-    for ($i = 0; $i < scalar @{$pass->{'startStates'}}; $i++)
-    {
-        my ($r) = $pass->{'startStates'}[$i];
-        last if (scalar @{$cinfo->{'rowfwdrefs'}[$r]} or scalar @{$cinfo->{'rowbackrefs'}[$r]})
-    }
-    if ($i < scalar @{$pass->{'startStates'}})
-    {
-        splice(@{$pass->{'startStates'}}, 0, $i);
-        $pass->{'minRulePreContext'} += $i;
-    }
-    else
-    {
-        print "No start states so exit pass $pass->{'id'}\n";
-        return 0;
-    }
-    if ($pass->{'minRulePreContext'} >= $pass->{'maxRulePreContext'})
-    { $pass->{'minRulePreContext'} = $pass->{'maxRulePreContext'}; }
-    else
-    {
-        for ($i = 0; $i < scalar @{$pass->{'startStates'}}; $i++)
-        {
-            my ($r) = $pass->{'startStates'}[$#{$pass->{'startStates'}} - $i];
-            last if (scalar @{$cinfo->{'rowfwdrefs'}[$r]} or scalar @{$cinfo->{'rowbackrefs'}[$r]});
-        }
-        if ($i)
-        {
-            splice (@{$pass->{'startStates'}}, -$i);
-            $pass->{'maxRulePreContext'} -= $i;
-        }
-    }
-   
-    for (my $i = 0; $i < $pass->{'numRows'}; $i++)
-    {
-        if (@{$cinfo->{'rowbackrefs'}[$i]} or @{$cinfo->{'rowfwdrefs'}[$i]} or grep($_ == $i, @{$pass->{'startStates'}}))
-        {
-            print $numrows . "($i): (" . join(",", @{$cinfo->{'rowbackrefs'}[$i]}) . "; " . join(",", @{$cinfo->{'rowfwdrefs'}[$i]}) . ")\n";
-            push (@rowmap, $numrows++);
-        }
-        else
-        { push (@rowmap, -1); }
-    }
-
-    # create column map
-    my (@colmap);
-    my ($numcolumns);
-    for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
-    {
-        if (vec($cinfo->{'cols'}, $j, 1))
-        { push (@colmap, $numcolumns++); }
-        else
-        { push (@colmap, -1); }
-    }
+    my ($i);
 
     # 5.4 create rule map
     my (@rulemap);
@@ -1102,57 +1069,33 @@ sub finalise_pass
     {
         if (defined $cinfo->{'rules'}[$i] and @{$cinfo->{'rules'}[$i]})
         {
-            print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n";
+            # print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n";
             push (@rulemap, $numrules++);
         }
         else
         { push (@rulemap, -1); }
     }
 
-    # 5.5 create fsm
-    my (@fsm);
-    for (my $i = 0; $i < scalar @{$pass->{'fsm'}}; $i++)
-    {
-        if ($rowmap[$i] >= 0)
-        {
-            my (@row);
-            for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
-            {
-                if (vec($cinfo->{'cols'}, $j, 1))
-                {
-                    my ($f) = $pass->{'fsm'}[$i][$j];
-                    if ($rowmap[$f] > 0)
-                    { push (@row, $rowmap[$f]); }
-                    else
-                    { push (@row, 0); }
-#                    else
-#                    { warn "Bad fsm mapping at $i, $j = $f"; }
-                }
-            }
-            push (@fsm, [@row]);
-        }
-    }
-
-    # 5.6, 5.7 create row->rule lists and remap rules and the like
     my (@rules);
-    my (@keys, @prectxts);
-    my ($numSuccess) = findmappedrow($pass->{'numRows'} - $pass->{'numSuccess'}, \@rowmap, 1);
-    my (@rowrules);
-    if ($numSuccess < 0)
-    {
-        print "No success states, so no rules\n";
-        return 0;
-    }
+    # 5.6, 5.7 create row->rule lists and remap rules and the like
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
     {
         next if ($rulemap[$i] < 0);
         my (@rinfo) = $self->unpack_code($pass->{'actionCode'}[$i]);
+        my ($c) = 0;
         foreach my $r (@rinfo)
         {
-            if ($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')    # need to handle upsizing to 16-bit
+            if ($r->[0] eq 'next')
+            { $c++; }
+            elsif ($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')    # need to handle upsizing to 16-bit and perhaps downsizing
             {
                 if (defined $subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]})
-                { ($r->[2], $r->[3]) = @{$subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]}}; }
+                {
+                    $self->remove_trail($subsetter, $cinfo, $pass, $i, $c, 
+                        $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]})
+                            if (defined $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]});
+                    ($r->[2], $r->[3]) = @{$subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]}};
+                }
                 else
                 {
                     testclass($r->[2], $subsetter, "pass $pass->{'id'}, rule ${i}a");
@@ -1169,6 +1112,166 @@ sub finalise_pass
             # log which glyph attributes are actually referenced and delete the rest.
         }
         push (@rules, $self->pack_code(\@rinfo));
+    }
+
+    # rebuild startStates given some of them may have been deleted.
+    for ($i = 0; $i < scalar @{$pass->{'startStates'}}; $i++)
+    {
+        my ($r) = $pass->{'startStates'}[$i];
+        last if (scalar keys %{$cinfo->{'rowfwdrefs'}[$r]} or scalar keys %{$cinfo->{'rowbackrefs'}[$r]})
+    }
+    if ($i < scalar @{$pass->{'startStates'}})
+    {
+        splice(@{$pass->{'startStates'}}, 0, $i);
+        $pass->{'maxRulePreContext'} -= $i;
+    }
+    else
+    {
+        print "No start states so exit pass $pass->{'id'}\n";
+        return 0;
+    }
+    if ($pass->{'minRulePreContext'} >= $pass->{'maxRulePreContext'})
+    { $pass->{'minRulePreContext'} = $pass->{'maxRulePreContext'}; }
+    else
+    {
+        for ($i = 0; $i < scalar @{$pass->{'startStates'}}; $i++)
+        {
+            my ($r) = $pass->{'startStates'}[$#{$pass->{'startStates'}} - $i];
+            last if (scalar keys %{$cinfo->{'rowfwdrefs'}[$r]} or scalar keys %{$cinfo->{'rowbackrefs'}[$r]});
+        }
+        if ($i)
+        {
+            splice (@{$pass->{'startStates'}}, -$i);
+            $pass->{'minRulePreContext'} += $i;
+        }
+    }
+
+    my (@colmap, @allcols);
+    my ($numcolumns);
+    my (@rowmap, @fsm, @allrows);
+    my ($numrows);
+    my (@temp) = (0 .. $pass->{'numTransitional'} - 1);
+    push (@temp, ($pass->{'numRows'} .. $cinfo->{'totalRows'} - 1)) if ($cinfo->{'totalRows'});
+    # @temp = grep {scalar keys %{$cinfo->{'rowbackrefs'}[$_]} or scalar keys %{$cinfo->{'rowfwdrefs'}[$_]}} @temp;
+    my (@rlist) = grep {!defined $cinfo->{'rulemap'}[$_] or !@{$cinfo->{'rulemap'}[$_]}} @temp;
+    push (@rlist, grep {defined $cinfo->{'rulemap'}[$_] and @{$cinfo->{'rulemap'}[$_]}} @temp);
+    my ($merged) = 1;
+    while ($merged)
+    {
+        $merged = 0;
+        # 5.3 create rowmap. Add row merging loop
+        @rowmap = (); @allrows = ();
+        $numrows = 0;
+        foreach my $i (@rlist)
+        {
+            if (scalar keys %{$cinfo->{'rowbackrefs'}[$i]} or scalar keys %{$cinfo->{'rowfwdrefs'}[$i]} or grep($_ == $i, @{$pass->{'startStates'}}))
+            {
+                push (@allrows, $i);
+                $rowmap[$i] = $numrows++;
+            }
+            else
+            { $rowmap[$i] = -1; }
+        }
+        my (%finalshash) = ();
+        for (my $i = $pass->{'numTransitional'}; $i < $pass->{'numRows'}; $i++)
+        {
+            if (scalar keys %{$cinfo->{'rowbackrefs'}[$i]})
+            {
+                my ($s) = join(",", @{$cinfo->{'rulemap'}[$i]});
+                if (!exists $finalshash{$s})
+                {
+                    $rowmap[$i] = $numrows++;
+                    $finalshash{$s} = $i;
+                }
+                else
+                {
+                    $self->mergerow($i, $finalshash{$s}, $pass, $cinfo);
+                    $rowmap[$i] = -1;
+                }
+            }
+            else
+            { $rowmap[$i] = -1; }
+        }
+
+        # create column map. Add column merging loop
+        my (%colshash) = ();
+        @colmap = (); @allcols = (); $numcolumns = 0;
+        for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
+        {
+            my ($v, $c, $found);
+            if (vec($cinfo->{'cols'}, $j, 1))
+            {
+                foreach my $r (@allrows)
+                {
+                    my ($f) = $rowmap[$pass->{'fsm'}[$r][$j]];
+                    if ($f > 0)
+                    {
+                        $found = 1;
+                        vec($v, $c++, 16) = $f;
+                    }
+                    else
+                    { vec($v, $c++, 16) = 0; }
+                }
+            }
+            if (!$found)
+            {
+                push (@colmap, -1);
+                next;
+            }
+
+            if (!exists $colshash{$v})
+            {
+                $colshash{$v} = $numcolumns;
+                push (@colmap, $numcolumns++);
+                push (@allcols, $j);
+            }
+            else
+            { push (@colmap, $colshash{$v}); }
+        }
+
+        # 5.5 create fsm - rewrite me for handling added rows
+        my (%rowhash) = ();
+        @fsm = ();
+        foreach my $i (@allrows)
+        {
+            if ($rowmap[$i] >= 0)
+            {
+                my (@row, $k, $v);
+                foreach my $j (@allcols)
+                {
+                    my ($f) = $pass->{'fsm'}[$i][$j];
+                    if ($rowmap[$f] > 0)
+                    { push (@row, $rowmap[$f]); }
+                    else
+                    { push (@row, 0); }
+                    vec($v, $k++, 16) = $row[-1];
+    #               else
+    #               { warn "Bad fsm mapping at $i, $j = $f"; }
+                }
+                push (@fsm, [@row]);
+                if (exists $rowhash{$v} and !arraycmp($cinfo->{'rulemap'}[$i], $cinfo->{'rulemap'}[$rowhash{$v}]) and !grep {$_ == $i} @{$pass->{'startStates'}})
+                {
+                    $self->mergerow($i, $rowhash{$v}, $pass, $cinfo);
+                    $merged = 1;
+                }
+                else
+                { $rowhash{$v} = $i; }
+            }
+        }
+    }
+
+    # create row to rules mapping for output
+    my (@keys, @prectxts);
+    my ($numSuccess) = findmappedrow($pass->{'numRows'} - $pass->{'numSuccess'}, \@rowmap, 1);
+    my (@rowrules);
+    if ($numSuccess < 0)
+    {
+        print "No success states, so no rules\n";
+        return 0;
+    }
+    for (my $i = 0; $i < $pass->{'numRules'}; $i++)
+    {
+        next if ($rulemap[$i] < 0);
         foreach my $r (@{$cinfo->{'rules'}[$i]})
         {
             if ($rowmap[$r] >= 0)
@@ -1182,7 +1285,7 @@ sub finalise_pass
     my (%cols);
     while (my ($k, $v) = each %{$pass->{'colmap'}})
     {
-        if ($colmap[$v] >= 0)
+        if ($colmap[$v] >= 0 and $subsetter->keep_glyph($k))
         { $cols{$subsetter->map_glyph($k)} = $colmap[$v]; }
     }
 
@@ -1247,8 +1350,8 @@ sub delrule
         $cinfo->{'rulemap'}[$r] = [grep ($_ != $num, @{$cinfo->{'rulemap'}[$r]})];
         if (!scalar @{$cinfo->{'rulemap'}[$r]})    # and $r < $pass->{'numTransitional'})
         { $self->delrow($pass, $cinfo, $r); }
-        else
-        { print join(",", @{$cinfo->{'rulemap'}[$r]}) . "\n"; }
+#        else
+#        { print join(",", @{$cinfo->{'rulemap'}[$r]}) . "\n"; }
     }
     $cinfo->{'rules'}[$num] = [];
 }
@@ -1266,24 +1369,24 @@ sub delrow
 {
     my ($self, $pass, $cinfo, $row) = @_;
 
-    foreach my $r (@{$cinfo->{'rowfwdrefs'}[$row]})
+    foreach my $r (keys %{$cinfo->{'rowfwdrefs'}[$row]})
     {
-        $cinfo->{'rowbackrefs'}[$r] = [grep ($_ != $row, @{$cinfo->{'rowbackrefs'}[$r]})];
-        $self->delrow($pass, $cinfo, $r) unless (scalar @{$cinfo->{'rowbackrefs'}[$r]});
+        delete $cinfo->{'rowbackrefs'}[$r]{$row};
+        $self->delrow($pass, $cinfo, $r) unless (scalar keys %{$cinfo->{'rowbackrefs'}[$r]});
     }
-    $cinfo->{'rowfwdrefs'}[$row] = [];
-    foreach my $k (@{$cinfo->{'rowbackrefs'}[$row]})
+    $cinfo->{'rowfwdrefs'}[$row] = {};
+    foreach my $k (keys %{$cinfo->{'rowbackrefs'}[$row]})
     {
-        $cinfo->{'rowfwdrefs'}[$k] = [grep ($_ != $row, @{$cinfo->{'rowfwdrefs'}[$k]})];
-        $self->delrow($pass, $cinfo, $k) unless (scalar @{$cinfo->{'rowfwdrefs'}[$k]});
+        delete $cinfo->{'rowfwdrefs'}[$k]{$row};
+        $self->delrow($pass, $cinfo, $k) unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$k]});
     }
-    $cinfo->{'rowbackrefs'}[$row] = [];
+    $cinfo->{'rowbackrefs'}[$row] = {};
     foreach my $r (@{$cinfo->{'rulemap'}[$row]})
     {
         $cinfo->{'rules'}[$r] = [grep ($_ != $row, @{$cinfo->{'rules'}[$r]})];
         $self->delrule($r) unless (scalar @{$cinfo->{'rules'}[$r]});
     }
-    return if ($row >= $pass->{'numTransitional'});
+    return if ($row >= $pass->{'numTransitional'} && $row < $pass->{'numRows'});
 
     my (@collist);
     for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
@@ -1294,7 +1397,7 @@ sub delrow
     return unless (@collist);
     for (my $i = 0; $i < $pass->{'numTransitional'}; $i++)
     {
-        next unless (@{$cinfo->{'rowfwdrefs'}});
+        next unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$i]});
         foreach my $j (@collist)
         {
             if ($pass->{'fsm'}[$i][$j])
@@ -1320,7 +1423,220 @@ sub addmappedclass
     }
     my ($i) = 0;
     push (@{$subsetter->{'silf'}{'classes'}}, {map {$_ => $i++} @m});
+    if ($DEBUG)
+    { print "class(" . $#{$subsetter->{'silf'}{'classes'}} . ") " . join(",", @m) . ".\n"; } 
     return $#{$subsetter->{'silf'}{'classes'}};
+}
+
+sub addrowsfor
+{
+    my ($self, $pass, $cinfo, $cols, $len, $row, $parent, $total) = @_;
+    my ($res);
+
+    if ($len == 0)
+    {
+        my (@entries) = grep {$pass->{'fsm'}[$row][$_] == $parent} (0 .. $#{$pass->{'fsm'}[$row]});
+        my (@locals) = grep {!defined $cols->{$_}} @entries;
+        my (@news) = grep {defined $cols->{$_}} @entries;
+        if (!@news)
+        { return undef; }
+        elsif (@locals)
+        {
+            $res = $self->addcopyrow($pass, $cinfo, $parent);
+            foreach my $r (@news)       # is this right or is it @news that are in @locals?
+            { $pass->{'fsm'}[$row][$r] = $res; }
+            if (!grep {$pass->{'fsm'}[$row][$_] == $parent} @locals)
+            {
+                delete $cinfo->{'rowfwdrefs'}[$row]{$parent};
+                delete $cinfo->{'rowbackrefs'}[$parent]{$row};
+            }
+            return $res;
+        }
+        else
+        { return $parent; }
+    }
+    else
+    {
+        my (@rets, $neednew, $res);
+        foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$row]})
+        {
+            my ($x) = $self->addrowsfor($pass, $cinfo, $cols, $len - 1, $r, $row, $total);
+            next if (!defined $x);
+            $neednew = 1 if ($x != $r);
+            push (@rets, $x) if (!grep {$_ == $x} @rets);
+        }
+        return undef unless (@rets);
+        return $parent unless ($neednew);
+        if ($len < $total - 1)
+        { $res = $self->addcopyrow($pass, $cinfo, $parent); }
+        else
+        { $res = 0; }
+        foreach my $r (@rets)
+        {
+            foreach my $c (@{$pass->{'fsm'}[$r]})
+            { $c = $res if ($c == $parent); }
+            delete $cinfo->{'rowfwdrefs'}[$r]{$parent};
+            delete $cinfo->{'rowbackrefs'}[$parent]{$r};
+            if ($res)
+            {
+                $cinfo->{'rowfwdrefs'}[$r]{$res} = 1;
+                $cinfo->{'rowbackrefs'}[$res]{$r} = 1;
+            }
+            elsif (!scalar keys %{$cinfo->{'rowfwdrefs'}[$r]})
+            { $self->delrow($pass, $cinfo, $r); }
+        }
+        return $res;
+    }
+}
+            
+sub remove_trail
+{
+    my ($self, $subsetter, $cinfo, $pass, $rule, $index, $glyphlist) = @_;
+    $index += $pass->{'rulePreContexts'}[$rule];
+    my ($countback) = $pass->{'ruleSortKeys'}[$rule] - $index;
+    my (@glyphs) = (@{$glyphlist});
+    my (@paths, @collist);
+    my ($fsm) = $pass->{'fsm'};
+
+    # Identify columns to split and split them
+    while (@glyphs)
+    {
+        my (@glist, $newc);
+        my ($g) = shift(@glyphs);
+        my ($c) = $pass->{'colmap'}{$g};
+        push (@glist, $g);
+        for (my $i = 0; $i < @glyphs; )
+        {
+            if ($pass->{'colmap'}{$glyphs[$i]} == $c)
+            {
+                push (@glist, $glyphs[$i]);
+                splice (@glyphs, $i, 1);
+            }
+            else
+            { $i++; }
+        }
+        if (defined $cinfo->{'glyphcols'} and scalar @{$cinfo->{'glyphcols'}[$c]} != scalar @glist)
+        { $self->splitcol($c, \@glist, $pass, $cinfo); }
+    }
+
+    # get a list of paths to trim. Each path includes the final row and is from to end to start
+    my (%rowmap);
+    my (%colhash) = map {$pass->{'colmap'}{$_} => 1} @{$glyphlist};
+    foreach my $p (@{$cinfo->{'rules'}[$rule]})
+    {
+        foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$p]})
+        { $self->addrowsfor($pass, $cinfo, \%colhash, $countback - 1, $r, $p, $countback); }
+    }
+
+    while (my ($k, $r) = each %rowmap)
+    {
+        foreach my $rb (keys %{$cinfo->{'rowbackrefs'}[$r]})
+        {
+            next if (defined $rowmap{$rb});
+            foreach my $c (keys %colhash)
+            {
+                if ($pass->{'fsm'}[$rb][$c] == $k)
+                {
+                    $pass->{'fsm'}[$rb][$c] = $r;
+                    # how do we tidy up rowbackrefs and rowfwdrefs here?
+                }
+            }
+        }
+        my ($f) = $pass->{'fsm'}[$r];
+        foreach (keys %{$cinfo->{'rowfwdrefs'}[$r]})
+        { delete $cinfo->{'rowfwdrefs'}[$r]{$_} unless (defined $rowmap{$_}); }
+        for (my $i = 0; $i < @{$f}; $i++)
+        {
+            my ($replace) = $f->[$i];
+            if (defined $colhash{$i} and grep {$_ == $replace} @{$cinfo->{'rules'}[$rule]})
+            { $replace = 0; }
+            elsif (defined $rowmap{$replace})
+            { $replace = $rowmap{$replace}; }
+            next unless ($replace != $f->[$i]);
+            delete $cinfo->{'rowbackrefs'}[$f->[$i]]{$r};
+            $f->[$i] = $replace;
+            if ($replace)
+            {
+                $cinfo->{'rowfwdrefs'}[$r]{$replace} = 1;
+                $cinfo->{'rowbackrefs'}[$replace]{$r} = 1;
+            }
+        }
+    }
+}
+
+sub splitcol
+{
+    my ($self, $col, $removes, $pass, $cinfo) = @_;
+    my ($new) = $pass->{'numColumns'}++;
+    my (%others) = map {$_ => 1} @{$removes};
+    $cinfo->{'glyphcols'}[$col] = [grep {!defined $others{$_}} @{$cinfo->{'glyphcols'}[$col]}];
+    $cinfo->{'glyphcols'}[$new] = [@{$removes}];
+
+    foreach my $r (@{$pass->{'fsm'}})
+    {
+        next unless (defined $r);
+        push (@{$r}, $r->[$col]);
+    }
+    vec($cinfo->{'cols'}, $new, 1) = 1;
+    foreach my $g (@{$removes})
+    { $pass->{'colmap'}{$g} = $new; }
+    return $new;
+}
+
+sub addcopyrow
+{
+    my ($self, $pass, $cinfo, $row) = @_;
+    my ($new) = $cinfo->{'totalRows'} || $pass->{'numRows'};
+    $cinfo->{'totalRows'} = $new + 1;
+    foreach ('fsm', 'rulemap')
+    { $pass->{$_}[$new] = [@{$pass->{$_}[$row]}] if (defined $pass->{$_}[$row]); }
+    foreach ('rowfwdrefs', 'rowbackrefs')
+    { $cinfo->{$_}[$new] = {%{$cinfo->{$_}[$row]}}; }
+    foreach (keys %{$cinfo->{'rowfwdrefs'}[$new]})
+    { $cinfo->{'rowbackrefs'}[$_]{$new} = 1; }
+    return $new;
+}
+
+# assumes from and to have the same contents
+sub mergerow
+{
+    my ($self, $from, $to, $pass, $cinfo) = @_;
+
+    foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$from]})
+    {
+        foreach my $c (@{$pass->{'fsm'}[$r]})
+        { $c = $to if ($c == $from); }
+        $cinfo->{'rowfwdrefs'}[$r]{$to} = 1;
+        $cinfo->{'rowbackrefs'}[$to]{$r} = 1;
+    }
+    $self->delrow($pass, $cinfo, $from);
+}
+
+
+
+
+sub arraycmp
+{
+    my ($a, $b) = @_;
+    if (!defined $a)
+    {
+        return 0 if (!defined $b or !@{$b});
+        return 1;
+    }
+    elsif (!defined $b)
+    {
+        return 0 if (!@{$a});
+        return -1;
+    }
+    my ($res) = @{$a} <=> @{$b};
+    return $res if ($res != 0);
+
+    for (my $i = 0; $i < @{$a}; $i++)
+    {
+        $res = $a->[$i] <=> $b->[$i];
+        return $res if ($res != 0)
+    }
+    return 0;
 }
 
 __END__

@@ -185,6 +185,19 @@ sub process_argv
 	$psort = 1 if $opts->{'o'} =~ /p/;  # enable Postname sort
 			# gid sort is always last resort
 }
+
+sub extra_points
+{
+    my ($class, $font, $gid, $glyph) = @_;
+    my (@res);
+
+    while (my ($k, $p) = each %{$xml_dat[$gid]{'points'}})
+    {
+        next unless (defined $p->{'loc'});
+        push (@res, [$p->{'loc'}[0], $p->{'loc'}[1], $k]);
+    }
+    return [@res];
+}
 	
 __END__
 
