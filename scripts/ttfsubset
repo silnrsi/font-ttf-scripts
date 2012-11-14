@@ -13,7 +13,7 @@ our $CHAIN_CALL;
 our %opts;
 our $f;
 
-our $DEBUG = 1;
+our $DEBUG = 0;
 
 unless($CHAIN_CALL)
 {
@@ -1245,8 +1245,6 @@ sub finalise_pass
                     else
                     { push (@row, 0); }
                     vec($v, $k++, 16) = $row[-1];
-    #               else
-    #               { warn "Bad fsm mapping at $i, $j = $f"; }
                 }
                 push (@fsm, [@row]);
                 if (exists $rowhash{$v} and !arraycmp($cinfo->{'rulemap'}[$i], $cinfo->{'rulemap'}[$rowhash{$v}]) and !grep {$_ == $i} @{$pass->{'startStates'}})
@@ -1266,7 +1264,7 @@ sub finalise_pass
     my (@rowrules);
     if ($numSuccess < 0)
     {
-        print "No success states, so no rules in $pass->{'id'}\n";
+        print "No success states, so no rules in $pass->{'id'}\n" if ($DEBUG);
         return 0;
     }
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
@@ -1534,7 +1532,13 @@ sub remove_trail
                 if ($pass->{'fsm'}[$rb][$c] == $k)
                 {
                     $pass->{'fsm'}[$rb][$c] = $r;
-                    # how do we tidy up rowbackrefs and rowfwdrefs here?
+                    if (!grep {$_ == $k} @{$pass->{'fsm'}[$rb]})
+                    {
+                        delete $cinfo->{'rowfwdrefs'}[$rb]{$k};
+                        delete $cinfo->{'rowbackrefs'}[$k]{$rb};
+                    }
+                    $cinfo->{'rowfwdrefs'}[$rb]{$r} = 1;
+                    $cinfo->{'rowbackrefs'}[$r]{$rb} = 1;
                 }
             }
         }
