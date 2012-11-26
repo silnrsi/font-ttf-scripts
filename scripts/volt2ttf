@@ -289,26 +289,26 @@ sub lookups_ttf
         {
             if ($l->{'marks'} =~ m/GLYPH_SET/oi)
             {
-            	# Use mark filter sets
-            	if (!defined $self->{'alls'}{'*'.$l->{'all'}})	# '*', as in VOLT UI, used here to differentiate marksets from mark classes (below)
-	            {
-					push @{$self->{'marksets'}}, $self->make_coverage(@{$dat->{'groups'}{$l->{'all'}}});
-					$self->{'alls'}{'*'.$l->{'all'}} = $#{$self->{'marksets'}};
-				}
-				$flags |= 0x10;
-				$font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'} = $self->{'alls'}{$l->{'all'}};
+                # Use mark filter sets
+                if (!defined $self->{'alls'}{'*'.$l->{'all'}})  # '*', as in VOLT UI, used here to differentiate marksets from mark classes (below)
+                {
+                    push @{$self->{'marksets'}}, $self->make_coverage(@{$dat->{'groups'}{$l->{'all'}}});
+                    $self->{'alls'}{'*'.$l->{'all'}} = $#{$self->{'marksets'}};
+                }
+                $flags |= 0x10;
+                $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'} = $self->{'alls'}{$l->{'all'}};
             }
             else
             {
-            	# Use mark classes
-	            if (!defined $self->{'alls'}{$l->{'all'}})
-	            {
-	                $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
-	                foreach $g (@{$self->or_context_glyphs(@{$dat->{'groups'}{$l->{'all'}}})})
-	                { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
-	            }
-	            $flags |= $self->{'alls'}{$l->{'all'}} << 8;
-	        }
+                # Use mark classes
+                if (!defined $self->{'alls'}{$l->{'all'}})
+                {
+                    $self->{'alls'}{$l->{'all'}} = ++$self->{'max_all'};
+                    foreach $g (@{$self->or_context_glyphs(@{$dat->{'groups'}{$l->{'all'}}})})
+                    { $dat->{'glyphs'}[$g]{'mark_class'} = $self->{'alls'}{$l->{'all'}}; }
+                }
+                $flags |= $self->{'alls'}{$l->{'all'}} << 8;
+            }
         }
 
         $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FLAG'} = $flags;
@@ -344,8 +344,15 @@ sub lookups_ttf
                     my (@match);
                     if ($lk->{'type'} eq 'ATTACH')
                     {
-                        push (@match, $self->make_coverage(@{$lk->{'context'}}),
-                                $self->make_coverage(@{$lk->{'to'}}));
+                        # Can't use make_coverage() because $lk->{'to'} is different
+                        my ($cover) = Font::TTF::Coverage->new(1);
+                        foreach my $c (@{$lk->{'to'}})
+                        {
+                            foreach my $g (@{$self->scon_glyphs($c->[0])})
+                            { $cover->add($g); }
+                        }
+                        $cover->sort;
+                        push (@match, $cover);
                     }
                     elsif ($lk->{'type'} eq 'ADJUST_PAIR')
                     {
@@ -404,7 +411,10 @@ sub lookups_ttf
                 $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
 #                print STDERR "cl=$contlength ($ltype $l->{' index'})\n";
             }
+            # Compute index for the chained lookup; be sure to copy flag word to chained lookup
             $index = $dat->{"${type}_counters"}++;
+            $font->{$type}{'LOOKUP'}[$index]{'FLAG'} = $flags;
+
         }
         else
         { $index = $l->{' index'}; }
