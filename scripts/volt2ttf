@@ -296,7 +296,7 @@ sub lookups_ttf
                     $self->{'alls'}{'*'.$l->{'all'}} = $#{$self->{'marksets'}};
                 }
                 $flags |= 0x10;
-                $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'} = $self->{'alls'}{$l->{'all'}};
+                $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'} = $self->{'alls'}{'*'.$l->{'all'}};
             }
             else
             {
