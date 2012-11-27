@@ -220,7 +220,8 @@ if present)
   -f            Don't try to save memory on large fonts (>1000 glyphs)
   -g            Add one glyph per page report following summary report
   -h            Mode for glyph per page output. Bitfield:
-                1 = bit 0       don't output point positions
+                1 = bit 0       don't output curve point positions
+                2 = bit 0       don't output attachment point positions
   -i re         Regular expression that identifies what attachment points
                 to include in the report
   -m points     Sets glyph size in the box regardless of what is calculated

@@ -121,7 +121,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
     {
         next unless (defined $other->{'points'}{$p});
         my ($point) = $opt_p ? $other->{'points'}{$p} : $char->{'points'}{$p};
-        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}\n";
+        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}";
         $allpoints{$p} = 1;
     }
 
@@ -135,7 +135,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
             next if (defined $char->{'points'}{$p});
             my ($x, $y) = @{$aps{$char->{'PSName'}}{$p}};
             $char->{'points'}{$p} = {'x' => $x, 'y' => $y, 'name' => $p, 'type' => $t ? "mark" : "base"};
-            $str .= "AnchorPoint: \"$char->{'name'}\" $char->{'x'} $char->{'y'} $char->{'type'} $point->{'rest'}\n";
+            $str .= "AnchorPoint: \"$char->{'name'}\" $char->{'x'} $char->{'y'} $char->{'type'} $point->{'rest'}";
             $allpoints{$p} = 1;
         }
     }
@@ -144,7 +144,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
     {
         next if (defined $char->{'points'}{$p});
         my ($point) = $other->{'points'}{$p};
-        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}\n";
+        $str .= "AnchorPoint: \"$point->{'name'}\" $point->{'x'} $point->{'y'} $point->{'type'} $point->{'rest'}";
         $allpoints{$p} = 1;
     }
 
@@ -173,6 +173,50 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
         }
     }
 # need to merge Kerns2, PairPos2 & Position2 with values coming from the design
+    my (%scratch);
+    foreach $i (@{$char->{'commands'}{'PairPos2'}})
+    {
+        my ($str) = $char->{'lines'}[$i];
+        $char->{'lines'}[$i] = '';
+        $str =~ s/^\S+\s*\"([^"]*)\"\s*(\S+)\s*//o;
+        my ($look) = $1;
+        my ($name) = $2;
+        $scratch{$look}{$name} = $str;
+    }
+    foreach $i (@{$other->{'commands'}{'PairPos2'}})
+    {
+        my ($str) = $other->{'lines'}[$i];
+        $str =~ s/^\S+\s*\"([^"]*)\"\s*(\S+)\s*//o;
+        my ($look) = $1;
+        my ($nameid) = $revmap[$struct->{'gnames'}{$2}];
+        next unless ($nameid);
+        my ($name) = $design->{'glyphs'}[$nameid]{'post'};
+        if (defined $scratch{$look}{$name})
+        { $res .= "PairPos2: \"$look\" $name $scratch{$look}{$name}"; }
+        else
+        { $res .= "PairPos2: \"$look\" $name $str"; }
+    }
+
+    %scratch = ();
+    foreach $i (@{$char->{'commands'}{'Position2'}})
+    {
+        my ($str) = $char->{'lines'}[$i];
+        $char->{'lines'}[$i] = '';
+        $str =~ s/^\S+\s*\"([^"]*)\"\s*//o;
+        my ($look) = $1;
+        $scratch{$look} = $str;
+    }
+    foreach $i (@{$other->{'commands'}{'Position2'}})
+    {
+        my ($str) = $other->{'lines'}[$i];
+        $str =~ s/^\S+\s*\"([^"]*)\"\s*//o;
+        my ($look) = $1;
+        if (defined $scratch{$look})
+        { $res .= "Position2: \"$look\" $scratch{$look}"; }
+        else
+        { $res .= "Position2: \"$look\" $str"; }
+    }
+    
     foreach $p (qw(LCarets2 AltUni2 GlyphClass))
     {
         foreach $i (@{$char->{'commands'}{$p}})
@@ -180,7 +224,7 @@ for ($i = 0; $i < $design->{'numg'}; $i++)
         foreach $i (@{$other->{'commands'}{$p}})
         { $res .= $other->{'lines'}[$i]; }
     }
-    push (@{$char->{'lines'}}, "$res\n") if ($res);
+    push (@{$char->{'lines'}}, "$res") if ($res);
 
     push (@{$char->{'lines'}}, $char->{'lines'}[$char->{'commands'}{'EndChar'}[-1]]);
     $char->{'lines'}[$char->{'commands'}{'EndChar'}[-1]] = '';

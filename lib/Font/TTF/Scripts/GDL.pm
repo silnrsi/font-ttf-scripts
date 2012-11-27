@@ -166,6 +166,7 @@ sub out_classes
             next if ($psname eq '' || $psname eq '.notdef');
             next if (vec($vecs->{$l}, $c, 1));
             next if (defined $glyphs->[$c]{'props'}{'GDL_order'} && $glyphs->[$c]{'props'}{'GDL_order'} <= 1);
+            next unless (vec($self->{'ismarks'}, $c, 1));
             $fh->print("$sep$glyphs->[$c]{'name'}");
             if (++$count % 8 == 0)
             { $sep = ",\n    "; }
