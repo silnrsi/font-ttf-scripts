@@ -6,9 +6,9 @@ use Getopt::Long;
 use Pod::Usage;
 
 our(%opts);
-GetOptions(\%opts, 'ap|a=s', 'autodefines|d', 'excludes|e=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
+GetOptions(\%opts, 'ap|a=s', 'autodefines|d', 'empty|e=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
                 'normalize|n=i', 'omitaps|o=s', 'positions|p=i', 'renameaps|r', 'substitutions|s=i',
-                'z=i', 'define|D=s%', 'ignore=s@');
+                'z=i', 'define|D=s%', 'mark|m=s');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -41,7 +41,6 @@ if ($opts{'excludes'})
 }
 
 $options{'-omittedAPs'} = $opts{'omitaps'} if ($opts{'omitaps'});
-$options{'-ignoredAPs'} = {map {$_ => 1} @{$opts{'ignore'}}};
 
 my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
@@ -77,7 +76,7 @@ if ($opts{'renameaps'})
 $f->{'vecs'} = {};
 
 $f->start_gdl($outfh);
-$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'-ignoredAPs'});
+$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'-ignoredAPs'}, -notmark => $opts{'mark'});
 $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
 $f->out_classes($outfh, -defines => $opts{'autodefines'});
 $f->endtable($outfh);
@@ -115,6 +114,7 @@ Creates font specific GDL from a font and optional attachment point database
                     last  - class name is last code, contents other codes
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensons as part of elements, as last
+  -m "list"     List of APs to ignore when deciding whether a glyph is a mark
   -n num        Add a normalization substitution with the given pass number
   -o "list"     List of AP names to omit
   -p num        Add auto positioning attachment rules with the given pass number

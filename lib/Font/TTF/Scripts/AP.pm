@@ -575,7 +575,7 @@ sub make_classes
             }
             push (@{$self->{'lists'}{$pname}}, $i);
             vec($self->{'vecs'}{$pname}, $i, 1) = 1 if ($self->{'vecs'});
-            next if (defined $opts{'-ignoredAPs'} and defined $opts{'-ignoredAPs'}{$pname});
+            next if (defined $opts{'-notmark'} and $opts{'-notmark'} =~ m/\b$pname\b/);
             vec($self->{'ismarks'}, $i, 1) = 1 if ($pname =~ m/^_/o);
         }
         foreach (split('/', $glyph->{'post'}))
