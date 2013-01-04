@@ -163,11 +163,16 @@ multiline program, and you can include additional modules via the B<-m> and B<-M
 When the caller-supplied expression is executed, B<$f> holds the result of 
 the Font::TTF::Font->open() function and elements of B<@ARGV> up to and including
 the input font name have been deleted -- you can use any remaining arguments
-for your own purposes.  B<$infont> and B<$outfile> hold the
-names of the input and optional output font files -- changing B<$infont> has no
-effect, but setting or clearing B<$outfile> will change the output.
+for your own purposes.  B<@_> holds the names of the 
+names of the input and optional output font files -- changing B<$_[0]> has no
+effect, but setting or clearing B<$_[1]> will change the output.
+
+Globbing of file names is permitted:
 
  ttfeval -e 'print $f->{'name'}->read->find_name(4) . "\n"' *.ttf
 
+including the output name:
+
+ ttfeval ... -o x*.ttf *.ttf
 
 =cut
