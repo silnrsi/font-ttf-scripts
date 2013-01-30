@@ -113,7 +113,7 @@ foreach my $filename (@ARGV)
 			else
 			{
 				print "\n";
-				foreach my $l ('DEFAULT', @{$g->{'SCRIPTS'}{$s}{'LANG_TAGS'}})
+				foreach my $l ('DEFAULT', sort {$a cmp $b} @{$g->{'SCRIPTS'}{$s}{'LANG_TAGS'}})
 				{
 					next if $l =~ /^zz\d\d$/ && !$opt_v;
 					print "      <$l> ", $ttnames{'LANGUAGE'}{$l};
@@ -129,7 +129,7 @@ foreach my $filename (@ARGV)
 					else
 					{
 						print "\n";
-						foreach my $f (@{$g->{'SCRIPTS'}{$s}{$l}{'FEATURES'}})
+						foreach my $f (sort {$a cmp $b} @{$g->{'SCRIPTS'}{$s}{$l}{'FEATURES'}})
 						{
 							print "        <$f> ", $ttnames{'FEATURE'}{substr($f,0,4)}, "\n";
 						}
