@@ -4,6 +4,7 @@
 use strict;
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
+use Font::TTF::Scripts::Volt;
 use Font::TTF::Dumper;
 use Pod::Usage;
 use Getopt::Std;
@@ -20,9 +21,14 @@ unless (defined $ARGV[0])
 
 
 
-my ($f, $ap);
+my ($f, $fv, $ap);
 
-if ($opt_a)
+if ($opt_t =~ /\bTSIV\b/)
+{
+    $fv = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font '$ARGV[0]': $!\n";
+    $f = $fv->{'font'};
+}
+elsif ($opt_a)
 {
     $ap = Font::TTF::Scripts::AP->read_font($ARGV[0], $opt_a) || die "Can't read font '$ARGV[0]': $!\n";
     $f = $ap->{'font'};
@@ -48,7 +54,7 @@ foreach (@tags)
     if (length($_) == 4 and exists $f->{$_})
     {
         $f->{$_}->read;
-        print Font::TTF::Dumper::ttfdump(\$f->{$_}, $_);
+        print Font::TTF::Dumper::ttfdump($_ eq 'TSIV' ? $fv->parse_volt() : \$f->{$_}, $_); 
     }
     elsif ($_ eq 'AP')
     {
