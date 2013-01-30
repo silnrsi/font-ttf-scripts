@@ -638,19 +638,24 @@ sub add_gpos_lookup
                     ($dat->{'glyphs'}[$g]{'type'} eq 'LIGATURE') ? 5 :  # mark-to-ligature
                     4;                                                  # mark-to-base
                 if ($type)
-                { $self->error("Mix of base character types in lookup $l->{'id'} at glyph $dat->{'glyphs'}[$g]{'name'}\n") if $type != $thistype; }
+                { $self->error("Mix of base character types in lookup $l->{'id'} for glyph $dat->{'glyphs'}[$g]{'name'}\n") if $type != $thistype; }
                 else
                 { $type = $thistype; }
-                    
-                foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
+                
+                foreach my $comp (0 .. ($dat->{'glyphs'}[$g]{'component_num'} || 1) -1)
                 {
-                    if (defined $dat->{'glyphs'}[$g]{'anchors'}{$k})
-                    { 
-                        for my $comp (0 .. $#{$dat->{'glyphs'}[$g]{'anchors'}{$k}})
-                        { 
-                            if (defined $dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp])
-                            { $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp]); }
-                        }
+                	foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
+                	{
+                		# avoiding auto-vivication..
+                		if (defined $dat->{'glyphs'}[$g]{'anchors'} && 
+                			defined $dat->{'glyphs'}[$g]{'anchors'}{$k} && 
+                			defined $dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp])
+                    	{ $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp]); }
+                    	else
+                    	{
+                    		$self->error("anchor $k not defined on component", $comp+1, "for glyph $dat->{'glyphs'}[$g]{'name'}\n"); 
+                    		$rules[$i][$comp]{'ACTION'}[$anchors{$k}] = Font::TTF::Anchor->new(x=>0, y=>0); 
+                    	}
                     }
                 }
             }
@@ -822,7 +827,7 @@ sub make_anchor
     return ($point->{'anchor'}) if defined ($point->{'anchor'});
 
     foreach $s (qw(x y))
-    { $res{$s} = $point->{'pos'}{$s}[0]; }
+    { $res{$s} = $point->{'pos'}{$s}[0] + 0; }
     $r = Font::TTF::Anchor->new(%res);
     $point->{'anchor'} = $r;
     return $r;
