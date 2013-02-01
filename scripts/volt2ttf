@@ -411,9 +411,10 @@ sub lookups_ttf
                 $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
 #                print STDERR "cl=$contlength ($ltype $l->{' index'})\n";
             }
-            # Compute index for the chained lookup; be sure to copy flag word to chained lookup
+            # Compute index for the chained lookup; be sure to copy flag word and MarkFilter to chained lookup
             $index = $dat->{"${type}_counters"}++;
             $font->{$type}{'LOOKUP'}[$index]{'FLAG'} = $flags;
+            $font->{$type}{'LOOKUP'}[$index]{'FILTER'} = $font->{$type}{'LOOKUP'}[$l->{' index'}]{'FILTER'};
 
         }
         else
