@@ -245,16 +245,14 @@ sub append_feat
     
     if ($lang eq 'dflt')
     {
-        $font->{$type}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'};
-        $font->{$othertype}{'SCRIPTS'}{$script}{'DEFAULT'} = {' REFTAG' => 'dflt'};
+    	# There is no 'dflt' language tag registered -- this is a figment of VOLT's imagination.
+    	# Instead features associated with 'dflt' tag should be attached to the 'DEFAULT' language
+    	$lang = 'DEFAULT';
     }
-
-    unless (defined $font->{$type}{'SCRIPTS'}{$script}{$lang})
+    elsif (!defined $font->{$type}{'SCRIPTS'}{$script}{$lang})
     {
-        push (@{$font->{$type}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
-        push (@{$font->{$othertype}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
-        $font->{$othertype}{'SCRIPTS'}{$script}{$lang}{'I Exist'} = 1;
-    }
+    	push (@{$font->{$type}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
+	}
 
     unless (defined $font->{$type}{'FEATURES'}{$fname})
     { push (@{$font->{$type}{'FEATURES'}{'FEAT_TAGS'}}, $fname); }
