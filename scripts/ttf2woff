@@ -52,9 +52,10 @@ my (@trmap) = sort {$tlist[$a] cmp $tlist[$b]} (0 .. $#tlist);
 my ($t, @tmap);
 foreach (@trmap) { $tmap[$_] = $t++; }
 $whdr{'num'} = scalar @tlist;
+$whdr{'total'} =  12 + $whdr{'num'} * 16;
 if ($opts{'v'})
 {
-    ($whdr{'major'}, $whdr{'minor'}) = split('.', $opts{'v'});
+    ($whdr{'major'}, $whdr{'minor'}) = ($opts{v} =~ /(\d+)(?:\.(\d+))/);
 }
 out_whdr($ofh, \%whdr);
 my ($curroffset) = $ofh->tell();
@@ -67,6 +68,7 @@ for (my $i = 0; $i < $whdr{'num'}; $i++)
 
     $curroffset = align4($ofh, $curroffset);
     $whdr{'dir'}[$tmap[$i]] = \%d;
+    $whdr{'total'} += ($t->{' LENGTH'} + 3) & ~3;
     $d{'tag'} = $n;
     $d{'offset'} = $curroffset;
     $d{'orglen'} = $t->{' LENGTH'};
@@ -85,8 +87,6 @@ for (my $i = 0; $i < $whdr{'num'}; $i++)
     }
     $curroffset = $ofh->tell();
 }
-
-$whdr{'total'} = $if->{$tlist[-1]}{' OFFSET'} + $if->{$tlist[-1]}{' LENGTH'} + 12 + $whdr{'num'} * 16;
 
 if ($opts{'m'})
 {
@@ -124,7 +124,7 @@ sub out_whdr
     my ($ofh, $whdr) = @_;
     $ofh->print(pack("NNNnnNnnNNNNN", 0x774F4646, 0x00010000, $whdr->{'len'}, 
                     $whdr->{'num'}, 0, $whdr->{'total'}, $whdr->{'major'}, $whdr->{'minor'},
-                    $whdr->{'moffset'}. $whdr->{'mlen'}, $whdr->{'morglen'},
+                    $whdr->{'moffset'}, $whdr->{'mlen'}, $whdr->{'morglen'},
                     $whdr->{'poffset'}, $whdr->{'plen'}));
     for (my $i = 0; $i < $whdr->{'num'}; $i++)
     {
