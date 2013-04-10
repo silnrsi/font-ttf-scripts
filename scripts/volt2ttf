@@ -146,6 +146,20 @@ sub main
         }
         $xfh->print("    <alias name='$id' value='$l->{' index'}'/>\n");
     }
+    # If the Graphite Feat table is present, make aliases for any alphanumeric feature tags
+    if (exists $font->{'Feat'})
+    {
+        my ($feat, $feat_id, $gdl_tag);
+        
+        foreach $feat (@{$font->{'Feat'}->read->{'features'}})
+        {
+            $feat_id = $feat->{'feature'};
+            next if $feat_id == 1;  #skip over weird last feature in Feat table
+            $gdl_tag = Font::TTF::GrFeat->num_to_tag($feat_id);
+            next if $gdl_tag == $feat_id;  # If the same, then not alphanumeric
+            $xfh->print("    <alias name='gr_$gdl_tag' value='$feat_id'/>\n");
+        }
+    }
     $xfh->print("</aliases>\n");
     $xfh->close;
 }
