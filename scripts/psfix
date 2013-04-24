@@ -1,42 +1,80 @@
 #! /usr/bin/perl
+use strict;
 use Font::TTF::Font;
 use Font::TTF::PSNames qw(parse lookup);
+use Getopt::Std;
+use Pod::Usage;
 
-unless (defined $ARGV[1])
+our ($CHAIN_CALL, $f, %opts);
+
+unless ($CHAIN_CALL)
 {
-    die <<'EOT';
-    PSFIX infile outfile
-Updates Postscript table to account for Postscript Unicode conventions
-EOT
+    getopts('ahsv', \%opts);
+
+    unless (defined $ARGV[1] || defined $opts{'h'})
+    {
+        pod2usage(1);
+        exit;
+    }
+
+    if ($opts{'h'})
+    {
+        pod2usage( -verbose => 2, -noperldoc => 1);
+        exit;
+    }
+
+    $f = Font::TTF::Font->open($ARGV[0]) || die "Unable to open font file $ARGV[0]";
 }
 
-$f = Font::TTF::Font->open($ARGV[0]) || die "Unable to open font file $ARGV[0]";
+
 exit(1) if (!defined $f->{'post'});
-$p = $f->{'post'}->read;
-$num = $f->{'maxp'}{'numGlyphs'};
-@rmap = $f->{'cmap'}->read->reverse();
-$nmap = {};
+my $p = $f->{'post'}->read;
+$p->dirty;
 
-for ($i = 1; $i < $num; $i++)
+if ($opts{'s'})
 {
-    if (defined $rmap[$i])
+    # Strip post table
+    $p->{'VAL'} = [];
+    $p->{'STRINGS'} = {};
+}
+else
+{
+    my ($num, @rmap, %nmap, $i);
+    $num = $f->{'maxp'}{'numGlyphs'};
+    @rmap = $f->{'cmap'}->read->reverse();
+    
+    for ($i = 1; $i < $num; $i++)
     {
-        $nmap{$p->{'VAL'}[$i]} = lookup($rmap[$i]);
-        $nmap{$p->{'VAL'}[$i]} =~ s/^uni/u/o;
+        if (defined $rmap[$i])
+        {
+            my ($current, $ext) = ($p->{'VAL'}[$i] =~ /^([^.]*)(\..*)?$/o);
+            next unless $current;
+            $nmap{$current} = lookup($rmap[$i], $opts{'a'});
+            $nmap{$current} =~ s/^uni/u/o;
+        }
+    }
+    
+    for ($i = 1; $i < $num; $i++)
+    {
+        my (@parts) = split(/([_\/.])/, $p->{'VAL'}[$i]);
+        for (my $j = 0; $j < @parts; $j += 2)
+        {
+            $parts[$j] = $nmap{$parts[$j]} || $parts[$j] if (!$j || $parts[$j - 1] =~ m/[_\/]/o);
+            $parts[$j] =~ s/[][()<>{}%]|\s//og; # Make sure nothing invalid remains (even in extension)
+        }
+        my $new = join('', @parts);
+        if ($p->{'VAL'}[$i] ne $new)
+        {
+            print STDOUT "$p->{'VAL'}[$i] -> $new\n" if $opts{'v'};
+            $p->{'VAL'}[$i] = $new;
+        }
     }
 }
 
-for ($i = 1; $i < $num; $i++)
+unless ($CHAIN_CALL)
 {
-    my (@parts) = split(/([_\/.])/, $p->{'VAL'}[$i]);
-    for ($j = 0; $j < @parts; $j += 2)
-    {
-        $parts[$j] = $nmap{$parts[$j]} || $parts{$j} if (!$j || $parts[$j - 1] =~ m/[_\/]/o);
-    }
-    $p->{'VAL'}[$i] = join('', @parts);
+    $f->out($ARGV[1]);
 }
-
-$f->out($ARGV[1]);
 
 __END__
 
@@ -46,16 +84,20 @@ psfix - create Adobe Glyph List conformant names for glyphs in a font
 
 =head1 SYNOPSIS
 
-    PSFIX infile outfile
+    psfix [-a] [-s] [-v] infile outfile
+    psfix -h
+
 Updates Postscript table to account for Postscript Unicode conventions
 
 =head1 DESCRIPTION
 
 Creates Adobe Glyph List conformant names for each of the glyphs in a font.
 
-=head1 TODO
+=head1 OPTIONS
 
-Need to merge code with C<Font::TTF::PSNames>. This code is somewhat out
-of date.
+  -a  Prefer afii names over uXXXX names
+  -s  strip out ps names (making converting to version 3 post table)
+  -v  verbose
+  -h  help
 
 =cut
