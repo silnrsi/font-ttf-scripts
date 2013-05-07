@@ -34,10 +34,16 @@ if ($opts{'c'})
 my $head = $f->{'head'}->read;
 my $cmap = $f->{'cmap'}->find_ms;
 die "No Unicode cmap in '$ARGV[0]'\n" unless $cmap;
-my $loca = $f->{'loca'}->read;
-die "No loca table in '$ARGV[0]'\n" unless $loca;
 my $hmtx = $f->{'hmtx'}->read;
 die "No hmtx table in '$ARGV[0]'\n" unless $hmtx;
+
+my $loca;
+if (defined $f->{'loca'})
+{
+	# Looks like a TTF
+	$loca = $f->{'loca'}->read || die "No loca table in '$ARGV[0]'\n";
+}
+
 
 if (defined $f->{'OS/2'})
 {
@@ -51,7 +57,14 @@ else
 	print join($delim, $head->{'unitsPerEm'}, map {$head->{$_}} (qw(xMin xMax yMin yMax))), "\n\n";
 }
 
-print join($delim, qw(Unicode Glyph AdvWidth LSdBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
+if ($loca)
+{
+	print join($delim, qw(Unicode Glyph AdvWidth LSdBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
+}
+else
+{
+	print join($delim, qw(Unicode Glyph AdvWidth LSdBearing)), "\n";
+}
 
 for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
 {
@@ -60,12 +73,12 @@ for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
 	my $usv = sprintf("U+%04X", $u);
 	my $g = $loca->{'glyphs'}[$gid];
 	my ($xMin, $xMax, $yMin, $yMax) = (0,0,0,0);
-	if (defined $g)
+	if ($loca && defined $g)
 	{
 		$g->read;
 		($xMin, $xMax, $yMin, $yMax) = (map {$g->{$_}} (qw(xMin xMax yMin yMax)));
 	}
-	if (defined($g) or $opts{'f'})
+	if ($loca && (defined($g) or $opts{'f'}))
 	{
 		print join($delim, $usv, $gid, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid], $xMin, $xMax, $yMin, $yMax,$hmtx->{'lsb'}[$gid] + ($xMax - $xMin)/2), "\n";
 	}
