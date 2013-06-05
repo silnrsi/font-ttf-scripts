@@ -358,7 +358,7 @@ sub read_font
             }
             else
             {
-                my (@basicnames) = qw(.notdef null cr);
+                my (@basicnames) = qw(.notdef .null cr);
 #                $numg ||= 3;
                 if ($cur_glyph->{'gnum'} > $numg)
                 { $numg = $cur_glyph->{'gnum'} + 1; }
@@ -566,7 +566,7 @@ sub make_classes
 
         foreach $p (keys %{$glyph->{'points'}})
         {
-            my ($pname) = $self->make_point($p, $glyph, %opts);
+            my ($pname) = $self->make_point($p, $glyph, \%opts);
             next unless ($pname);                           # allow for point deletion, in effect.
             if ($p ne $pname)
             {
@@ -690,7 +690,8 @@ By default this returns $pname, but the function could be overridden when subcla
 
 sub make_point
 {
-    my ($self, $p, $glyph, %opts) = @_;
+    my ($self, $p, $glyph, $opts) = @_;
+    return undef if ($opts->{'-ignoredAPs'} and $opts->{'-ignoredAPs'} =~ m/\b$p\b/);
     $p;
 }
 

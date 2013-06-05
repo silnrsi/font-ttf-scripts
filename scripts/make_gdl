@@ -40,8 +40,6 @@ if ($opts{'excludes'})
 	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
-$options{'-omittedAPs'} = $opts{'omitaps'} if ($opts{'omitaps'});
-
 my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
 if (exists $f->{'WARNINGS'})
@@ -76,7 +74,7 @@ if ($opts{'renameaps'})
 $f->{'vecs'} = {};
 
 $f->start_gdl($outfh);
-$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'-ignoredAPs'}, -notmark => $opts{'mark'});
+$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
 $f->out_classes($outfh, -defines => $opts{'autodefines'});
 $f->endtable($outfh);

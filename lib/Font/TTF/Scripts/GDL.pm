@@ -259,7 +259,7 @@ sub make_name
 
 sub make_point
 {
-    my ($self, $p, $glyph) = @_;
+    my ($self, $p, $glyph, $opts) = @_;
 
     if ($p =~ m/^%([a-z0-9]+)_([a-z0-9]+)$/oi)
     {
@@ -274,6 +274,7 @@ sub make_point
         return undef;
     }
 
+    return undef if ($opts->{'-ignoredAPs'} and $opts->{'-ignoredAPs'} =~ m/\b$p\b/);
     return $p;
 }
 
