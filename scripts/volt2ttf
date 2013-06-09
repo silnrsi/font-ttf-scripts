@@ -63,6 +63,7 @@ use Font::TTF::GDEF;
 use IO::File;
 
 my $TYPE2;      # To do: resolve when to generate FMT1 or FMT2 pair adjustments
+                # NB: It appears VOLT always does FMT1
 
 sub main
 {
@@ -259,14 +260,14 @@ sub append_feat
     
     if ($lang eq 'dflt')
     {
-    	# There is no 'dflt' language tag registered -- this is a figment of VOLT's imagination.
-    	# Instead features associated with 'dflt' tag should be attached to the 'DEFAULT' language
-    	$lang = 'DEFAULT';
+        # There is no 'dflt' language tag registered -- this is a figment of VOLT's imagination.
+        # Instead features associated with 'dflt' tag should be attached to the 'DEFAULT' language
+        $lang = 'DEFAULT';
     }
     elsif (!defined $font->{$type}{'SCRIPTS'}{$script}{$lang})
     {
-    	push (@{$font->{$type}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
-	}
+        push (@{$font->{$type}{'SCRIPTS'}{$script}{'LANG_TAGS'}}, $lang);
+    }
 
     unless (defined $font->{$type}{'FEATURES'}{$fname})
     { push (@{$font->{$type}{'FEATURES'}{'FEAT_TAGS'}}, $fname); }
@@ -294,8 +295,8 @@ sub lookups_ttf
     {
         my ($flags);
         $flags |= 1 if ($l->{'dir'} =~ /RTL/oi);
-        $flags |= 2 if (!$l->{'base'});
-        $flags |= 8 if ($l->{'marks'} =~ m/SKIP/oi);
+        $flags |= 6 if ($l->{'base'} =~ /SKIP/oi);		# VOLT doesn't have separate SKIP_LIGATURES info.
+        $flags |= 8 if ($l->{'marks'} =~ /SKIP/oi);
 
         if ($l->{'all'} and $l->{'all'} ne 'ALL')
         {
@@ -565,7 +566,7 @@ sub add_gpos_lookup
             my ($sub) = {
                 'FORMAT' => 2,
                 'ACTION_TYPE' => 'p',
-                'MATCH_TYPE' => 'g',
+                'MATCH_TYPE' => 'c',
                 'COVERAGE' => $cover,
                 'CLASS' => $cover1,
                 'MATCH' => [$cover2]};
@@ -657,18 +658,18 @@ sub add_gpos_lookup
                 
                 foreach my $comp (0 .. ($dat->{'glyphs'}[$g]{'component_num'} || 1) -1)
                 {
-                	foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
-                	{
-                		# avoiding auto-vivication..
-                		if (defined $dat->{'glyphs'}[$g]{'anchors'} && 
-                			defined $dat->{'glyphs'}[$g]{'anchors'}{$k} && 
-                			defined $dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp])
-                    	{ $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp]); }
-                    	else
-                    	{
-                    		$self->error("anchor $k not defined on component", $comp+1, "for glyph $dat->{'glyphs'}[$g]{'name'}\n"); 
-                    		$rules[$i][$comp]{'ACTION'}[$anchors{$k}] = Font::TTF::Anchor->new(x=>0, y=>0); 
-                    	}
+                    foreach $k (sort {$anchors{$a} <=> $anchors{$b}} keys %anchors)
+                    {
+                        # avoiding auto-vivication..
+                        if (defined $dat->{'glyphs'}[$g]{'anchors'} && 
+                            defined $dat->{'glyphs'}[$g]{'anchors'}{$k} && 
+                            defined $dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp])
+                        { $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = make_anchor($dat->{'glyphs'}[$g]{'anchors'}{$k}[$comp]); }
+                        else
+                        {
+                            $self->error("anchor $k not defined on component", $comp+1, "for glyph $dat->{'glyphs'}[$g]{'name'}\n"); 
+                            $rules[$i][$comp]{'ACTION'}[$anchors{$k}] = Font::TTF::Anchor->new(x=>0, y=>0); 
+                        }
                     }
                 }
             }
@@ -787,7 +788,7 @@ sub scon_glyphs
     elsif ($context->[0] eq 'RANGE')
     { return [$context->[1] .. $context->[2]]; }
     elsif ($context->[0] eq 'ENUM')
-    { return $dat->or_context_glyphs($context->[1]); }
+    { return $dat->or_context_glyphs(@{$context->[1]}); }
     return [];
 }
 
