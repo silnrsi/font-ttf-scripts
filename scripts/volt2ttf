@@ -62,9 +62,6 @@ use Font::TTF::GPOS;
 use Font::TTF::GDEF;
 use IO::File;
 
-my $TYPE2;      # To do: resolve when to generate FMT1 or FMT2 pair adjustments
-                # NB: It appears VOLT always does FMT1
-
 sub main
 {
     my ($fv, %opts) = @_;
@@ -556,7 +553,7 @@ sub add_gpos_lookup
             push (@{$font->{'GPOS'}{'LOOKUP'}[$index]{'SUB'}}, $sub);
             $contlength = 1;
         }
-        elsif ($TYPE2 && $s->{'type'} eq 'ADJUST_PAIR')
+        elsif ($dat->{'info'}{'ppfmt2'} && $s->{'type'} eq 'ADJUST_PAIR')
         {
             my ($cover1) = Font::TTF::Coverage->new(0);
             my ($cover2) = Font::TTF::Coverage->new(0);
