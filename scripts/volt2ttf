@@ -381,6 +381,31 @@ sub lookups_ttf
                     push (@clr, {MATCH => [@match], ACTION => [[0, $dat->{"${type}_counters"}]]});
                 }
             }
+            
+            # NOTE: Normally @clr will contain a single item. However, there is
+            # a now-prohibited syntax in the GPOS lookups that utilized multiple 
+            # ADJUST, etc., specifications. e.g.:
+            #        DEF_LOOKUP "name" PRO...
+            #        AS_POSITION
+            #        ADJUST_SINGLE GROUP "group1" BY POS ADV 50 DX 100 END_POS
+            #        END_ADJUST
+            #        ADJUST_SINGLE GLYPH "glyph1" BY POS ADV 50 DX 100 END_POS
+            #        END_ADJUST
+            #        END_POSITION
+            #
+            # Each such ADJUST generates a separate entry in @clr, and these are then
+            # supposed to end up in separate subtables.
+            # But it isn't clear how this should interact with multiple context strings
+            # (especially the EXCEPT type) which also build multiple sub-tables.
+            #
+            # In any case, the code in this block was originally written to handle
+            # any number of @clr entries, but it didn't work for the case of a single @clr
+            # and two context strings, the first being EXCEPT context. In this case there
+            # should be no extra subtable that matches the core string.
+            # The code related to $wantAnother fixes this case, but only when there is
+            # a single entry in @clr. 
+            
+            my $wantAnother;
             foreach $c (@{$l->{'contexts'}})        # multiple context subrules
             {
                 my ($contlength);
@@ -403,11 +428,17 @@ sub lookups_ttf
                             'MATCH_TYPE' => 'o',
                             'ACTION_TYPE' => 'l',
                             'RULES' => [[{'MATCH' => $_->{'MATCH'}, 'ACTION' => [], %$clr1}]]});
-                        # then just match the core string and do the lookup
-                        push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
-                            'MATCH_TYPE' => 'o',
-                            'ACTION_TYPE' => 'l',
-                            'RULES' => [[{%$_}]]});
+                        if (scalar(@clr) > 1)
+                        {
+                            # match the core string and do the lookup
+                            push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
+                                'MATCH_TYPE' => 'o',
+                                'ACTION_TYPE' => 'l',
+                                'RULES' => [[{%$_}]]});
+                            $wantAnother = 0;                       
+                        }
+                        else
+                        { $wantAnother = 1;}
                     }
                     else
                     {
@@ -415,12 +446,22 @@ sub lookups_ttf
                             'MATCH_TYPE' => 'o',
                             'ACTION_TYPE' => 'l',
                             'RULES' => [[{%$_, %$clr1}]]});
+                        $wantAnother = 0;
                     }
                 }
                 $contlength += scalar @{$clr->{'MATCH'}} if exists $clr->{'MATCH'};
                 $self->{'maxcontext'} = $contlength if ($contlength > $self->{'maxcontext'});
 #                print STDERR "cl=$contlength ($ltype $l->{' index'})\n";
             }
+            if ($wantAnother)
+            {
+                # match the core string and do the lookup
+                push (@{$font->{$type}{'LOOKUP'}[$l->{' index'}]{'SUB'}}, {'FORMAT' => 3,
+                    'MATCH_TYPE' => 'o',
+                    'ACTION_TYPE' => 'l',
+                    'RULES' => [[{%{$clr[0]}}]]});
+            }
+   
             # Compute index for the chained lookup; be sure to copy flag word and MarkFilter to chained lookup
             $index = $dat->{"${type}_counters"}++;
             $font->{$type}{'LOOKUP'}[$index]{'FLAG'} = $flags;
