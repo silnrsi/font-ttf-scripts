@@ -98,10 +98,10 @@ if ($opts{'g'})
 }
 
 if ($opts{'l'})
-{ $subsetter->langlist(split(' ', $opts{'l'})); }
+{ $subsetter->langlist(map {pack('A4',$_)} split(' ', $opts{'l'})); }
 
 if ($opts{'s'})
-{ $subsetter->scriptlist(split(' ', $opts{'s'})); }
+{ $subsetter->scriptlist(map {pack('A4',$_)} split(' ', $opts{'s'})); }
 
 my ($canchangegids) = 1;
 $f->tables_do(sub {$canchangegids &= $_[0]->canchangegids();});
@@ -374,6 +374,8 @@ sub subset
                 }
             }
         }
+        $self->{'SCRIPTS'}{$s}{'LANG_TAGS'} = [grep {$_} @{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}}];
+        
         if ((defined $subsetter->{'scripts'} && !defined $subsetter->{'scripts'}{$s})
                 || (!@{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}} && !defined $self->{'SCRIPTS'}{$s}{'DEFAULT'}))
         {
@@ -408,15 +410,46 @@ sub subset_lookup
         if (!$self->subset_subtable($subsetter, $s, $lookup, $lkvec)
             || !defined $s->{'RULES'} || !@{$s->{'RULES'}})
         { next; }
-        $s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
+        
+        # the below code scrambled the AP data for base glyphs 
+        # for GPOS type 4 lookups
+        #$s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
         # remove unused coverage indices
-        if ($s->{'COVERAGE'})
+        #if ($s->{'COVERAGE'})
+        #{
+        #    my $c = $s->{'COVERAGE'}{'val'};
+        #    my $i = 0;
+        #    foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
+        #    { $c->{$k} = $i++; }
+        #}
+		
+		# TODO: MATCH and MARKS structs need to be reduced in the same way 
+		# as COVERAGE and RULES for GPOS type 4 lookups 
+		# (and possibly other lookup types and formats) for consistency.
+		# FYI, excluding the code below (ie not cleaning up the holes in 
+		# COVERAGE and RULES) will still produce a valid font 
+		# with my test data (from subsetting the Roman fonts for Africa)
+        if (defined $s->{'COVERAGE'}) # 'RULES' is tested for above
         {
-            my $c = $s->{'COVERAGE'}{'val'};
-            my $i = 0;
-            foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
-            { $c->{$k} = $i++; }
-        }
+	        my $c = $s->{'COVERAGE'}{'val'};
+	        my $r = $s->{'RULES'};
+	        my $cover = {};
+	        my $rules = [];
+	        my $i = 0;
+	        foreach my $gid (sort {$c->{$a} <=> $c->{$b}} keys $c)
+	        {
+	        	my ($ix) = $c->{$gid};
+	        	push (@{$rules}, $r->[$ix]);
+	        	$cover->{$gid} = $i++; #will exclude empty hash keys
+	        }
+	        $s->{'COVERAGE'}{'val'} = $cover;
+			$s->{'RULES'} = $rules;        
+    	}
+    	else
+    	{
+    		$s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
+    	}
+        
         push (@{$res}, $s);
     }
     return $res;
@@ -511,8 +544,9 @@ sub subset_context
     my ($classvals, $prevals, $postvals, $i, $j, @gids);
 
     return 0 if (defined $sub->{'COVERAGE'} && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $fmt < 2 ? $sub->{'RULES'} : undef));
-    while (my ($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
-    { $gids[$v] = $k; }
+    if ($fmt < 3) {
+    	while (my ($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
+    	{ $gids[$v] = $k; }}
     return 0 if (defined $sub->{'CLASS'} && !($classvals = $self->subset_class($subsetter, $sub->{'CLASS'})));
     return 0 if (defined $sub->{'PRE_CLASS'} && !($prevals = $self->subset_class($subsetter, $sub->{'PRE_CLASS'})));
     return 0 if (defined $sub->{'POST_CLASS'} && !($postvals = $self->subset_class($subsetter, $sub->{'POST_CLASS'})));
@@ -610,8 +644,9 @@ sub subset_subtable
 
     return 0 if ($type < 4 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
 
-    while (($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
-    { $gids[$v] = $k; }
+    if ($type < 4) {
+    	while (($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
+		{ $gids[$v] = $k; }}
 
     if (($type == 1 && $fmt > 1) || $type == 2)
     {
@@ -668,6 +703,7 @@ sub subset_subtable
     my ($self, $subsetter, $sub, $lookup, $lkvec) = @_;
     my ($type) = $lookup->{'TYPE'};
     my ($fmt) = $sub->{'FORMAT'};
+    # TODO: is the below line a bug for types 7 and 8 format 3 lookups?
     my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
     my ($i, $j, $k);
 
