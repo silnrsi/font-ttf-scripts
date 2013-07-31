@@ -6,19 +6,21 @@ use Getopt::Std;
 our ($opt_a,$opt_f,$opt_o,$opt_t,$VERSION);
 
 getopts('aft:o:');
-$VERSION = '0.1'; # original 
+$VERSION = '0.2'; # original 
 
 unless ($#ARGV == 1)
 {
     die <<"EOT";
 
-ttfcompare [-a][-f][-o outputfile] -t table fontfile1 fontfile2
+ttfcompare [-a] [-f] [-o outputfile] [-t table] fontfile1 fontfile2
 
-Compares all values in the specified table between the two fonts and displays differences on screen.
+Compares all values in the specified table between the two fonts and displays 
+differences on screen. Currently works for name, cmap and post tables only.  
 
-Currently works for name, cmap and post tables only.  
+If no table is specified, compares checksums and lengths of all tables.
 
-With the name table, by default it shows just one per Name ID and the first 100 characters of each string
+With the name table, by default it shows just one per Name ID and the 
+first 100 characters of each string
 
 Options:
 
@@ -30,21 +32,21 @@ Version $VERSION
 EOT
 }
 
-my %subs_table = ( name => \&namesub, post => \&postsub, cmap => \&cmapsub );
+my %subs_table = ( name => \&namesub, post => \&postsub, cmap => \&cmapsub, x => \&csumsub );
 
 my ($font1, $font2) = @ARGV;
 if ($opt_o) {
 	unless (open (STDOUT, ">$opt_o")) {die ("Could not open $opt_o for output")} ;
 }
 
-unless ($opt_t) {die "No table name specified"}
+$opt_t ||= 'x';	# If not supplied, just do table checksum/length
 unless ($subs_table{$opt_t}) {die "Invalid table name"}
 
 # Open fonts and read the tables
 my $f1 = Font::TTF::Font->open($font1) || die ("Couldn't open TTF '$font1'\n");
-my $table1 = $f1->{$opt_t}->read;
+my $table1 = $f1->{$opt_t}->read unless $opt_t eq 'x';
 my $f2 = Font::TTF::Font->open($font2) || die ("Couldn't open TTF '$font2'\n");
-my $table2 = $f2->{$opt_t}->read;
+my $table2 = $f2->{$opt_t}->read unless $opt_t eq 'x';
 
 # Produce output versions of font names without .ttf and padded to same length
 my $if1 = index( $font1, ".ttf");
@@ -185,6 +187,34 @@ sub postsub {
   }	
   print "  $difffound differences found\n\n";
 }
+
+sub csumsub {
+	my %alltags;
+	map { $alltags{$_}=1 } grep { length($_) == 4 } (keys(%{$f1}), keys(%{$f2}));
+	my $difffound = 0;
+	foreach my $tag (sort keys(%alltags))
+	{
+		if (!exists $f1->{$tag})
+		{
+			print "$tag  missing\n";
+		}
+		elsif (!exists $f2->{$tag})
+		{
+			print "$tag                   missing\n";
+		}
+		elsif ($f1->{$tag}{' CSUM'} != $f2->{$tag}{' CSUM'} || $f1->{$tag}{' LENGTH'} != $f2->{$tag}{' LENGTH'})
+		{
+			printf "%s  %8X / %-6d %8X / %-6d\n", $tag, $f1->{$tag}{' CSUM'}, $f1->{$tag}{' LENGTH'}, $f2->{$tag}{' CSUM'}, $f2->{$tag}{' LENGTH'};
+		}
+		else
+		{
+			next;
+		}
+		$difffound++;
+	}
+  print "  $difffound differences found\n\n";
+}
+
 
 # Other subroutines, called by main subroutines
 
