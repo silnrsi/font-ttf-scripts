@@ -41,10 +41,10 @@ else
 my @tags;
 
 if ($opt_t)
-{   @tags = split(/\s*[,\s]\s*/, $opt_t); }
+{   @tags = map {pack('A4',$_)} split(/\s*[,\s]\s*/, $opt_t); }
 else
 {   
-    @tags = keys %{$f};
+    @tags = grep {length($_) == 4} keys %{$f};
     push @tags, 'TSIV' if ($opt_v && $opt_t !~ /\bTSIV\b/);
     @tags = sort @tags;
     push @tags, 'AP' if $opt_a;
