@@ -18,7 +18,7 @@ $VERSION = 0.01;    # MJPH      11-OCT-2007     First release
 
 unless ($CHAIN_CALL)
 {
-    getopts('a:d:hirt:x:', \%opts);
+    getopts('a:d:f:hirt:x:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -108,10 +108,40 @@ sub main
 #    print STDERR "maxcontext=$fv->{'maxcontext'}\n";
     return unless ($opts{'x'});
     
+    my ($pre, $post, $indent);
+    $indent = '    ';
+    if ($opts{'f'})
+    {
+        # Slurp in the entire master TypeTuner file.
+        local $/;
+        my ($xfh) = IO::File->new("< $opts{'f'}") || die "Can't open $opts{'f'} for reading";
+        $_ = <$xfh>;
+        $xfh->close;
+        # Look for a place to insert the aliases:
+        #    - replacing an empty <aliases/> tag
+        #    - replacing an existing <aliases> ... </aliases> section
+        #    - replacing an xml comment including the word "aliases"
+        #    - just preceding the closing </all_features> tag.
+        if (/\n([ \t]*)<aliases(?:[^>]*\/>|.*<\/aliases\s*>)/so || /\n([ \t]*)<!--\s+[^>]*aliases[^>]*-->/soi)
+        {
+            $pre = "$`\n";
+            $post = $'; #'
+            $indent = $1;
+        }
+        elsif (/<\/all_features\s*>/so)
+        {
+            $pre = "$`\n";
+            $post = "$&$'"; #'
+        }
+    }
+    
     my ($xfh) = IO::File->new("> $opts{'x'}") || die "Can't open $opts{'x'} for writing";
     my (%feattags, %multis);
-    $xfh->print("<?xml version='1.0' encoding='UTF-8'?>\n");
-    $xfh->print("<aliases>\n");
+    if ($opts{'f'})
+    {   $xfh->print($pre); }
+    else
+    {   $xfh->print("<?xml version='1.0' encoding='UTF-8'?>\n"); }
+    $xfh->print("$indent<aliases>\n");
     foreach my $t(qw(GSUB GPOS))
     {
         foreach my $f (@{$font->{$t}{'FEATURES'}{'FEAT_TAGS'}})
@@ -127,7 +157,7 @@ sub main
             }
             else
             { $feattags{$val} = ""; }
-            $xfh->print("    <alias name='$f' value='$val'/>\n");
+            $xfh->print("$indent$indent<alias name='$f' value='$val'/>\n");
         }
     }
     foreach my $l (@{$fv->{'voltdat'}{'lookups'}})
@@ -142,7 +172,7 @@ sub main
             else
             { $multis{$id} = 1; }
         }
-        $xfh->print("    <alias name='$id' value='$l->{' index'}'/>\n");
+        $xfh->print("$indent$indent<alias name='$id' value='$l->{' index'}'/>\n");
     }
     # If the Graphite Feat table is present, make aliases for any alphanumeric feature tags
     if (exists $font->{'Feat'})
@@ -155,10 +185,11 @@ sub main
             next if $feat_id == 1;  #skip over weird last feature in Feat table
             $gdl_tag = Font::TTF::GrFeat->num_to_tag($feat_id);
             next if $gdl_tag == $feat_id;  # If the same, then not alphanumeric
-            $xfh->print("    <alias name='gr_$gdl_tag' value='$feat_id'/>\n");
+            $xfh->print("$indent$indent<alias name='gr_$gdl_tag' value='$feat_id'/>\n");
         }
     }
-    $xfh->print("</aliases>\n");
+    $xfh->print("$indent</aliases>\n");
+    $xfh->print($post) if $opts{'f'};
     $xfh->close;
 }
 
@@ -917,12 +948,19 @@ Compiles volt source into OT tables in the font.
   -r          Do not delete Volt source table in the font
   -t file     Volt source as text file to use instead of what is in the font
   -h          Help
-  -x file     Generate TypeTuner aliases .xml file
+  -x file     Generate TypeTuner xml file including aliases
+  -f file     TypeTuner features xml source file
     
 =head1 DESCRIPTION
 
 volt2ttf is like loading a font into VOLT and hitting compile and saving the
-result. Note that it doesn't compile a new cmap, though. Just the OT tables
+result. Note that it does not compile a new cmap, though. Just the OT tables
 are built.
+
+If -x is supplied, feature and lookup aliases are written in
+TypeTuner xml format to the file. If -f is also supplied, the aliases are
+first merged with the features source file: any existing <aliases> element
+(including the empty element, <aliases/> is replaced with the new
+alias definitions.
 
 =cut
