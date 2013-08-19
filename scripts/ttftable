@@ -80,6 +80,7 @@ foreach my $tag (\@deletes, \@updates, \@exports, \@imports)
             s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
             s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
             s/\bopentype\b/ GDEF GSUB GPOS /oi;
+            s/\baat\b/ mort morx feat /oi;
             push @newtag, grep {$_} split(/[\s,:;|]+/);
         }
     }
@@ -334,6 +335,7 @@ insensitive) pseudo tags can also be used:
   graphite  all SIL Graphite tables (Silf Feat Gloc Glat Sill Sile)
   volt      all Microsoft VOLT tables (TSIV TSID TSIP TSIS)
   opentype  all OpenType tables (GDEF GSUB GPOS)
+  aat       all AAT tables (mort morx feat)
   all       all tables in the font (use with caution!)
 
 The parameter to -export and -import is a table tag optionally followed by
