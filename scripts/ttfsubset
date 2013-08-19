@@ -30,7 +30,7 @@ if ($opts{'d'})
     $opts{'d'} =~ s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
     $opts{'d'} =~ s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
     $opts{'d'} =~ s/\bopentype\b/ GDEF GSUB GPOS /oi;
-    $opts{'d'} =~ s/\baat\b/ morx feat /oi;
+    $opts{'d'} =~ s/\baat\b/ mort morx feat /oi;
     # Split generously (spaces, comma, colon, semicolon)
     foreach my $tag (grep {length($_) == 4} split(/[\s,:;]+/, $opts{'d'}))
     {
@@ -777,6 +777,26 @@ sub subset
     { delete $self->{'LIG'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'LIG'}{'COVERAGE'}, $self->{'LIG'}{'POINTS'})); }
     if (defined $self->{'MARKS'})
     { delete $self->{'MARKS'} unless (Font::TTF::Ttopen->subset_cover($subsetter, $self->{'MARKS'}, undef)); }
+}
+
+package Font::TTF::OS_2;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+    
+    return unless ($self->SUPER::subset($subsetter) && defined $self->{' PARENT'}{'cmap'});
+    my ($cmap) = $self->{' PARENT'}{'cmap'};
+    $cmap->subset($subsetter);  # Must be done first so we have valid cmap
+
+    # The subset font can support no more ranges than the original, so we use
+    # whatever bits guessRangeBits() comes up with as long as long as those bits 
+    # were set in the original font. I.e. we do a logical AND. 
+    my (@fields) = (qw( ulCodePageRange1 ulCodePageRange2 ulUnicodeRange1 ulUnicodeRange2 ulUnicodeRange3 ulUnicodeRange3));
+    my (%save) = (map {$_ => $self->{$_}} @fields); # Remember original
+    $cmap = $cmap->find_ms->{'val'};                # generate new bits
+    $self->guessRangeBits($cmap);
+    map { $self->{$_} &= $save{$_} } @fields;       # turn off any bits that weren't in the original.
 }
 
 package Font::TTF::Cmap;
