@@ -74,7 +74,7 @@ if ($opts{'g'})
             # Process postscript or GID range
             $n1 = $post->{'STRINGS'}{$n1} unless $n1 =~ m/^\d+$/o;
             if (!defined $n1 || $n1 >= $numg)
-            { warn "Can't parse $g"; next;}
+            { warn "Warning: Can't parse or find $g, ignoring."; next;}
             if (defined $n2)
             {
                 $n2 = $post->{'STRINGS'}{$n1} unless $n2 =~ m/^\d+$/o;
@@ -116,18 +116,26 @@ $f->out($ARGV[1]);
 
 package Font::TTF::Scripts::SubSetter;
 
+# manage the subsetting process
+
 sub new
 {
     my ($class, $numg) = @_;
     my ($self) = {};
-    $self->{'glyphs'} = '';
-    $self->{'remaps'} = {};
+    $self->{'glyphs'} = '';     # bit vector in old font gid space, set if glyph to be kept
+    $self->{'remaps'} = {};     # maps new unicode cmap entry to old font gid
     $self->{'numg'} = $numg;
+    # other attributes:
+    # $self->{'gidmap'} = [];   # maps old gid to new gid
+    # $self->{'gcount'} = 0;    # number of glyphs in new font
+    # $self->{'langs'} = {};    # a set of lang tags of languages to include
+    # $self->{'scripts'} = {};  # a set of script tags to include
     bless $self, $class || ref $class;
     foreach (0..2) { $self->add_glyph($_); }
     return $self;
 }
 
+# ensure this glyph gets into the output
 sub add_glyph
 {
     my ($self, $n, $private) = @_;
@@ -141,30 +149,35 @@ sub add_glyph
     { return 0; }
 }
 
+# should this glyph from the old font go into the new font?
 sub keep_glyph
 {
     my ($self, $n) = @_;
     return vec($self->{'glyphs'}, $n, 1);
 }
 
+# add a cmap entry for this old font glyph
 sub remap
 {
     my ($self, $u, $n) = @_;
     $self->{'remaps'}{$u} = $n;
 }
 
+# here's the list of languages to conserve
 sub langlist
 {
     my ($self, @dat) = @_;
     $self->{'langs'} = { map {$_=>1} @dat };
 }
 
+# here's the list of scripts to conserve
 sub scriptlist
 {
     my ($self, @dat) = @_;
     $self->{'scripts'} = { map {$_=>1} @dat };
 }
 
+# now we know what all glyphs the user thinks we need to keep, create the map old to new
 sub creategidmap
 {
     my ($self) = @_;
@@ -185,6 +198,7 @@ sub creategidmap
     return $self->{'gcount'};
 }
 
+# return the new glyph id from an old one
 sub map_glyph
 {
     my ($self, $g) = @_;
@@ -197,9 +211,14 @@ sub map_glyph
 
 package Font::TTF::Table;
 
+# shared code for all tables
+
+# by default, this table can allow glyph ids to be changed. In theory a table
+# might not support us changing glyph ids around
 sub canchangegids
 { 1; }
 
+# set up the table for subsetting and say we did it.
 sub subset
 {
     my ($self, $subsetter) = @_;
@@ -210,8 +229,12 @@ sub subset
     return 1;
 }
 
+
 package Font::TTF::Loca;
 
+# we handle the actual glyphs and we are the only table that might
+# add extra glyphs to conserve (due to glyph references). So we
+# are run first.
 sub subset
 {
     my ($self, $subsetter) = @_;
@@ -234,35 +257,40 @@ sub outglyph
     $res->[$subsetter->map_glyph($n)] = $self->{'glyphs'}[$n];
     if (defined $self->{'glyphs'}[$n] && $self->{'glyphs'}[$n]->read()->{'numberOfContours'} < 0)
     {
+        # if this glyph is made up of references, ensure the referenced glyphs are conserved
         my ($g) = $self->{'glyphs'}[$n]->read_dat();
         foreach my $c (@{$g->{'comps'}})
         {
             if ($subsetter->add_glyph($c->{'glyph'}, 1))
-            { $self->outglyph($subsetter, $res, $c->{'glyph'}); }
-            $c->{'glyph'} = $subsetter->map_glyph($c->{'glyph'});
+            { $self->outglyph($subsetter, $res, $c->{'glyph'}); }   # recurse for references of references etc.
+            $c->{'glyph'} = $subsetter->map_glyph($c->{'glyph'});   # update the reference to new gid
         }
         $g->{' isDirty'} = 1;
     }
 }
 
+
 package Font::TTF::Ttopen;
 
+# shared code for GSUB and GPOS
+
+# entry point for subsetting GSUB and GPOS
 sub subset
 {
     my ($self, $subsetter) = @_;
     return unless ($self->SUPER::subset($subsetter));
 
     my ($l, $count, @lmap, @lookups, $lkvec, $res, $nlookup);
-    $lkvec = "";
+    $lkvec = "";    # bit vector for each lookup to say whether to conserve
     $nlookup = $#{$self->{'LOOKUP'}};
     # process non-contextual lookups
     foreach $l (0 .. $nlookup)
     {
         my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
         next if ($type >= $self->extension() - 2 && $type < $self->extension());
-        $res = $self->subset_lookup($self->{'LOOKUP'}[$l]);
+        $res = $self->subset_lookup($self->{'LOOKUP'}[$l]);     # subset the lookup, returning a list of new subtables
 
-        if (!@{$res})
+        if (!@{$res})       # no subtables? delete the lookup
         {
             delete $self->{'LOOKUP'}[$l];
             vec($lkvec, $l, 1) = 0;
@@ -281,8 +309,8 @@ sub subset
         {
             my ($type) = $self->{'LOOKUP'}[$l]{'TYPE'};
             if ($type >= $self->extension() - 2 && $type < $self->extension())
-            {
-                $res = $self->subset_lookup($self->{'LOOKUP'}[$l], $lkvec);
+            {       # contextual lookups are the last 2 before the extension lookup
+                $res = $self->subset_lookup($self->{'LOOKUP'}[$l], $lkvec);     # subset it like non-contextual
                 if (!@{$res})
                 {
                     delete $self->{'LOOKUP'}[$l];
@@ -295,6 +323,7 @@ sub subset
                 }
             }
         }
+        # save a pass and collect list of lookups to output as we go, along with an old->new map
         if (vec($lkvec, $l, 1))
         {
             push (@lookups, $self->{'LOOKUP'}[$l]);
@@ -305,9 +334,12 @@ sub subset
     }
     
     $self->{'LOOKUP'} = \@lookups;
+    # now we have the map, we can change the lookup references in the contextual lookups to refer
+    # to the new lookup ids.
     foreach $l (@lookups)
     { $self->fixcontext($l, \@lmap); }
 
+    # now make the new FEATURES structure, removing or changing lookup ids
     foreach my $t (@{$self->{'FEATURES'}{'FEAT_TAGS'}})
     {
         my $f = $self->{'FEATURES'}{$t};
@@ -324,11 +356,13 @@ sub subset
         else
         { $f->{'LOOKUPS'} = [grep {defined $_} @{$f->{'LOOKUPS'}}]; }
     }
+    # remove empty FEATURES by simply not having a FEAT_TAG to refer to them
     $self->{'FEATURES'}{'FEAT_TAGS'} = [grep {defined $self->{'FEATURES'}{$_}} @{$self->{'FEATURES'}{'FEAT_TAGS'}}];
 
     my ($isEmpty) = 1;
     foreach my $s (keys %{$self->{'SCRIPTS'}})
     {
+        # update LANG structures inside the SCRIPTS, use -1 for DEFAULT
         foreach $l (-1 .. $#{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}})
         {
             my $lang;
@@ -360,6 +394,7 @@ sub subset
                 if (!$found)
                 { $lang->{'DEFAULT'} = -1; }
             }
+            # do we delete this language?
             if (($l >= 0 && defined $subsetter->{'langs'}
                 && !defined $subsetter->{'langs'}{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}[$l]})
                     || ((!defined $lang->{'FEATURES'} || !@{$lang->{'FEATURES'}})
@@ -376,6 +411,7 @@ sub subset
         }
         $self->{'SCRIPTS'}{$s}{'LANG_TAGS'} = [grep {$_} @{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}}];
         
+        # do we delete this script since it has no languages and wasn't required to be preserved
         if ((defined $subsetter->{'scripts'} && !defined $subsetter->{'scripts'}{$s})
                 || (!@{$self->{'SCRIPTS'}{$s}{'LANG_TAGS'}} && !defined $self->{'SCRIPTS'}{$s}{'DEFAULT'}))
         {
@@ -385,6 +421,8 @@ sub subset
         else
         { $isEmpty = 0; }
     }
+
+    # if there are no scripts to output, there is no table!
     if ($isEmpty)
     {
         my ($k, $v);
@@ -407,28 +445,12 @@ sub subset_lookup
 
     foreach $s (@{$lookup->{'SUB'}})
     {
+        # call the subclass to process this subtable
         if (!$self->subset_subtable($subsetter, $s, $lookup, $lkvec)
             || !defined $s->{'RULES'} || !@{$s->{'RULES'}})
         { next; }
         
-        # the below code scrambled the AP data for base glyphs 
-        # for GPOS type 4 lookups
-        #$s->{'RULES'} = [grep {$_} @{$s->{'RULES'}}];
-        # remove unused coverage indices
-        #if ($s->{'COVERAGE'})
-        #{
-        #    my $c = $s->{'COVERAGE'}{'val'};
-        #    my $i = 0;
-        #    foreach my $k (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
-        #    { $c->{$k} = $i++; }
-        #}
-		
-		# TODO: MATCH and MARKS structs need to be reduced in the same way 
-		# as COVERAGE and RULES for GPOS type 4 lookups 
-		# (and possibly other lookup types and formats) for consistency.
-		# FYI, excluding the code below (ie not cleaning up the holes in 
-		# COVERAGE and RULES) will still produce a valid font 
-		# with my test data (from subsetting the Roman fonts for Africa)
+        # remove empty rules and coverage entries but keep them in sync
         if (defined $s->{'COVERAGE'}) # 'RULES' is tested for above
         {
 	        my $c = $s->{'COVERAGE'}{'val'};
@@ -439,8 +461,11 @@ sub subset_lookup
 	        foreach my $gid (sort {$c->{$a} <=> $c->{$b}} keys $c)
 	        {
 	        	my ($ix) = $c->{$gid};
-	        	push (@{$rules}, $r->[$ix]);
-	        	$cover->{$gid} = $i++; #will exclude empty hash keys
+                if ($r->[$ix])      # strip empty rules from coverage table
+                {
+    	        	push (@{$rules}, $r->[$ix]);
+	            	$cover->{$gid} = $i++; #will exclude empty hash keys
+                }
 	        }
 	        $s->{'COVERAGE'}{'val'} = $cover;
 			$s->{'RULES'} = $rules;        
@@ -455,7 +480,7 @@ sub subset_lookup
     return $res;
 }
 
-
+# subset a class table (coverage table with class values)
 sub subset_class
 {
     my ($self, $subsetter, $classdef, $noremap) = @_;
@@ -486,6 +511,8 @@ sub subset_class
     { return undef; }
 }
 
+# subset the common initial relationship between coverage table and rules
+# leaves the rules array the same size with the same indices. Remaps the input to the coverage table
 sub subset_cover
 {
     my ($self, $subsetter, $coverage, $rules) = @_;
@@ -493,7 +520,7 @@ sub subset_cover
     my $isEmpty = 1;
     my $cover = $coverage->{'val'};
     foreach (sort {$a <=> $b} keys %{$cover})
-    {
+    {   # run sorted so we don't overwrite something we output since we assume map_glyph(x) <= x
         if (!$subsetter->keep_glyph($_))
         {
             delete $rules->[$cover->{$_}] if $rules;
@@ -514,6 +541,7 @@ sub subset_cover
     }
 }
 
+# subset an array of gids in a contextual lookup based on format of lookup
 sub subset_string
 {
     my ($self, $subsetter, $string, $fmt, $classvals) = @_;
@@ -537,12 +565,14 @@ sub subset_string
     return $test;
 }
 
+# subset a contextual lookup
 sub subset_context
 {
     my ($self, $subsetter, $sub, $type, $lkvec) = @_;
     my ($fmt) = $sub->{'FORMAT'};
     my ($classvals, $prevals, $postvals, $i, $j, @gids);
 
+    # subset the various coverage and class tables
     return 0 if (defined $sub->{'COVERAGE'} && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $fmt < 2 ? $sub->{'RULES'} : undef));
     if ($fmt < 3) {
     	while (my ($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
@@ -550,21 +580,6 @@ sub subset_context
     return 0 if (defined $sub->{'CLASS'} && !($classvals = $self->subset_class($subsetter, $sub->{'CLASS'})));
     return 0 if (defined $sub->{'PRE_CLASS'} && !($prevals = $self->subset_class($subsetter, $sub->{'PRE_CLASS'})));
     return 0 if (defined $sub->{'POST_CLASS'} && !($postvals = $self->subset_class($subsetter, $sub->{'POST_CLASS'})));
-    # tidy up coverage tables that contain glyphs not in the matching class
-#    if (defined $sub->{'CLASS'})
-#    {
-#        foreach $i (0 .. $#gids)
-#        {
-#            if (defined $gids[$i] && !defined $sub->{'CLASS'}{'val'}{$gids[$i]})
-#            {
-#                delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};
-#                delete $gids[$i];
-#            }
-#        }
-#        @gids = grep {defined $_} @gids;
-#    }
-#    return 0 unless (@gids);
-
 
     foreach $i (0 .. @{$sub->{'RULES'}})
     {
@@ -575,7 +590,8 @@ sub subset_context
             {
                 my ($r) = $sub->{'RULES'}[$i][$j];
                 my ($test) = 1;
-                if ($type == 4)
+                # subset the ACTION gids
+                if ($type == 4)     # handle ligature substitution differently
                 {
                     if ($subsetter->keep_glyph($r->{'ACTION'}[0]))
                     { $r->{'ACTION'}[0] = $subsetter->map_glyph($r->{'ACTION'}[0]); }
@@ -598,14 +614,16 @@ sub subset_context
                 { $test = $self->subset_string($subsetter, $r->{'POST'}, $fmt, $postvals); }
                 if ($test)
                 { $test = $self->subset_string($subsetter, $r->{'MATCH'}, $fmt, $classvals); }
+                # if any of the context lists end up empty, delete the subrule
                 if (!$test)
                 { delete $sub->{'RULES'}[$i][$j]; }
                 else
                 { $isEmpty = 0; }
             }
+            # shrink the list to remove undefs
             $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}];
         }
-        if ($isEmpty)
+        if ($isEmpty)   # delete the rule?
         {
             delete $sub->{'RULES'}[$i];
             delete $sub->{'COVERAGE'}{'val'}{$gids[$i]} if ($fmt < 2);  # already remapped
@@ -614,6 +632,8 @@ sub subset_context
     return 1;
 }
 
+# fixup the gid references in a contextual lookup actions to point to their new values. No subsetting
+# just remapping.
 sub fixcontext
 {
     my ($self, $l, $lmap) = @_;
@@ -642,13 +662,14 @@ sub subset_subtable
     my ($fmt) = $sub->{'FORMAT'};
     my ($r, $i, $j, @gids, $k, $v);
 
+    # handle conventionally structured lookups coverage tables
     return 0 if ($type < 4 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
 
-    if ($type < 4) {
+    if ($type < 4) {        # non contextual lookups
     	while (($k, $v) = each %{$sub->{'COVERAGE'}{'val'}})
 		{ $gids[$v] = $k; }}
 
-    if (($type == 1 && $fmt > 1) || $type == 2)
+    if (($type == 1 && $fmt > 1) || $type == 2)     # single or multiple substitution
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
@@ -667,13 +688,13 @@ sub subset_subtable
             }
         }
     }
-    elsif ($type == 3)
+    elsif ($type == 3)      # alternate substitution
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
             if (!defined $sub->{'RULES'}[$i])
             {
-                delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};
+                delete $sub->{'COVERAGE'}{'val'}{$gids[$i]};    # already remapped
                 next;
             }
             my $res = [];
@@ -691,7 +712,7 @@ sub subset_subtable
             }
         }
     }
-    elsif ($type >=4 && $type <= 6)
+    elsif ($type >=4 && $type <= 6)     # contextual lookups (including ligatures, which look like contextual lookups)
     { return $self->subset_context($subsetter, $sub, $type, $lkvec); }
     return 1;
 }
@@ -703,12 +724,12 @@ sub subset_subtable
     my ($self, $subsetter, $sub, $lookup, $lkvec) = @_;
     my ($type) = $lookup->{'TYPE'};
     my ($fmt) = $sub->{'FORMAT'};
-    # TODO: is the below line a bug for types 7 and 8 format 3 lookups?
-    my (@gids) = sort { $a <=> $b} keys %{$sub->{'COVERAGE'}{'val'}};
     my ($i, $j, $k);
 
-    return 0 if ($type <= 6 && !$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'}));
-    if ($type == 2 && $fmt == 1)
+    if ($type <= 6)
+    { return 0 if (!$self->subset_cover($subsetter, $sub->{'COVERAGE'}, $sub->{'RULES'})); }
+    
+    if ($type == 2 && $fmt == 1)        # pair positioning
     {
         foreach $i (0 .. $#{$sub->{'RULES'}})
         {
@@ -726,7 +747,7 @@ sub subset_subtable
             { $sub->{'RULES'}[$i] = [grep {$_} @{$sub->{'RULES'}[$i]}]; }
         }
     }
-    elsif ($type == 2 && $fmt == 2)
+    elsif ($type == 2 && $fmt == 2)     # pair positioning class based
     {
         my ($c1vals) = $self->subset_class($subsetter, $sub->{'CLASS'});
         my ($c2vals) = $self->subset_class($subsetter, $sub->{'MATCH'}[0]);
@@ -755,6 +776,7 @@ sub subset_subtable
         else
         { return 0; }
     }
+    # This doesn't cover removing anchors from bases where the mark class is no longer used
     elsif ($type >= 4 && $type <= 6)
     { return $self->subset_cover($subsetter, $sub->{'MATCH'}[0], $sub->{'MARKS'}) ? 1 : 0; }
     elsif ($type >=7 && $type <= 8)
@@ -769,6 +791,8 @@ sub subset
     my ($self, $subsetter) = @_;
 
     return unless ($self->SUPER::subset($subsetter));
+
+    # we are not a subclass of Font::TTF::Ttopen so use direct calls
     if (defined $self->{'GLYPH'})
     { delete $self->{'GLYPH'} unless (Font::TTF::Ttopen->subset_class($subsetter, $self->{'GLYPH'}, 1)); }
     if (defined $self->{'ATTACH'})
@@ -832,11 +856,15 @@ sub subset
     my ($res) = [];
 
     return unless ($self->SUPER::subset($subsetter));
-    # need to rewrite for real glyph remapping
+
     foreach my $i (0 .. @{$self->{'VAL'}})
-    { $res->[$subsetter->map_glyph($i)] = $subsetter->keep_glyph($i) ? $self->{'VAL'}[$i] : ".notdef"; }
+    {
+        if ($subsetter->keep_glyph($i))     # only add entries for new glyphs (cf Hmtx algorithm)
+        { $res->[$subsetter->map_glyph($i)] = $self->{'VAL'}[$i]; }
+    }
     $self->{'VAL'} = $res;
 }
+
 
 package Font::TTF::Hmtx;
 
@@ -859,6 +887,7 @@ sub subset
     $self->{'advance'} = $adv;
     $self->{'lsb'} = $lsb;
 }
+
 
 package Font::TTF::LTSH;
 
@@ -906,6 +935,40 @@ sub subset
     foreach $s (@{$self->{'SILF'}})
     { $self->subset_silf($s, $subsetter); }
 }
+
+
+# This is the original long algorithm:
+# 1.	For each pass
+#	1.1	Establish rule->row and row->rule mappings
+#	1.2	Mark kept columns
+#	1.3	Mark kept rows (based on deleted columns)
+#	1.4	Mark kept rules (based on deleted rules)
+#	1.5 Test constraint to see if deleted features have impossible values
+#	1.6 Parse and associate substitutionary classes
+#
+# 2.	Mark deleted classes
+#	2.1 If a single input class has more than one output class, copy input class and map
+#	2.2 Remove entries from input and output class pairs
+#		2.2.1 Mark empty classes as deleted
+#
+# 3.	For each pass
+#	3.1 For each non-deleted rule
+#		3.1.1 Mark deleted if references deleted class
+#
+# 4. Mark unneeded classes as deleted
+#	4.1 re-merge identical input classes to have multiple output classes
+#	4.2 Create old->new class id mapping
+#	4.3 Create remapped classes to new glyph ids.
+# 5. For each pass
+#	5.1 Mark rows of deleted rules as deleted
+#	5.2 Mark columns that only consist of deleted rows as deleted
+#	5.3 Create old->new row mapping
+#	5.4 Create old->new rule mapping
+#	5.5 Create new fsm
+#	5.6 Create new row->rule lists
+#	5.7 Create new rules with classes remapped
+#	5.8 Remap gids in column mapping
+# 6. Create new classes structure deleting some classes, and remapping gids
 
 sub subset_silf
 {
