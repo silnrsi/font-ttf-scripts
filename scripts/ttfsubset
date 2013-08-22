@@ -925,7 +925,6 @@ sub subset
 
 package Font::TTF::Silf;
 
-# disable for now so we can check in initial code
 sub subset
 {
     my ($self, $subsetter) = @_;
@@ -937,7 +936,7 @@ sub subset
 }
 
 
-# This is the original long algorithm:
+# This is the original long algoriththe original. It got modified a bit as I wrote the real code:
 # 1.	For each pass
 #	1.1	Establish rule->row and row->rule mappings
 #	1.2	Mark kept columns
@@ -970,6 +969,22 @@ sub subset
 #	5.8 Remap gids in column mapping
 # 6. Create new classes structure deleting some classes, and remapping gids
 
+# We use various attributes of $subsetter->{'silf'}:
+# All the glyphs referenced here are in terms of the input font
+# passes            An array of sub info per pass:
+#       cols            bitmap for columns of fsm. Set if required in output
+#       glyphcols       array indexed by col, list of required glyphs mapping to that col
+#       rowfwdrefs      array indexed by row, a set of required rows this fsm row can end up at
+#       rowbackrefs     array indexed by row, a set of required rows that can fwd reference to here
+#       rules           array indexed by rule, a list of rows that fire this rule
+#       rulemap         array indexed by row, a list of rules this row fires
+# numclass_pairs    hash keyed by class, contains a hash of classes that required rules map glyphs from the hash key to, valued by number of occurrences
+# numclasses        hash keyed by class, contains a hash of classes used in required rules, valued by number of occurrences
+# class_pairs       double hashed key by in & out class to a pair of lists in & out required glyphs.
+# class_pairs_removed   double hash, 2 classes to a list of glyphs in the first class that map to unrequired glyphs in the second
+# classes
+# class_map
+
 sub subset_silf
 {
     my ($self, $silf, $subsetter) = @_;
@@ -986,8 +1001,8 @@ sub subset_silf
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
         my ($c) = $silf->{'classes'}[$i];
-        my (@class) = sort {$c->{$a} <=> $c->{$b}} keys %{$c};
-        my (@subsetclass) = grep ($subsetter->keep_glyph($_), @class);
+        my (@class) = sort {$c->{$a} <=> $c->{$b}} keys %{$c};      # all glyphs in the class
+        my (@subsetclass) = grep ($subsetter->keep_glyph($_), @class);  # all required glyphs in the class
         unless (scalar @subsetclass)
         {
             $subsetter->{'silf'}{'numclasses'}{$i} = -1;
@@ -1002,13 +1017,16 @@ sub subset_silf
         while (my ($k, $v) = each %{$subsetter->{'silf'}{'numclass_pairs'}{$i}})
         {
             next if ($v < 0);
+            # get all required glyphs in the other class of the pair
             my (@subother) = grep ($subsetter->keep_glyph($_), keys %{$silf->{'classes'}[$k]});
+            # if no subsetting occurred anywhere, skip on
             next if (scalar @subother == scalar keys %{$silf->{'classes'}[$k]} and
                 scalar @subsetclass == scalar @class);
             @subother = ();
             my (@subthis) = ();
             my ($co) = $silf->{'classes'}[$k];
             my (@otherclass) = sort {$co->{$a} <=> $co->{$b}} keys %{$co};
+            # subset based on both glyphs being required
             for (my $j = 0; $j < @class; $j++)
             {
                 my ($a) = $class[$j];
@@ -1018,12 +1036,12 @@ sub subset_silf
                     push (@subother, $b);
                     push (@subthis, $a);
                 }
-                elsif ($subsetter->keep_glyph($a))
+                elsif ($subsetter->keep_glyph($a))  # if second glyph deleted, mark pair to delete
                 { push (@{$subsetter->{'silf'}{'class_pairs_removed'}{$i}{$k}}, $a); }
             }
-            if (!scalar @subthis)
-            { $subsetter->{'silf'}{'numclass_pairs'}{$i}{$k} = -1; }
-            else
+            if (!scalar @subthis)   # if no pairs
+            { $subsetter->{'silf'}{'numclass_pairs'}{$i}{$k} = -1; }    # delete the class pair
+            else    # two lists of required glyphs: in & out
             { $subsetter->{'silf'}{'class_pairs'}{$i}{$k} = [[@subthis], [@subother]]; }
         }
     }
@@ -1032,10 +1050,10 @@ sub subset_silf
     for (my $i = 0; $i < scalar @{$silf->{'PASS'}}; $i++)
     { $self->testrules($silf->{'PASS'}[$i], $subsetter, $subsetter->{'silf'}{'passes'}[$i]); }
 
-    # make new, mapped, classes and a map from one to the other, update class_pairs to return [in_new_class_id, out_new_class_id]
+    # make new, mapped, classes and a map from one to the other, update/reuse class_pairs to return [in_new_class_id, out_new_class_id]
     # also do class reduction.
-    $subsetter->{'silf'}{'classes'} = [];
-    $subsetter->{'silf'}{'classmap'} = [];
+    $subsetter->{'silf'}{'classes'} = [];   # for each class a hash of new gid to new class index
+    $subsetter->{'silf'}{'classmap'} = [];  # size of each class, -1 for a deleted class
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
         my ($c) = $silf->{'classes'}[$i];
@@ -1049,7 +1067,7 @@ sub subset_silf
         {
             my ($i) = 0;
             push (@{$subsetter->{'silf'}{'classes'}}, {map {$_ => $i++} @newclass});
-            push (@{$subsetter->{'silf'}{'classmap'}}, $#{$subsetter->{'silf'}{'classes'}});
+            push (@{$subsetter->{'silf'}{'classmap'}}, $#{$subsetter->{'silf'}{'classes'}}); # does this $# really work?
             if ($DEBUG)
             {
                 print "class(".($#{$subsetter->{'silf'}{'classes'}}).") ";
@@ -1059,6 +1077,8 @@ sub subset_silf
         else
         { push (@{$subsetter->{'silf'}{'classmap'}}, -1); }
         next unless (defined $subsetter->{'silf'}{'class_pairs'}{$i});
+        # iterate over class pairs containing arrays of glyphs to create real classes in silf.class and replace
+        # the class pairs entry with the id of that new class.
         while(my ($k,$v) = each %{$subsetter->{'silf'}{'class_pairs'}{$i}})
         { $subsetter->{'silf'}{'class_pairs'}{$i}{$k} = [map {$self->addmappedclass($_, $subsetter)} @{$v}]; }
     }
@@ -1081,6 +1101,7 @@ sub subset_silf
 }
 
 # algorithm section 1
+# analyse fsm while ignoring columns that only cover deleted glyphs
 sub markdels
 {
     my ($self, $pass, $subsetter, $cinfo) = @_;
@@ -1140,7 +1161,7 @@ sub markdels
         }
     }
 
-    # 1.5 analyse test constraint code and possibly delete.
+    # 1.5 analyse test constraint code and possibly delete. Not yet implemented
 
     # 1.6 parse and associate substitutionary classes
     for (my $i = 0; $i < $pass->{'numRules'}; ++$i)
@@ -1157,6 +1178,7 @@ sub markdels
     }
 }
 
+# check the rules of a pass and delete any that reference a deleted class
 sub testrules
 {
     my ($self, $pass, $subsetter, $cinfo) = @_;
@@ -1166,7 +1188,7 @@ sub testrules
         next unless (defined $cinfo->{'rules'}[$i] and @{$cinfo->{'rules'}[$i]});
         my (@rinfo) = $self->unpack_code($pass->{'actionCode'}[$i]);
         foreach my $r (@rinfo)
-        {
+        {   # delete rule if class pair or referenced class has been deleted
             if (   (($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')
                      and $subsetter->{'silf'}{'numclass_pairs'}{$r->[2]}{$r->[3]} < 0)
                 or (($r->[0] eq 'put_glyph_8bit_obs' or $r->[0] eq 'put_glyph')
@@ -1176,6 +1198,8 @@ sub testrules
     }
 }
 
+# basically creates the new fsm and rules and the mapping between them
+# minimises the fsm on the way
 sub finalise_pass
 {
     my ($self, $pass, $subsetter, $cinfo) = @_;
@@ -1204,15 +1228,21 @@ sub finalise_pass
         my ($c) = 0;
         foreach my $r (@rinfo)
         {
+            # update action code if needbe
             if ($r->[0] eq 'next' or $r->[0] eq 'copy_next')
             { $c++; }
             elsif ($r->[0] eq 'put_subs_8bit_obs' or $r->[0] eq 'put_subs')    # need to handle upsizing to 16-bit and perhaps downsizing
             {
                 if (defined $subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]})
                 {
+                    # if some glyphs have been removed from the class, then the column may need to split
+                    # so that only a subset of the column has a path to this rule. Edit the fsm accordingly.
+                    # This will grow the fsm. But later deduping can shrink it again. Actually a good form of
+                    # optimisation.
                     $self->remove_trail($subsetter, $cinfo, $pass, $i, $c, 
                         $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]})
                             if (defined $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]});
+                    # update the action code
                     ($r->[2], $r->[3]) = @{$subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]}};
                 }
                 else
@@ -1265,6 +1295,7 @@ sub finalise_pass
         }
     }
 
+    # create a new, optimised fsm
     my (@colmap, @allcols);
     my ($numcolumns);
     my (@rowmap, @fsm, @allrows);
@@ -1275,7 +1306,7 @@ sub finalise_pass
     my (@rlist) = grep {!defined $cinfo->{'rulemap'}[$_] or !@{$cinfo->{'rulemap'}[$_]}} @temp;
     push (@rlist, grep {defined $cinfo->{'rulemap'}[$_] and @{$cinfo->{'rulemap'}[$_]}} @temp);
     my ($merged) = 1;
-    while ($merged)
+    while ($merged)     # if we have deduped columns and then deduped rows as a result, then go round again to look for more
     {
         $merged = 0;
         # 5.3 create rowmap. Add row merging loop
@@ -1291,6 +1322,7 @@ sub finalise_pass
             else
             { $rowmap[$i] = -1; }
         }
+        # dedup rows
         my (%finalshash) = ();
         for (my $i = $pass->{'numTransitional'}; $i < $pass->{'numRows'}; $i++)
         {
@@ -1312,7 +1344,7 @@ sub finalise_pass
             { $rowmap[$i] = -1; }
         }
 
-        # create column map. Add column merging loop
+        # create column map. Add column merging loop. Dedup columns
         my (%colshash) = ();
         @colmap = (); @allcols = (); $numcolumns = 0;
         for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
@@ -1348,7 +1380,7 @@ sub finalise_pass
             { push (@colmap, $colshash{$v}); }
         }
 
-        # 5.5 create fsm - rewrite me for handling added rows
+        # 5.5 create fsm - dedup rows again having deleted columns
         my (%rowhash) = ();
         @fsm = ();
         foreach my $i (@allrows)
@@ -1369,7 +1401,7 @@ sub finalise_pass
                 if (exists $rowhash{$v} and !arraycmp($cinfo->{'rulemap'}[$i], $cinfo->{'rulemap'}[$rowhash{$v}]) and !grep {$_ == $i} @{$pass->{'startStates'}})
                 {
                     $self->mergerow($i, $rowhash{$v}, $pass, $cinfo);
-                    $merged = 1;
+                    $merged = 1;       # we deduped a row, so repeat algorithm in case removing a row allows columns to be merged
                 }
                 else
                 { $rowhash{$v} = $i; }
@@ -1431,6 +1463,7 @@ sub finalise_pass
     return 1;
 }
 
+# a test assertion. Should neve fire. Helps spot bugs in the code (or faulty fonts)
 sub testclass
 {
     my ($c, $subsetter, $d) = @_;
@@ -1438,6 +1471,8 @@ sub testclass
     { warn ("Bad class $c in $d\n"); }
 }
 
+# finds the first element in the array that isn't -1, at or after ind.
+# returns -1 if it can't find one.
 sub findmappedrow
 {
     my ($ind, $arr, $dir) = @_;
@@ -1448,6 +1483,7 @@ sub findmappedrow
     return $arr->[$ind];
 }
 
+# deletes a rule updating the pass info for the fsm
 sub delrule
 {
     my ($self, $pass, $subsetter, $cinfo, $num) = @_;
@@ -1461,6 +1497,7 @@ sub delrule
     $cinfo->{'rules'}[$num] = [];
 }
 
+# returns whether a row is a start state
 sub isStart
 {
     my ($self, $pass, $row) = @_;
@@ -1470,6 +1507,7 @@ sub isStart
     { return 0; }
 }
 
+# returns whether a row is a final state
 sub isFinal
 {
     my ($self, $pass, $cinfo, $row) = @_;
@@ -1478,6 +1516,8 @@ sub isFinal
     return 1;
 }
 
+# mark an fsm row for deletion and work through implications to see what else we can delete
+# may recurse whether indirectly or directly.
 sub delrow
 {
     my ($self, $pass, $cinfo, $row) = @_;
@@ -1485,18 +1525,21 @@ sub delrow
     foreach my $r (keys %{$cinfo->{'rowfwdrefs'}[$row]})
     {
         delete $cinfo->{'rowbackrefs'}[$r]{$row};
+        # delete a fwd referenced row if deleting us means nothing else fwd references it
         $self->delrow($pass, $cinfo, $r) unless (scalar keys %{$cinfo->{'rowbackrefs'}[$r]});
     }
     $cinfo->{'rowfwdrefs'}[$row] = {};
     foreach my $k (keys %{$cinfo->{'rowbackrefs'}[$row]})
     {
         delete $cinfo->{'rowfwdrefs'}[$k]{$row};
+        # delete a back referenced row if deleting us means there is nothing for it to fwd reference to or it's a final row
         $self->delrow($pass, $cinfo, $k) unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$k]} or $self->isFinal($pass, $cinfo, $k));
     }
     $cinfo->{'rowbackrefs'}[$row] = {};
     foreach my $r (@{$cinfo->{'rulemap'}[$row]})
     {
         $cinfo->{'rules'}[$r] = [grep ($_ != $row, @{$cinfo->{'rules'}[$r]})];
+        # delete rule if there are now no rows that reference the rule
         $self->delrule($r) unless (scalar @{$cinfo->{'rules'}[$r]});
     }
     return if ($row >= $pass->{'numTransitional'} && $row < $pass->{'numRows'});
@@ -1504,6 +1547,7 @@ sub delrow
     my (@collist);
     for (my $j = 0; $j < $pass->{'numColumns'}; $j++)
     {
+        # potentially delete all cols that have transitions on the deleted row
         if (vec($cinfo->{'cols'}, $j, 1) and $pass->{'fsm'}[$row][$j])
         { push (@collist, $j); }
     }
@@ -1513,14 +1557,18 @@ sub delrow
         next unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$i]});
         foreach my $j (@collist)
         {
+            # keep those cols where there are transitions in other required rows
             if ($pass->{'fsm'}[$i][$j])
             { @collist = grep ($_ != $j, @collist); }
         }
     }
+    # do the column deletion
     foreach my $j (@collist)
     { vec($cinfo->{'cols'}, $j, 1) = 0; }    
 }
 
+# add a class to the set of output classes deduping as we go
+# returns the new class id
 sub addmappedclass
 {
     my ($self, $class, $subsetter) = @_;
@@ -1541,6 +1589,10 @@ sub addmappedclass
     return $#{$subsetter->{'silf'}{'classes'}};
 }
 
+# given a list of columns, a starting row and a number of steps backwards to walk,
+# floodfills backwards the number of steps and then copies the rows for the
+# columns not in the list. This is needed when one splits a column and wants to
+# split the paths through the fsm for a particular rule
 sub addrowsfor
 {
     my ($self, $pass, $cinfo, $cols, $len, $row, $parent, $total) = @_;
@@ -1601,7 +1653,15 @@ sub addrowsfor
         return $res;
     }
 }
-            
+
+# a rule references a class that has been changed. We now have to analyse the glyphs
+# to see which columns they are in and whether as a result of changing the glyph lists
+# those columns need splitting (since there are glyphs in there that shouldn't cause
+# our rule to fire). Then we update the fsm to add rows for the extra columns we make
+# and ensure the path to the rule (given it's back length) is now correct within
+# the fsm. All paths to other rules are copied for the new column.
+# This results in potentially a lot of growth for the fsm and probably some duping.
+# deduping later will take care of that.        
 sub remove_trail
 {
     my ($self, $subsetter, $cinfo, $pass, $rule, $index, $glyphlist) = @_;
@@ -1612,6 +1672,10 @@ sub remove_trail
     my ($fsm) = $pass->{'fsm'};
 
     # Identify columns to split and split them
+    # test each collection of glyphs with a given column id against that complete
+    # class. If that collection is different from our accumulated column, then
+    # split the column to reflect that some glyphs need to take a different path
+    # through the fsm
     while (@glyphs)
     {
         my (@glist, $newc);
@@ -1635,14 +1699,18 @@ sub remove_trail
     # get a list of paths to trim. Each path includes the final row and is from to end to start
     my (%rowmap);
     my (%colhash) = map {$pass->{'colmap'}{$_} => 1} @{$glyphlist};
+    # expand the fsm to ensure paths for each rule
     foreach my $p (@{$cinfo->{'rules'}[$rule]})
     {
         foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$p]})
         { $self->addrowsfor($pass, $cinfo, \%colhash, $countback - 1, $r, $p, $countback); }
     }
 
+    # does this loop even run?
+    # rowmap maps old rows to new rows
     while (my ($k, $r) = each %rowmap)
     {
+        # remap fsm entries for the colhash according to the rowmap entry
         foreach my $rb (keys %{$cinfo->{'rowbackrefs'}[$r]})
         {
             next if (defined $rowmap{$rb});
@@ -1667,11 +1735,14 @@ sub remove_trail
         for (my $i = 0; $i < @{$f}; $i++)
         {
             my ($replace) = $f->[$i];
+            # this is the row and column that fires our rule so don't let it move on
             if (defined $colhash{$i} and grep {$_ == $replace} @{$cinfo->{'rules'}[$rule]})
             { $replace = 0; }
+            # assumes $i not in %colhash
             elsif (defined $rowmap{$replace})
             { $replace = $rowmap{$replace}; }
             next unless ($replace != $f->[$i]);
+            # update fsm entry to be new value of $replace
             delete $cinfo->{'rowbackrefs'}[$f->[$i]]{$r};
             $f->[$i] = $replace;
             if ($replace)
@@ -1683,6 +1754,7 @@ sub remove_trail
     }
 }
 
+# splits a column set (of glyphs) into two updating the fsm
 sub splitcol
 {
     my ($self, $col, $removes, $pass, $cinfo) = @_;
@@ -1702,6 +1774,8 @@ sub splitcol
     return $new;
 }
 
+# add a row to the fsm that is the copy of another
+# update everything accordingly
 sub addcopyrow
 {
     my ($self, $pass, $cinfo, $row) = @_;
@@ -1731,6 +1805,7 @@ sub mergerow
     $self->delrow($pass, $cinfo, $from);
 }
 
+# Does a fast ordered comparison of two arrays
 sub arraycmp
 {
     my ($a, $b) = @_;
