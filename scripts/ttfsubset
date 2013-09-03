@@ -26,7 +26,7 @@ $opts{'d'} = 'default' unless (defined $opts{'d'});
 if ($opts{'d'})
 {
     # expand magic words.
-    $opts{'d'} =~ s/\bdefault\b/ hdmx vdmx EBDT EBLC EBSC aat /oi;
+    $opts{'d'} =~ s/\bdefault\b/ hdmx vdmx EBDT EBLC EBSC Silt aat /oi;
     $opts{'d'} =~ s/\bgraphite\b/ Silf Feat Gloc Glat Sill Sile /oi; 
     $opts{'d'} =~ s/\bvolt\b/ TSIV TSID TSIP TSIS /oi;
     $opts{'d'} =~ s/\bopentype\b/ GDEF GSUB GPOS /oi;
@@ -37,6 +37,16 @@ if ($opts{'d'})
     {
         $tag =~ s/_/ /og;
         delete $f->{$tag} if exists $f->{$tag};
+    }
+}
+
+if (defined $f->{'kern'})
+{
+    my $kern = $f->{'kern'}->read;
+    if ($kern->{'Version'} > 0)
+    {
+        warn ("Can't handle AAT style kern tables, deleting");
+        delete $f->{'kern'};
     }
 }
 
@@ -273,6 +283,7 @@ sub outglyph
     if (defined $subsetter->{'opts'}{'H'})
     {
         my ($g) = $self->{'glyphs'}[$n];
+        next unless (defined $g);
         $g->read_dat() unless ($g->{' isDirty'});
         $g->{'instLen'} = 0;
         $g->{'hints'} = "";
@@ -843,23 +854,27 @@ sub subset
     return unless ($self->SUPER::subset($subsetter));
     if (defined $subsetter->{'opts'}{'C'})
     {
-       $self->{'Tables'} = grep {$_->{'LOC'} == $main::cmap->{'LOC'}} @{$self->{'Tables'}};
+       $self->{'Tables'} = [grep {$_->{'LOC'} == $cmap->{'LOC'} or 
+                                ($cmap->{'Platform'} == 3 
+                                    && $_->{'Platform'} == $cmap->{'Platform'} 
+                                    && $_->{'Encoding'} == 1)}
+                                        @{$self->{'Tables'}}];
     }
     foreach my $i (0 .. $#{$self->{'Tables'}})
     {
+        my ($r) = {};
         my ($t) = $self->{'Tables'}[$i]{'val'};
         foreach my $k (keys %{$t})
         {
             if ($subsetter->keep_glyph($t->{$k}))
-            { $t->{$k} = $subsetter->map_glyph($t->{$k}); }
-            else
-            { delete $t->{$k}; }
+            { $r->{$k} = $subsetter->map_glyph($t->{$k}); }
         }
         if ($self->is_unicode($i))
         {
             foreach my $k (keys %{$subsetter->{'remaps'}})
-            { $t->{$k} = $subsetter->map_glyph($subsetter->{'remaps'}{$k}); }
+            { $r->{$k} = $subsetter->map_glyph($subsetter->{'remaps'}{$k}); }
         }
+        $self->{'Tables'}[$i]{'val'} = $r;
     }
 }
 
@@ -981,8 +996,37 @@ sub subset
             $t->{'Version'} = -1;
         }
     }
-    $self->{'tables'} = grep {$_->{'Version'} != -1} @{$self->{'tables'}};
+    $self->{'tables'} = [grep {$_->{'Version'} != -1} @{$self->{'tables'}}];
     $self->{'Num'} = scalar @{$self->{'tables'}};
+}
+
+
+package Font::TTF::Name;
+
+sub subset
+{
+    my ($self, $subsetter) = @_;
+    my ($pid, $eid);
+
+    return unless($self->SUPER::subset($subsetter));
+    return unless(defined $subsetter->{'opts'}{'C'});
+    $pid = $cmap->{'Platform'};
+    $eid = $pid == 3 ? 1 : $cmap->{'Encoding'};
+    foreach my $n (@{$self->{'strings'}})
+    {
+        next unless (defined $n);
+        for (my $p = 0; $p < @{$n}; $p++)
+        {
+            next if ($p == $pid);
+            delete $n->[$p];
+        }
+        next unless (defined $n->[$pid]);
+        for (my $e = 0; $e < @{$n->[$pid]}; $e++)
+        {
+            next if ($e == $eid);
+            delete $n->[$pid][$e];
+        }
+    }
 }
 
 
@@ -1945,7 +1989,7 @@ the following (case insensitive) pseudo tags can also be used:
   volt      all Microsoft VOLT tables (TSIV TSID TSIP TSIS)
   opentype  all OpenType tables (GDEF GSUB GPOS)
   aat       all AAT tables (mort morx feat)
-  default   all unhandled tables (hdmx vdmx EBDT EBLC EBSC aat)
+  default   all unhandled tables (hdmx vdmx EBDT EBLC EBSC Silt aat)
 
 The C<-g> option specifies a file that lists glyphs to be retained in the 
 subset font -- ttfsubset will remove all other glyphs and then do what it can to simplify
