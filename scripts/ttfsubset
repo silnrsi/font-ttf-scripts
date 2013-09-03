@@ -857,12 +857,15 @@ sub subset
 
     return unless ($self->SUPER::subset($subsetter));
 
-    foreach my $i (0 .. @{$self->{'VAL'}})
+    if (defined $self->{'VAL'})
     {
-        if ($subsetter->keep_glyph($i))     # only add entries for new glyphs (cf Hmtx algorithm)
-        { $res->[$subsetter->map_glyph($i)] = $self->{'VAL'}[$i]; }
+        foreach my $i (0 .. @{$self->{'VAL'}})
+        {
+            if ($subsetter->keep_glyph($i))     # only add entries for new glyphs (cf Hmtx algorithm)
+            { $res->[$subsetter->map_glyph($i)] = $self->{'VAL'}[$i]; }
+        }
+        $self->{'VAL'} = $res;
     }
-    $self->{'VAL'} = $res;
 }
 
 
