@@ -39,6 +39,7 @@ if (defined $if->{'DSIG'})
     my (@tlist) = sort {$if->{$a}{' OFFSET'} <=> $if->{$b}{' OFFSET'}}
                     grep(length($_) == 4 && $_ ne 'DSIG', keys %{$if});
     $if->out($tfh, @tlist);
+    $tfh = IO::String->new($string);
     $if = Font::TTF::Font->open($tfh);
 }
 
