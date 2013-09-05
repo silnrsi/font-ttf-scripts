@@ -38,6 +38,10 @@ if ($opts{'d'})
         $tag =~ s/_/ /og;
         delete $f->{$tag} if exists $f->{$tag};
     }
+    foreach my $tag (grep {length($_) == 4} keys %$f)
+    {
+        delete $f->{$tag} if ($f->{$tag}{' LENGTH'} < $f->{$tag}->minsize());
+    }
 }
 
 if (defined $f->{'kern'})
