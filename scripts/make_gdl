@@ -79,7 +79,7 @@ $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4
 $f->out_classes($outfh, -defines => $opts{'autodefines'});
 $f->endtable($outfh);
 $f->normal_rules($outfh, $opts{'normalize'}, ($opts{'z'} & 2)) if ($opts{'normalize'});
-$f->lig_rules($outfh, $opts{'subsitutions'}, $opts{'ligatures'}) if ($opts{'ligatures'});
+$f->lig_rules($outfh, $opts{'substitutions'}, $opts{'ligatures'}) if ($opts{'ligatures'});
 $f->pos_rules($outfh, $opts{'positions'}) if ($opts{'positions'});
 $f->end_gdl($outfh, $opts{'include'}, $opts{'define'});
 
