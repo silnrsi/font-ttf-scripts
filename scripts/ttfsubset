@@ -112,6 +112,10 @@ if ($opts{'g'})
     }
     $fh->close();
 }
+else
+{
+    $subsetter->map_unity();
+}
 
 if ($opts{'l'})
 { $subsetter->langlist(map {pack('A4',$_)} split(' ', $opts{'l'})); }
@@ -120,7 +124,7 @@ if ($opts{'s'})
 { $subsetter->scriptlist(map {pack('A4',$_)} split(' ', $opts{'s'})); }
 
 my ($canchangegids) = 1;
-$f->tables_do(sub {$canchangegids &= $_[0]->canchangegids();});
+$f->tables_do(sub {$canchangegids &= $_[0]->canchangegids($subsetter);});
 $numg = $subsetter->creategidmap() if ($canchangegids);
 
 $f->{'loca'}->subset($subsetter);
@@ -141,6 +145,7 @@ sub new
     $self->{'glyphs'} = '';     # bit vector in old font gid space, set if glyph to be kept
     $self->{'remaps'} = {};     # maps new unicode cmap entry to old font gid
     $self->{'numg'} = $numg;
+    $self->{'numPseudo'} = 0;
     $self->{'opts'} = $opts;
     # other attributes:
     # $self->{'gidmap'} = [];   # maps old gid to new gid
@@ -164,6 +169,14 @@ sub add_glyph
     }
     else
     { return 0; }
+}
+
+sub map_unity
+{
+    my ($self) = @_;
+
+    for (my $i = 0; $i < $self->{'numg'}; $i++)
+    { vec($self->{'glyphs'}, $i, 1) = 1; }
 }
 
 # should this glyph from the old font go into the new font?
@@ -205,6 +218,9 @@ sub creategidmap
     $self->{'gcount'} = 0;
     foreach my $i (0 .. $numg - 1)
     { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $self->{'gcount'}++ : 0); }
+    $count = $self->{'gcount'};
+    foreach my $i ($self->{'gcount'} .. $self->{'gcount'} + $self->{'numPseudo'})
+    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0); }
     if ($DEBUG)
     {
         my (@list);
@@ -1052,6 +1068,22 @@ sub subset
 
 package Font::TTF::Silf;
 
+# include the pseudo glyphs
+sub canchangegids
+{
+    my ($self, $subsetter) = @_;
+    my ($maxpseudo) = 0;
+
+    $self->read();
+    $self->{' PARENT'}{'Gloc'}->read();
+    $maxpseudo = scalar @{$self->{' PARENT'}{'Gloc'}{'locations'}} - 1 - $subsetter->{'numg'};
+    $subsetter->{'numPseudo'} = $maxpseudo;
+    foreach my $i (0 .. $maxpseudo - 1)
+    { $subsetter->add_glyph($subsetter->{'numg'} + $i); }
+    return 1;
+}
+
+
 sub subset
 {
     my ($self, $subsetter) = @_;
@@ -1127,10 +1159,9 @@ sub subset_silf
     # calculate substitution classes 
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
-        my ($c) = $silf->{'classes'}[$i];
-        my (@class) = sort {$c->{$a} <=> $c->{$b}} keys %{$c};      # all glyphs in the class
-        my (@subsetclass) = grep ($subsetter->keep_glyph($_), @class);  # all required glyphs in the class
-        unless (scalar @subsetclass)
+        my ($subsetexists) = grep {defined $_ and $subsetter->keep_glyph($_)} @{$silf->{'classes'}[$i]};
+        my ($nosubset) = grep {defined $_ and !$subsetter->keep_glyph($_)} @{$silf->{'classes'}[$i]};
+        unless ($subsetexists)
         {
             $subsetter->{'silf'}{'numclasses'}{$i} = -1;
             while (my ($k, $v) = each %{$subsetter->{'silf'}{'numclass_pairs'}})
@@ -1145,19 +1176,16 @@ sub subset_silf
         {
             next if ($v < 0);
             # get all required glyphs in the other class of the pair
-            my (@subother) = grep ($subsetter->keep_glyph($_), keys %{$silf->{'classes'}[$k]});
-            # if no subsetting occurred anywhere, skip on
-            next if (scalar @subother == scalar keys %{$silf->{'classes'}[$k]} and
-                scalar @subsetclass == scalar @class);
-            @subother = ();
+            my ($subotherexists) = grep {defined $_ and $subsetter->keep_glyph($_)} @{$silf->{'classes'}[$k]};
+            my ($noothersubset) = grep {defined $_ and !$subsetter->keep_glyph($_)} @{$silf->{'classes'}[$k]};
+            next if (!$noothersubset and !$nosubset);
+            my (@subother) = ();
             my (@subthis) = ();
-            my ($co) = $silf->{'classes'}[$k];
-            my (@otherclass) = sort {$co->{$a} <=> $co->{$b}} keys %{$co};
             # subset based on both glyphs being required
-            for (my $j = 0; $j < @class; $j++)
+            for (my $j = 0; $j < @{$silf->{'classes'}[$i]}; $j++)
             {
-                my ($a) = $class[$j];
-                my ($b) = $otherclass[$j];
+                my ($a) = $silf->{'classes'}[$i][$j];
+                my ($b) = $silf->{'classes'}[$k][$j];
                 if ($subsetter->keep_glyph($a) and $subsetter->keep_glyph($b))
                 {
                     push (@subother, $b);
@@ -1184,16 +1212,12 @@ sub subset_silf
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
         my ($c) = $silf->{'classes'}[$i];
-        my (@newclass);
-        foreach (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
-        {
-            if ($subsetter->keep_glyph($_))
-            { push (@newclass, $subsetter->map_glyph($_)); }
-        }
+        my (@newclass, $index);
+        my (@newclass) = map {$subsetter->map_glyph($_)} grep {$subsetter->keep_glyph($_)} @{$silf->{'classes'}[$i]};
         if (scalar @newclass)
         {
             my ($i) = 0;
-            push (@{$subsetter->{'silf'}{'classes'}}, {map {$_ => $i++} @newclass});
+            push (@{$subsetter->{'silf'}{'classes'}}, [@newclass]);
             push (@{$subsetter->{'silf'}{'classmap'}}, $#{$subsetter->{'silf'}{'classes'}}); # does this $# really work?
             if ($DEBUG)
             {
@@ -1202,7 +1226,10 @@ sub subset_silf
             }
         }
         else
-        { push (@{$subsetter->{'silf'}{'classmap'}}, -1); }
+        {
+            push (@{$subsetter->{'silf'}{'classmap'}}, -1);
+            --$silf->{'numLinearClasses'} if ($i < $silf->{'numLinearClasses'});
+        }
         next unless (defined $subsetter->{'silf'}{'class_pairs'}{$i});
         # iterate over class pairs containing arrays of glyphs to create real classes in silf.class and replace
         # the class pairs entry with the id of that new class.
@@ -1214,6 +1241,7 @@ sub subset_silf
     for (my $i = 0; $i < scalar @{$silf->{'PASS'}}; $i++)
     { 
         unless ($self->finalise_pass($silf->{'PASS'}[$i], $subsetter, $subsetter->{'silf'}{'passes'}[$i]))
+        #unless ($self->finalise_pass($silf->{'PASS'}[$i], $subsetter, {}))
         {
             splice(@{$silf->{'PASS'}}, $i, 1);
             splice(@{$subsetter->{'silf'}{'passes'}}, $i, 1);
@@ -1221,9 +1249,11 @@ sub subset_silf
             { $silf->{$_}-- if ($i < $silf->{$_} and $silf->{$_} != 0xFF); }
             $i--;
         }
+        else
+        { $subsetter->{'silf'}{'passes'}[$i] = undef; }
     }
 
-    $silf->{'maxGlyphID'} = $subsetter->{'gcount'} - 1;
+    $silf->{'maxGlyphID'} = $subsetter->{'gcount'}  + $subsetter->{'numPseudo'} - 1;
     $silf->{'classes'} = $subsetter->{'silf'}{'classes'};
 }
 
@@ -1234,7 +1264,7 @@ sub markdels
     my ($self, $pass, $subsetter, $cinfo) = @_;
 
     # 1.2 mark kept columns
-    for (my $i = 0; $i < $subsetter->{'numg'}; ++$i)
+    for (my $i = 0; $i < $subsetter->{'numg'} + $subsetter->{'numPseudo'}; ++$i)
     {
         if (defined $pass->{'colmap'}{$i} and $subsetter->keep_glyph($i))
         {
@@ -1325,6 +1355,45 @@ sub testrules
     }
 }
 
+sub canmergerule
+{
+    my ($self, $hash, $in, $cinfo, $rulemap) = @_;
+
+    return undef unless (defined $hash);
+    return $hash->[0] unless defined $cinfo->{'prerules'}[$in];
+    foreach my $h (@{$hash})
+    {
+        my ($failed) = 0;
+        foreach my $t (keys %{$cinfo->{'prerules'}[$in]})
+        {
+            if ($rulemap->[$t] > $h)
+            {
+                $failed = 1;
+                last;
+            }
+        }
+        return $h if (!$failed);
+    }
+    return undef;
+}
+
+sub substrulemap
+{
+    my ($self, $in, $out, $subsetter, $cinfo) = @_;
+    my ($row);
+
+    foreach $row (@{$cinfo->{'rules'}[$in]})
+    {
+        if (!grep {$_ == $out} @{$cinfo->{'rulemap'}[$row]})
+        {
+            foreach my $c (@{$cinfo->{'rulemap'}[$row]})
+            { $c = $out if ($c == $in); }
+        }
+        else
+        { $cinfo->{'rulemap'}[$row] = [grep {$_ != $in} @{$cinfo->{'rulemap'}[$row]}]; }
+    }
+}
+
 # basically creates the new fsm and rules and the mapping between them
 # minimises the fsm on the way
 sub finalise_pass
@@ -1333,24 +1402,67 @@ sub finalise_pass
     my ($i);
 
     # 5.4 create rule map
-    my (@rulemap);
-    my ($numrules);
+    my (@rulemap, @revrulemap);
+    my ($numrules, %actdedup);
+    $cinfo->{'prerules'} = [];
+    for (my $i = 0; $i < $pass->{'numRules'}; $i++)
+    {
+        foreach my $row (@{$cinfo->{'rules'}[$i]})
+        {
+            foreach my $rule (@{$cinfo->{'rulemap'}[$row]})
+            {
+                last if ($rule == $i);
+                $cinfo->{'prerules'}[$i]{$rule} = 1 if ($pass->{'ruleSortKeys'}[$rule] == $pass->{'ruleSortKeys'}[$i]);
+            }
+        }
+    }
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
     {
         if (defined $cinfo->{'rules'}[$i] and @{$cinfo->{'rules'}[$i]})
         {
-            # print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n";
-            push (@rulemap, $numrules++);
+            my ($actd) = $actdedup{$pass->{'actionCode'}[$i]}{$pass->{'constraintCode'}[$i]}{$pass->{'ruleSortKeys'}[$i]}{$pass->{'rulePreContexts'}[$i]};
+            $actd = $self->canmergerule($actd, $i, $cinfo, \@rulemap);
+            if ($actd)
+            {
+                # [DOME] update $cinfo->{'rulemap'} and don't update $cinfo->{'rules'} here. Also allows for row deduping on this rule.
+                # for $cinfo->{'rulemap'} make sure all values are unique and appropriately ordered (for deduping comparison)
+                $self->substrulemap($i, $revrulemap[$actd], $subsetter, $cinfo);
+                push (@rulemap, $actd);
+            }
+            else
+            {
+                # print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n";
+                push (@{$actdedup{$pass->{'actionCode'}[$i]}{$pass->{'constraintCode'}[$i]}{$pass->{'ruleSortKeys'}[$i]}{$pass->{'rulePreContexts'}[$i]}}, $numrules);
+                push (@revrulemap, $i);
+                push (@rulemap, $numrules++);
+            }
         }
         else
         { push (@rulemap, -1); }
     }
 
+    # dedup final rows that map to the same rule set
+    my (%rmap);
+    for (my $i = $pass->{'numTransitional'}; $i < $pass->{'numRows'}; $i++)
+    {
+        my ($c) = 0;
+        my (%rs) = map {$_ => $c++} @{$cinfo->{'rulemap'}[$i]};
+        my ($r) = join(" ", sort keys %rs);
+        if (defined $rmap{$r})
+        { $self->mergerow($i, $rmap{$r}, $pass, $cinfo); }
+        else
+        {
+            $rmap{$r} = $i;
+            $cinfo->{'rulemap'}[$i] = [sort {$rs{$a} <=> $rs{$b}} keys %rs];      # dedup the rules
+        }
+    }
     my (@rules);
+    my ($lastrule) = -1;
     # 5.6, 5.7 create row->rule lists and remap rules and the like
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
     {
-        next if ($rulemap[$i] < 0);
+        next if ($rulemap[$i] <= $lastrule);    # only process first occurrence of a rule
+        $lastrule = $rulemap[$i];
         my (@rinfo) = $self->unpack_code($pass->{'actionCode'}[$i]);
         my ($c) = 0;
         foreach my $r (@rinfo)
@@ -1430,6 +1542,7 @@ sub finalise_pass
     my (@temp) = (0 .. $pass->{'numTransitional'} - 1);
     push (@temp, ($pass->{'numRows'} .. $cinfo->{'totalRows'} - 1)) if ($cinfo->{'totalRows'});
     # @temp = grep {scalar keys %{$cinfo->{'rowbackrefs'}[$_]} or scalar keys %{$cinfo->{'rowfwdrefs'}[$_]}} @temp;
+    # do empty rows then ones with rules.
     my (@rlist) = grep {!defined $cinfo->{'rulemap'}[$_] or !@{$cinfo->{'rulemap'}[$_]}} @temp;
     push (@rlist, grep {defined $cinfo->{'rulemap'}[$_] and @{$cinfo->{'rulemap'}[$_]}} @temp);
     my ($merged) = 1;
@@ -1449,7 +1562,7 @@ sub finalise_pass
             else
             { $rowmap[$i] = -1; }
         }
-        # dedup rows
+        # dedup final non-transitional rows
         my (%finalshash) = ();
         for (my $i = $pass->{'numTransitional'}; $i < $pass->{'numRows'}; $i++)
         {
@@ -1518,11 +1631,9 @@ sub finalise_pass
                 foreach my $j (@allcols)
                 {
                     my ($f) = $pass->{'fsm'}[$i][$j];
-                    if ($rowmap[$f] > 0)
-                    { push (@row, $rowmap[$f]); }
-                    else
-                    { push (@row, 0); }
-                    vec($v, $k++, 16) = $row[-1];
+                    my ($o) = $rowmap[$f] > 0 ? $rowmap[$f] : 0;
+                    push (@row, $o);
+                    vec($v, $k++, 16) = $o;
                 }
                 push (@fsm, [@row]);
                 if (exists $rowhash{$v} and !arraycmp($cinfo->{'rulemap'}[$i], $cinfo->{'rulemap'}[$rowhash{$v}]) and !grep {$_ == $i} @{$pass->{'startStates'}})
@@ -1547,14 +1658,22 @@ sub finalise_pass
     }
     for (my $i = 0; $i < $pass->{'numRules'}; $i++)
     {
-        next if ($rulemap[$i] < 0);
+        next if ($rulemap[$i] <= -1);
         foreach my $r (@{$cinfo->{'rules'}[$i]})
         {
             if ($rowmap[$r] >= 0)
             { push (@{$rowrules[$rowmap[$r] - $numSuccess]}, $rulemap[$i]); }
         }
+        # doesn't matter that these are overwritten for each duplicate rule since the values should be
+        # identical each time.
         $keys[$rulemap[$i]] = $pass->{'ruleSortKeys'}[$i];
         $prectxts[$rulemap[$i]] = $pass->{'rulePreContexts'}[$i];
+    }
+    foreach my $r (@rowrules)
+    {
+        my ($c) = 0;
+        my (%hr) = map {$_ => $c++} @$r;
+        $r = [sort {$keys[$a] <=> $keys[$b] || $hr{$a} <=> $hr{$b}} keys %hr];
     }
    
     # 5.8 create gid->column mapping
@@ -1567,10 +1686,14 @@ sub finalise_pass
 
     # remap constraint code. Probably should check it for class references or something
     my (@ruleconstraints);
+    my ($lastrule) = -1;
     for (my $i; $i < $pass->{'numRules'}; $i++)
     {
-        if ($rulemap[$i] >= 0)
-        { $ruleconstraints[$rulemap[$i]] = $pass->{'constraintCode'}[$i]; }
+        if ($rulemap[$i] > $lastrule)
+        {
+            $lastrule = $rulemap[$i];
+            $ruleconstraints[$lastrule] = $pass->{'constraintCode'}[$i];
+        }
     }
 
     # put everything back
@@ -1682,7 +1805,8 @@ sub delrow
     for (my $i = 0; $i < $pass->{'numTransitional'}; $i++)
     {
         next unless (scalar keys %{$cinfo->{'rowfwdrefs'}[$i]});
-        foreach my $j (@collist)
+        my (@templist) = @collist;  # allow us to edit the collist inside the loop
+        foreach my $j (@templist)
         {
             # keep those cols where there are transitions in other required rows
             if ($pass->{'fsm'}[$i][$j])
@@ -1704,13 +1828,21 @@ sub addmappedclass
 
     for (my $i = 0; $i < @{$subsetter->{'silf'}{'classes'}}; $i++)
     {
+        my ($nomatch) = 0;
         my ($c) = $subsetter->{'silf'}{'classes'}[$i];
-        next unless (scalar keys %{$c} == $l);
-        if (!grep {!defined $c->{$m[$_]} or $_ != $c->{$m[$_]}} (0 .. $l - 1))
-        { return $i; }
+        next unless (scalar @{$c} == $l);
+        foreach (my $j = 0; $j < $l; $j++)
+        {
+            if ($c->[$j] != $m[$j])
+            {
+                $nomatch = 1;
+                last;
+            }
+        }
+        return $i if (!$nomatch);
     }
     my ($i) = 0;
-    push (@{$subsetter->{'silf'}{'classes'}}, {map {$_ => $i++} @m});
+    push (@{$subsetter->{'silf'}{'classes'}}, [@m]);
     if ($DEBUG)
     { print "class(" . $#{$subsetter->{'silf'}{'classes'}} . ") " . join(",", @m) . ".\n"; } 
     return $#{$subsetter->{'silf'}{'classes'}};
@@ -1901,6 +2033,31 @@ sub splitcol
     return $new;
 }
 
+# assumes from and to have the same contents
+sub mergerow
+{
+    my ($self, $from, $to, $pass, $cinfo) = @_;
+
+    foreach my $rule (@{$cinfo->{'rulemap'}[$from]})
+    {
+        foreach my $c (@{$cinfo->{'rules'}[$rule]})
+        { $c = $to if ($c == $from); }
+        if (!grep {$_ == $rule} @{$cinfo->{'rulemap'}[$to]})
+        { push (@{$cinfo->{'rulemap'}[$to]}, $rule); }
+    }
+
+    foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$from]})
+    {
+        foreach my $c (@{$pass->{'fsm'}[$r]})
+        { $c = $to if ($c == $from); }
+        $cinfo->{'rowfwdrefs'}[$r]{$to} = 1;
+        $cinfo->{'rowbackrefs'}[$to]{$r} = 1;
+        # delete $cinfo->{'rowfwdrefs'}[$r]{$from}; #not needed because delrow will have non empty row
+    }
+    # $cinfo->{'rowbackrefs'}[$from] = {};  # not needed becuase delrow will have non empty rows
+    $self->delrow($pass, $cinfo, $from);
+}
+
 # add a row to the fsm that is the copy of another
 # update everything accordingly
 sub addcopyrow
@@ -1915,21 +2072,6 @@ sub addcopyrow
     foreach (keys %{$cinfo->{'rowfwdrefs'}[$new]})
     { $cinfo->{'rowbackrefs'}[$_]{$new} = 1; }
     return $new;
-}
-
-# assumes from and to have the same contents
-sub mergerow
-{
-    my ($self, $from, $to, $pass, $cinfo) = @_;
-
-    foreach my $r (keys %{$cinfo->{'rowbackrefs'}[$from]})
-    {
-        foreach my $c (@{$pass->{'fsm'}[$r]})
-        { $c = $to if ($c == $from); }
-        $cinfo->{'rowfwdrefs'}[$r]{$to} = 1;
-        $cinfo->{'rowbackrefs'}[$to]{$r} = 1;
-    }
-    $self->delrow($pass, $cinfo, $from);
 }
 
 # Does a fast ordered comparison of two arrays
@@ -2002,6 +2144,8 @@ can be decimal numeric glyph IDs, postscript glyph names, or hexidecimal Unicode
 of U+xxxx. Ranges of glyphs (specified by either glyph ID or postscript name) and of Unicode scalar values
 can be specified using '..' between the values. Glyph identifiers or ranges may be followed immediately by 
 equals sign and 4 to 6 hex digits to indicate the glyph(s) should be encoded.
+
+A missing C<-g> option results in all glyphs being conserved.
 
 The C<-s> and C<-l> options identify OpenType script and language (respectively) tags
 to retain in the font. The Default language is always retained, so specify C<-l ''> to remove all but the default language. 
