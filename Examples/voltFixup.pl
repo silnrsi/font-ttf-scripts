@@ -98,7 +98,6 @@ If -d is supplied, missing glyphs are removed from groups.
 If -i is supplied, new glyphs with names matching the given pattern are
 ignored (not reported in a warning).
 
-Copyright (c) 2002-2004 SIL International; All Rights Reserved.
 EOT
 }
 

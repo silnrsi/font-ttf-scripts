@@ -14,8 +14,6 @@ unless ($#ARGV == 1)
 Strips SIL Graphite tables (Silf, Feat, Gloc, Glat, Sill, and Sile) from
 a font and writes the result to a new font file.
 
-Copyright (c) 2007 SIL International; All Rights Reserved.
-
 EOT
 }
 

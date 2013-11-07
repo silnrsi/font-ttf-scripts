@@ -18,8 +18,6 @@ to PC-compatible crlf, etc. (do this only on "text" tables such as TSIV).
 
 Example:  TTFExtractTable -tVTIS -a SomeFont.ttf out.txt
 
-Copyright (c) 2002 SIL International; All Rights Reserved.
-
 EOT
 }
 

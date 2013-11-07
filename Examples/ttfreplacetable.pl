@@ -21,8 +21,6 @@ should be a comma-separated list of table tags (default 'TSID,TSIP,TSIS').
 
 Example:  TTFReplaceTable -tVTIS SomeFont.ttf out.txt OutFont.ttf
 
-Copyright (c) 2002 SIL International; All Rights Reserved.
-
 EOT
 }
 
