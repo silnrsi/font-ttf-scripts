@@ -1,12 +1,11 @@
-testfont.ttf is copyright (c) SIL International, 2005-2012,
+testfont.ttf test_builder.ttf ttfnamed.ttf subset.ttf are copyright (c) 2005-2012, SIL International (http://www.sil.org) 
 with Reserved Font Names "Gentium" and "FontUtils".
 
-tt_font.ttf is copyright (c) SIL International, 1997-2009,
+tt_font.ttf is copyright (c) 1997-2009, SIL International (http://www.sil.org) 
 with Reserved Font Names "Doulos" and "SIL".
 
-schtest.ttf is copyright (c) SIL International, 1994-2012,
+schtest.ttf psfix.ttf lamalefliga.ttf compiled.ttf are copyright (c) 1994-2012, SIL International (http://www.sil.org) 
 with Reserved Font Name "Scheherazade".
-
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
