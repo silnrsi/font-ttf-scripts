@@ -21,7 +21,7 @@ AppPublisherURL=http://www.sil.org/computing
 ; AppSupportURL=http://www.sil.org/computing
 ; AppUpdatesURL=http://www.sil.org/computing
 VersionInfoVersion={#MyVer}
-VersionInfoCopyright="Copyright (c) 1997-2012 SIL International; released under Perl Artistic License"
+VersionInfoCopyright="Copyright (c) 1997-2013, SIL International (http://www.sil.org); released under the Artistic License 2.0"
 DefaultDirName={pf}\SIL\FontUtils
 DefaultGroupName=Font Utilities
 ; uncomment the following line if you want your installation to run on NT 3.51 too.
