@@ -104,19 +104,19 @@ Creates font specific GDL from a font and optional attachment point database
   -d            Output per class #defines for key classes
   -D name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
-                known to have no outline (thus shouldn't generate warning). 
+                known to have no outline (thus shouldn't generate warnings). 
   -h            print manpage
   -i file       add #include statement at end of file
   -l type       type =
                     first - class name is first code, contents other codes
                     last  - class name is last code, contents other codes
                     firstcomp - treat extensions as part of elements, as first
-                    lastcomp - treat extensons as part of elements, as last
+                    lastcomp - treat extensions as part of elements, as last
   -m "list"     List of APs to ignore when deciding whether a glyph is a mark
   -n num        Add a normalization substitution with the given pass number
   -o "list"     List of AP names to omit
   -p num        Add auto positioning attachment rules with the given pass number
-  -r            Rename point names such that final M gets inital _ and final S
+  -r            Rename point names such that final M gets initial _ and final S
                 is removed. Typically for Fontographer fonts.
   -s num        Add ligature substitution rules with the given pass number
   -z bitfield   Bitfield of various controls:
