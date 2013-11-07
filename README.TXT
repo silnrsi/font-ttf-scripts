@@ -1,5 +1,3 @@
-Perl Module Font::TTF:Scripts is Copyright (c) 1998-2012, Martin Hosken (SIL International)
-
 =head1 INTRODUCTION
 
 This module contains various scripts using the Font::TTF module. 
@@ -28,6 +26,22 @@ your system's perl library directory. You can type something like this:
 
     perl Makefile.PL PREFIX=/home/me/perl INSTALLDIRS=perl
 
+You need the following dependencies installed:
+Algorithm::Diff
+IO::String
+Text::PDF
+XML::Parser
+Unicode::String
+Text::Unicode::Equivalents
+
+(On Ubuntu the corresponding packages to install are:
+libalgorithm-diff-perl
+libio-string-perl
+libtext-pdf-perl
+libxml-parser-perl
+libunicode-string-perl
+libtext-unicode-equivalents-perl)
+
 Then to build you run make.
 
     make
@@ -36,6 +50,8 @@ If you have write access to the perl library directories, you may then
 install by typing:
 
     make install
+
+(sudo make install on Ubuntu)
 
 To tidy up, type:
 
@@ -52,16 +68,16 @@ Or using the install feature in tools like WinZip.
 =head1 AUTHOR
 
 Martin Hosken L<Martin_Hosken@sil.org>
-
-Copyright (c) 1998-2012, Martin Hosken (SIL International)
 (see CONTRIBUTORS for other authors).
 
-No warranty or expression of effectiveness for anything, least of all anyone's
-safety, is implied in this software or documentation.
+Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+
 
 =head1 LICENSE INFORMATION
 
-This module is free software; you can redistribute it and/or modify it under the terms of the
-Artistic License 2.0. For details, see the full text of the license in the file LICENSE.
+This module and all the various scripts are released under the terms of the
+Artistic License 2.0. For details, see the full text of the license in the file
+LICENSE.
 
 The test suite contains test fonts released under the Open Font License v1.1, see OFL.txt.
+
