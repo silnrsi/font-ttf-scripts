@@ -70,10 +70,9 @@ Or using the install feature in tools like WinZip.
 Martin Hosken L<Martin_Hosken@sil.org>
 (see CONTRIBUTORS for other authors).
 
+=head1 LICENSING
+
 Copyright (c) 1998-2013, SIL International (http://www.sil.org)
-
-
-=head1 LICENSE INFORMATION
 
 This module and all the various scripts are released under the terms of the
 Artistic License 2.0. For details, see the full text of the license in the file
