@@ -2,6 +2,7 @@
 
 use strict;
 use Font::TTF::Useall;
+use IO::File;
 use Pod::Usage;
 
 # Can't use GetOpt variants because of the funky syntax of -m and -M  (see perlrun)
@@ -66,6 +67,16 @@ foreach (@modules)
 
 # Open the font:
 my ($f);
+
+unless (defined $prog)
+{
+	# Take first next argument as a script
+	$prog = shift @ARGV;
+	my ($fh) = IO::File->new("< $prog") || die "Can't open '$prog': ";
+	local $/;
+	$prog = <$fh>;
+	$fh->close;
+}
 {
     no strict;
     $exe = eval "sub{ $prog }" if ($prog ne "");
@@ -75,6 +86,7 @@ $output =~ s|\\|/|og;
 my ($out_rep) = $output;
 my ($i);
 $out_rep =~ s/[?*]/'$m[' . ($i++) . ']'/oge;
+
 
 foreach my $a (@ARGV)
 {
@@ -93,7 +105,7 @@ foreach my $a (@ARGV)
             if ($infile =~ m|[\\/]([^/\\]+)$|o)
             { $outfile = "$output/$1"; }
             else
-            { $outfile = "$output/$f"; }
+            { $outfile = "$output/$infile"; }
         }
         elsif ($output)                  # replace wildcards with corresponding wildcard matches
         { $outfile = eval "\"$out_rep\""; }
@@ -120,7 +132,7 @@ ttfeval - wrapper for short L<Font::TTF> hacks
 
 =head1 SYNOPSIS
 
-tteval [options] infont.ttf ...
+tteval [options] [progfile] infont.ttf ...
 
 =head1 OPTIONS
 
@@ -136,7 +148,8 @@ tteval [options] infont.ttf ...
 
 =item B<-e> commandline
 
-Work essentially like the same options for Perl. See L<perlrun>.
+Work essentially like the same options for Perl. If no B<-e> options are provided, the B<progfile> argument 
+specifies the name of a file containing code to be executed. See L<perlrun>.
 
 =item B<-o> outfont
 
