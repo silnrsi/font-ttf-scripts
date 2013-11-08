@@ -885,12 +885,12 @@ sub error
     $self->{'cWARNINGS'}++;
 }
 
+
+1;
+
 =head1 See also
 
 L<TTFBuilder|bin::TTFBuilder>, L<Font::TTF::Font>
-
-=cut
-
 
 =head1 AUTHOR
 
@@ -906,7 +906,4 @@ LICENSE.
 
 The test suite contains test fonts released under the Open Font License v1.1, see OFL.txt.
 
-
 =cut
-
-1;

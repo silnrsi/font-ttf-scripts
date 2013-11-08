@@ -475,6 +475,8 @@ sub cut
 }
 
 
+1;
+
 =head1 AUTHOR
 
 Martin Hosken L<Martin_Hosken@sil.org>. 
@@ -491,6 +493,3 @@ The test suite contains test fonts released under the Open Font License v1.1, se
 
 
 =cut
-
-1;
-
