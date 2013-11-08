@@ -10,7 +10,7 @@ $opt_v ||= 1;
 
 my ($VERSION, $fversion, @extras, @scripts, @theselibs, $fhi, $fho, $perlbin);
 
-$VERSION = "1.03";
+$VERSION = "1.04";
 
 # Fix up inno script by substituting {perl: $var}
 
@@ -168,7 +168,7 @@ WriteMakefile (
 		PREREQ_PM => {
 			'Algorithm::Diff' => 0,
             'IO::String' => 0,
-			'Font::TTF' => 1.00,
+			'Font::TTF' => 1.03,
 			'Text::PDF::File' => 0,
             'Text::Unicode::Equivalents' => 0,
             'XML::Parser' => 0

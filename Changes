@@ -1,3 +1,39 @@
+1.04
+
+* Bug fixes and/or new capabilities:
+*    ttfbuilder 
+*        glyph rotation
+*    make_gdl
+*        -D and -ignore options
+*    ttfsubset
+*        major upgrade with better subsetting 
+*        support for Silf table, glyph ranges
+*    ttfname 
+*        can remove multiple names at once
+*    volt2ttf 
+*        chaining lookups
+*        mark filter sets
+*        handle missing APs
+*        expunge notion of 'dflt' language tag
+*        better integration with TypeTuner
+*        SKIP_BASE, ENUM and ECEPT_CONTEXT fixes
+*        support pair-position format 1
+*    dumpfont 
+*        TSIV now parsed before dumping
+*    ttfprintinfo
+*        sorts language & feature tags
+*    ttf2woff
+*    psfix 
+*        major overhaul, new options
+*    ttfeval
+*        can now read program from a file
+*    Examples/ttfcompare.pl
+*        -t option to compare checksum & length of all tables
+
+1.03  (r866, 2012-09-07)
+
+* Bug fix: two tests weren't cross-platform
+
 1.02  (r863, 2012-08-28)
 
 * Add Text::Unicode::Equivalents dependency
