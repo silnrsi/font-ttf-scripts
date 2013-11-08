@@ -5,8 +5,8 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t, $opt_x, $opt_z);
-getopts('a:be:f:hi:l:m:no:tx:z:');
+our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t, $opt_z);
+getopts('a:be:f:hi:l:m:no:tz:');
 
 unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
 {
@@ -50,7 +50,7 @@ if (exists $f->{'WARNINGS'})
 
 my $comp = $1 if ($opt_l =~ s/(comp)$//o);
 
-$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m, -extre => $opt_x);
+$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m);
 if ($opt_i)
 {
     my ($fh, $dat, @map, $vtext);
@@ -129,7 +129,6 @@ Creates a copy of the infile font file adding a VOLT table to it.
   -n            Add a normalization ligature lookups
   -o "list"     List of AP names to omit
   -t            output volt code to stdout and don't generate a font file
-  -x "(re)"     regex to match and capture glyph name extension
   -z bitfield   Bitfield of various controls:
                     0 - n/a
                     1 - normalise even if presentation is only references
