@@ -268,6 +268,8 @@ An array of cmap entries, each of which is an array of 3 numbers.
 In addition to extra entries in the main object there are two types that are used
 in various places:
 
+=back
+
 =head2 context_item
 
 A C<context_item> consists of an array with two or three elements. The first, a string, gives the type
@@ -1803,3 +1805,23 @@ sub point2anchor
 L<Font::TTF::Scripts::AP>
 
 =cut
+
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>. 
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+
+This module and all the various scripts are released under the terms of the
+Artistic License 2.0. For details, see the full text of the license in the file
+LICENSE.
+
+The test suite contains test fonts released under the Open Font License v1.1, see OFL.txt.
+
+
+=cut
+
+1;
+
