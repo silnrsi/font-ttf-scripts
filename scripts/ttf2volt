@@ -1461,7 +1461,7 @@ sub ProcessGPOSLookup ($)		# GPOS lookup index to process
         }
         else
         {
-    	    MyWarn ("Unhandled GPOS Lookup type " . $l->{'TYPE'} . " ignored for now.\n");
+    	    MyWarn ("Unhandled GPOS Lookup $name (type $l->{'TYPE'}) ignored for now.\n");
     	}
     }
 }
