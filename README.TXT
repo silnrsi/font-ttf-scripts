@@ -34,7 +34,7 @@ XML::Parser
 Unicode::String
 Text::Unicode::Equivalents
 
-(On Ubuntu the corresponding packages to install are:
+(On Debian/Ubuntu the corresponding packages to install are:
 libalgorithm-diff-perl
 libio-string-perl
 libtext-pdf-perl
@@ -78,5 +78,5 @@ This module and all the various scripts are released under the terms of the
 Artistic License 2.0. For details, see the full text of the license in the file
 LICENSE.
 
-The test suite contains test fonts released under the Open Font License v1.1, see OFL.txt.
+The fonts in the test suite are released under the Open Font License 1.1, see t/OFL.txt.
 
