@@ -500,7 +500,7 @@ sub subset_lookup
 	        my $cover = {};
 	        my $rules = [];
 	        my $i = 0;
-	        foreach my $gid (sort {$c->{$a} <=> $c->{$b}} keys $c)
+	        foreach my $gid (sort {$c->{$a} <=> $c->{$b}} keys %{$c})
 	        {
 	        	my ($ix) = $c->{$gid};
                 if ($r->[$ix])      # strip empty rules from coverage table
