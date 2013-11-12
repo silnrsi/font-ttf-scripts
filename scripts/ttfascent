@@ -70,4 +70,17 @@ OS/2 table and then writes the resulting file to outfile if specified.
 Setting the ascent and descent values of a font is a fiddly business. This program
 sets the values in their default relationship.
 
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>
+(see CONTRIBUTORS for other authors).
+
+=head1 LICENSING
+
+Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+
+This script is released under the terms of the Artistic License 2.0.
+For details, see the full text of the license in the file LICENSE.
+
+
 =cut
