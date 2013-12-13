@@ -6,9 +6,9 @@
     <string num="name">Testing</string>
     <string num="5">Version 1.0</string>
     <string num="6">Testing <name num="2"/></string>
-    <string num="9">Victor Gaultney</string>
+    <string num="9">Annie Olsen and J. Victor Gaultney</string>
     <string num="11">http://scripts.sil.org</string>
-    <string num="13">Released under the Open Font License.</string>
+    <string num="13">Released under the SIL Open Font License.</string>
     <string num="14">http://scripts.sil.org/OFL</string>
 </names>
 
