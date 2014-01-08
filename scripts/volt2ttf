@@ -851,9 +851,9 @@ sub scon_glyphs
     my ($dat, $context) = @_;
 
     if ($context->[0] eq 'GLYPH')
-    { return defined $context->[1] ? [$context->[1]] : warn("Undefined glyph"); }
+    { return defined $context->[1] ? [$context->[1]] : do {warn("Undefined glyph"); []}; }
     elsif ($context->[0] eq 'GROUP')
-    { return defined $dat->{'voltdat'}{'groups'}{$context->[1]} ? [sort {$a <=> $b} @{$dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}})}] : warn "Unknown glyph group $context->[1]"; }
+    { return defined $dat->{'voltdat'}{'groups'}{$context->[1]} ? [sort {$a <=> $b} @{$dat->or_context_glyphs(@{$dat->{'voltdat'}{'groups'}{$context->[1]}})}] : do {warn "Unknown glyph group $context->[1]"; []}; }
     elsif ($context->[0] eq 'RANGE')
     { return [$context->[1] .. $context->[2]]; }
     elsif ($context->[0] eq 'ENUM')
