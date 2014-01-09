@@ -1,4 +1,11 @@
-1.04
+1.04.1 (r995, 2014-01-09)
+
+* Bug fixes:
+*    Fix ttfsubset for Perl 5.12 and earlier
+*    Update licensing info for test fonts to OFL
+*    Slight improvement in volt2ttf for cases of missing glyphs
+
+1.04  (r969, 2013-11-10)
 
 * Bug fixes and/or new capabilities:
 *    ttfbuilder 
