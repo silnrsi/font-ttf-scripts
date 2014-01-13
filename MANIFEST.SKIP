@@ -1,6 +1,7 @@
 blib/
 \.\$\$\$
 \.tmp
+\.temp
 \.bak
 CVS/
 \.tar
@@ -16,6 +17,8 @@ Makefile$
 \.par$
 -stamp$
 debian/
+debian-src/
+dest-deb/
 pm_to_blib
 \~$
 (?<!TypeTuner_)dev/
