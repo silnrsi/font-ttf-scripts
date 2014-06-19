@@ -8,7 +8,7 @@ use Pod::Usage;
 our(%opts);
 GetOptions(\%opts, 'ap|a=s', 'autodefines|d', 'empty|e=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
                 'normalize|n=i', 'omitaps|o=s', 'positions|p=i', 'renameaps|r', 'substitutions|s=i',
-                'z=i', 'define|D=s%', 'mark|m=s');
+                'z=i', 'define|D=s%', 'mark|m=s', 'classfile|c=s', 'classprops');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -73,6 +73,7 @@ if ($opts{'renameaps'})
 
 $f->{'vecs'} = {};
 
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
 $f->start_gdl($outfh);
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
@@ -101,6 +102,10 @@ Creates font specific GDL from a font and optional attachment point database
 =head1 OPTIONS
 
   -a file       Attachment point database
+  -c classfile  xml file of class and property information to merge in
+  --classproperties
+                specifies whether classes are made for property values in
+                the classfile
   -d            Output per class #defines for key classes
   -D name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
@@ -222,6 +227,23 @@ of glyphs in the font.
 Since a GDL description is only a single file, the command line allows one to
 specify another GDL file to include at the end of the file. This makes including
 a font independent GDL fragment much easier.
+
+=head2 Classfile
+
+The DTD for the classes file is:
+
+    <!ELEMENT classes (class, property)*>
+
+    <!ELEMENT class (#PCDATA)>
+    <!ATTLIST class
+        name    CDATA #REQUIRED
+        exts    CDATA #IMPLIED>
+
+    <!ELEMENT property (#PCDATA)>
+    <!ATTLIST property
+        name    CDATA #REQUIRED
+        value   CDATA #REQUIRED
+        exts    CDATA #IMPLIED>
 
 =head1 SEE ALSO
 

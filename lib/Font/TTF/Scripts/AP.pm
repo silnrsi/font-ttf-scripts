@@ -174,6 +174,7 @@ Count of number of warnings or errors encountered.
 # ' make editors happy
 
 use Font::TTF::Font 0.36;
+use Font::TTF::PSNames;
 use XML::Parser::Expat;
 use Algorithm::Diff qw(sdiff);
 
@@ -488,6 +489,64 @@ sub read_font
     $self;
 }
 
+=head2 $ap->add_classfile ($fname, %opts)
+
+Reads the given xml classes description file and stores the info in this ap structure
+
+=cut
+
+sub add_classfile
+{
+    my ($self, $fname, %opts) = @_;
+    my ($text, $currclass, %cglyphs);
+    my ($xml) = XML::Parser::Expat->new();
+
+    $xml->setHandlers(
+        Start => sub {
+            my ($xp, $tag, %attrs) = @_;
+
+            if ($tag eq 'class')
+            { $currclass = [$attrs{'name'}, $attrs{'exts'}]; }
+            elsif ($tag eq 'property')
+            { $currclass = [$attrs{'name'}, $attrs{'exts'}, $attrs{'value'}]; }
+            $text = '';
+        },
+        End => sub {
+            my ($xp, $tag) = @_;
+
+            foreach my $g (split(' ', $text))
+            {
+                foreach my $e (('', split(' ', $currclass->[1])))
+                {
+                    my ($c) = canon("$g$e");
+                    next unless (defined $cglyphs{$c});
+
+                    if ($tag eq 'class')
+                    { $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[$0]"; }
+                    elsif ($tag eq 'property')
+                    {
+                        $cglyphs{$c}{'props'}{$currclass->[0]} = $currclass->[2];
+                        $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]_$currclass->[2]" if ($opts{'-p'});
+                    }
+                }
+            }
+        },
+        Char => sub {
+            my ($xp, $str) = @_;
+            $text .= $str;
+        });
+
+    # load up cglyphs before we read the file
+    for (my $i = 0; $i < $self->{'numg'}; $i++)
+    {
+        my ($g) = $self->{'glyphs'}[$i];
+        $cglyphs{canon($g->{'post'})} = $g;
+    }
+    $xml->parsefile($fname);
+    $xml->release;
+    return $self;
+}
+
 =head2 $ap->make_names
 
 An alternative to L</"make_classes">, this method just creates name records for all the glyphs in the font. 
@@ -782,6 +841,24 @@ sub align_glyphs
     }
     return (@map);
 }
+
+=head2 canon($psname)
+
+Returns a canonical form of the given name in a form that is not useful for
+anythin except comparison
+
+=cut
+
+sub canon
+{
+    my ($name) = @_;
+    my ($uids, $exts) = Font::TTF::PSNames::parse($name);
+    return $name unless scalar(@{$uids});
+    my ($res) = join("_", map {sprintf("%04X", $_)} @{$uids});
+    $res .= "." . join(".", @$exts) if (scalar @$exts);
+    $res;
+}
+
 
 =head2 $str = $ap->as_xml()
 

@@ -16,7 +16,7 @@ use Text::PDF::Utils;
 use Getopt::Std;
 use strict;
 use vars qw(@ISA %sizes @EXPORT $pdf_helv $pdf_helvb $pdf_helvi $pdf_helvbi $VERSION
-            $dots);
+            $dots %transformingops);
 
 require Exporter;
 @ISA = qw(Exporter);
@@ -41,6 +41,7 @@ BEGIN {
         require IO::Scalar;
     }
     $dots = "0 w [.25 1.25] 0 d";
+    %transformingops = map {$_=>1} qw(m l c v y);
 }
 
 
@@ -309,8 +310,10 @@ use strict;
                         && ($gcol = sprintf("%.2f %.2f %.2f rg",
                                             hex($1), hex($2), hex($3)));
                 $glyph = $font->{'loca'}{'glyphs'}[$gid];
+                my @parms = ($cids[$gcount + $i], $gid, $glyph, $rev[$gid], $font);
                 if ($glyph && $glyph->{' LEN'} != 0)
                 {
+                    my (@instr, $in);
                     $glyph->read;
                     $xorg = ($glyph->{'xMax'} + $glyph->{'xMin'}) * $tsize / $upem;
                     $xorg = $xcentre - $xorg / 2;
@@ -318,6 +321,21 @@ use strict;
                     $ppage->add(sprintf("%s %.4f %d m %.4f %d l S [] 0 d\n", $dots, $xadv, $ybase + 7, $xadv,$ybase + 57)) if ($xadv < $xcentre + 27);
                     $ppage->add(sprintf("%s %.4f %d m %.4f %d l S [] 0 d\n", $dots, $xorg, $ybase + 7, $xorg, $ybase + 57)) if ($xorg > $xcentre - 27 && $xorg < $xcentre + 27);
                     $ppage->add(sprintf("BT 1 0 0 1 %.4f %.4f Tm /T$id $tsize Tf 100 Tz $gcol <%04X> Tj %s ET\n", $xorg, $yorg, $gid, ($gcol ? "0 g " : "")));
+                    @instr = $package->overlay(@parms);
+                    if (@instr)
+                    {
+                        $ppage->add("q ");
+                        foreach $in (@instr)
+                        {
+                            if (defined $transformingops{$in->[0]})
+                            {
+                                for (my $j = 1; $j < @{$in}; $j++)
+                                { $in->[$j] = $in->[$j] * $tsize / $upem + ($j % 2 ? $xorg : $yorg); }
+                            }
+                            $ppage->add(join(' ', map {sprintf("%.4f", $_)} @{$in}[1..$#{$in}]) . " $in->[0] ");
+                        }
+                        $ppage->add("Q\n");
+                    }
                     unless ($opt{'r'})
                     {
                         $gxorg = ($glyph->{'xMax'} + $glyph->{'xMin'}) * $gsize / $upem / 2;
@@ -327,7 +345,6 @@ use strict;
                         $ppage->add(sprintf("BT 1 0 0 1 %.4f %.4f Tm /T$id $gsize Tf 100 Tz <%04X> Tj ET\n", $gxorg, $gyorg, $gid));
                     }
                 }
-                @parms = ($cids[$gcount + $i], $gid, $glyph, $rev[$gid], $font);
                 @rowt = $package->topdat(@parms);
                 @roww = widths(6, \@rowt);
                 @xorg = ([$xcentre - 26, $xcentre + 24 - $roww[1]],
@@ -1006,6 +1023,23 @@ sub extra_points
 
     return [];
 }
+
+=head2 overlay
+
+Returns an array of arrays, each is an operator string followed by the parameters that will precede
+the operator. If the operator is a contour forming op, then the positions will be transformed
+from glyph space for rendering.
+
+=cut
+
+sub overlay
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+
+    return [];
+}
+
+
 
 =head1 AUTHOR
 
