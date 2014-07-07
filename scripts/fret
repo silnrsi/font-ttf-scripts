@@ -166,7 +166,7 @@ sub process_argv
 {
 	my ($self);
 	($self, $opts) = @_;
-	getopts("a:d:fgh:i:m:o:p:qrs:?", $opts);
+	getopts("a:bd:fgh:i:m:o:p:qrs:?", $opts);
 	
 	if ($opts->{'?'})
     {
@@ -198,7 +198,215 @@ sub extra_points
     }
     return [@res];
 }
-	
+
+sub outlinebox
+{
+    my ($xmin, $ymin, $xmax, $ymax, $amin, $smin, $amax, $smax, $col) = @_;
+    my ($x1, $x2, $y1, $y2);
+    my (@res);
+    $col = [.92, .37, .17] unless (defined $col);
+
+    $x1 = $ymax + $smin; $x2 = $amax - $ymax;
+    if ($x2 < $x1) { push (@res, ['m', 0.5 * ($amax + $smin), 0.5 * ($amax - $smin)]); }
+    else { push (@res, ['m', $x1, $ymax], ["l", $x2, $ymax]); }
+    $y1 = $amax - $xmax; $y2 = $xmax - $smax;
+    if ($y1 < $y2) { push (@res, ["l", 0.5 * ($amax + $smax), 0.5 * ($amax - $smax)]); }
+    else { push (@res, ["l", $xmax, $y1], ["l", $xmax, $y2]); }
+    $x2 = $amin - $ymin; $x1 = $ymin + $smax;
+    if ($x1 < $x2) { push (@res, ["l", 0.5 * ($amin + $smax), 0.5 * ($amin - $smax)]); }
+    else { push (@res, ["l", $x1, $ymin], ["l", $x2, $ymin]); }
+    $y2 = $xmin - $smin; $y1 = $amin - $xmin;
+    if ($y2 < $y1) { push (@res, ["l", 0.5 * ($amin + $smin), 0.5 * ($amin - $smin)]); }
+    else { push (@res, ["l", $xmin, $y1], ["l", $xmin, $y2]); }
+    push (@res, ["RG", @$col], ["s"]);
+    return @res;
+}
+
+sub normalpt
+{
+    my ($g, $x, $y) = @_;
+    my ($newx) = ($x - $g->{'xMin'}) / ($g->{'xMax'} - $g->{'xMin'});
+    my ($newy) = ($y - $g->{'yMin'}) / ($g->{'yMax'} - $g->{'yMin'});
+    return ($newx, $newy);
+}
+
+sub unnormalpt
+{
+    my ($g, $x, $y) = @_;
+    my ($newx) = $x * $g->{'xMax'} + (1 - $x) * $g->{'xMin'};
+    my ($newy) = $y * $g->{'yMax'} + (1 - $y) * $g->{'yMin'};
+    return ($newx, $newy);
+}
+
+sub unnormald
+{
+    my ($g, $a, $s) = @_;
+    my ($newx) = ($a + $s) * 0.5 * ($g->{'xMax'} - $g->{'xMin'}) + $g->{'xMin'};
+    my ($newy) = ($a - $s) * 0.5 * ($g->{'yMax'} - $g->{'yMin'}) + $g->{'yMin'}; 
+    return ($newx + $newy, $newx - $newy);
+}
+
+sub addpoint
+{
+    my ($g, $x, $y, $glyph) = @_;
+
+    push (@{$g->{'points'}}, [$x, $y]);
+    my ($s) = $x - $y;
+    my ($a) = $x + $y;
+    # minmaxes
+    $g->{'bbox'}[0] = $x if (!defined $g->{'bbox'}[0] || $x < $g->{'bbox'}[0]);
+    $g->{'bbox'}[1] = $x if (!defined $g->{'bbox'}[1] || $x > $g->{'bbox'}[1]);
+    $g->{'bbox'}[2] = $y if (!defined $g->{'bbox'}[2] || $y < $g->{'bbox'}[2]);
+    $g->{'bbox'}[3] = $y if (!defined $g->{'bbox'}[3] || $y > $g->{'bbox'}[3]);
+    $g->{'dbox'}[0] = $a if (!defined $g->{'dbox'}[0] || $a < $g->{'dbox'}[0]);
+    $g->{'dbox'}[1] = $a if (!defined $g->{'dbox'}[1] || $a > $g->{'dbox'}[1]);
+    $g->{'dbox'}[2] = $s if (!defined $g->{'dbox'}[2] || $s < $g->{'dbox'}[2]);
+    $g->{'dbox'}[3] = $s if (!defined $g->{'dbox'}[3] || $s > $g->{'dbox'}[3]);
+    if ($glyph)
+    {
+        $glyph->{'dbox'}[0] = $a if (!defined $glyph->{'dbox'}[0] || $a < $glyph->{'dbox'}[0]);
+        $glyph->{'dbox'}[1] = $a if (!defined $glyph->{'dbox'}[1] || $a > $glyph->{'dbox'}[1]);
+        $glyph->{'dbox'}[2] = $s if (!defined $glyph->{'dbox'}[2] || $s < $glyph->{'dbox'}[2]);
+        $glyph->{'dbox'}[3] = $s if (!defined $glyph->{'dbox'}[3] || $s > $glyph->{'dbox'}[3]);
+    }
+}
+
+sub addminmax
+{
+    my ($e, $v) = @_;
+    $e->[0] = $v if (!defined $e->[0] || $v < $e->[0]);
+    $e->[1] = $v if (!defined $e->[1] || $v > $e->[1]);
+}
+
+sub overlay
+{
+    my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
+    my (@res, @grid, $i, $j, $ei, $oldx, $oldy, $oldgx, $oldgy);
+    return () unless ($opts->{'b'});
+
+    foreach $i (0 .. 3)
+    {
+        foreach $j (0 .. 3)
+        {
+            $grid[$i][$j] = {'cutsi' => [[], [], [], []], 'cutso' => [[], [], [], []]};
+        }
+    }
+
+    $glyph->get_points();
+    $ei = 0;
+    for ($i = 0; $i < @{$glyph->{'x'}}; $i++)
+    {
+        my ($x, $y) = ($glyph->{'x'}[$i], $glyph->{'y'}[$i]);
+        my ($x1, $y1) = normalpt($glyph, $x, $y);
+        my ($gx, $gy) = (int($x1 * 4 - .001), int($y1 * 4 - .001));
+        addpoint($grid[$gx][$gy], $x, $y, $glyph);
+        if (defined $oldgx)
+        {
+            # handle curve lines crossing grid lines
+            while ($oldgx < $gx)
+            {
+                my ($nbx) = ($oldgx + 1) / 4.;
+                my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
+                my ($nby) = $t * $y1 + (1 - $t) * $oldy;
+                my ($bgy) = int($nby * 4 - .001);
+                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                addpoint($grid[$oldgx][$bgy], $bx, $by);
+                addminmax($grid[$oldgx][$bgy]{'cutso'}[1], $by);
+                ++$oldgx;
+                addpoint($grid[$oldgx][$bgy], $bx, $by);
+                addminmax($grid[$oldgx][$bgy]{'cutsi'}[0], $by);
+            }
+            while ($oldgx > $gx)
+            {
+                my ($nbx) = $oldgx / 4.;
+                my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
+                my ($nby) = $t * $y1 + (1 - $t) * $oldy;
+                my ($bgy) = int($nby * 4 - .001);
+                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                addpoint($grid[$oldgx][$bgy], $bx, $by);
+                addminmax($grid[$oldgx][$bgy]{'cutso'}[0], $by);
+                --$oldgx;
+                addpoint($grid[$oldgx][$bgy], $bx, $by);
+                addminmax($grid[$oldgx][$bgy]{'cutsi'}[1], $by);
+            }
+            while ($oldgy < $gy)
+            {
+                my ($nby) = ($oldgy + 1) / 4.;
+                my ($t) = ($nby - $oldy) / ($y1 - $oldy);
+                my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
+                my ($bgx) = int($nbx * 4 - .001);
+                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                addpoint($grid[$bgx][$oldgy], $bx, $by);
+                addminmax($grid[$bgx][$oldgy]{'cutso'}[3], $bx);
+                ++$oldgy;
+                addpoint($grid[$bgx][$oldgy], $bx, $by);
+                addminmax($grid[$bgx][$oldgy]{'cutsi'}[2], $bx);
+            }
+            while ($oldgy > $gy)
+            {
+                my ($nby) = $oldgy / 4.;
+                my ($t) = ($nby - $oldy) / ($y1 - $oldy);
+                my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
+                my ($bgx) = int($nbx * 4 - .001);
+                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                addpoint($grid[$bgx][$oldgy], $bx, $by);
+                addminmax($grid[$bgx][$oldgy]{'cutso'}[2], $bx);
+                --$oldgy;
+                addpoint($grid[$bgx][$oldgy], $bx, $by);
+                addminmax($grid[$bgx][$oldgy]{'cutsi'}[3], $bx);
+            }
+        }
+        if ($glyph->{'endPoints'}[$ei] == $i)
+        {
+            ++$ei;
+            $oldgx = undef;
+            $oldgy = undef;
+        }
+        else
+        {
+            $oldx = $x1;
+            $oldy = $y1;
+            $oldgx = $gx;
+            $oldgy = $gy;
+        }
+    }
+
+    push (@res, outlinebox($glyph->{'xMin'}, $glyph->{'yMin'}, $glyph->{'xMax'}, $glyph->{'yMax'},
+                          $glyph->{'dbox'}[0], $glyph->{'dbox'}[2], $glyph->{'dbox'}[1], $glyph->{'dbox'}[3], [.375, .754, .078]));
+    # add extra corner points if the corner is within a stem
+    foreach $i (0 .. 3)
+    {
+        foreach $j (0 .. 3)
+        {
+            my ($g) = $grid[$j][$i];
+
+            if (defined $g->{'cutsi'}[0][0] && (!defined $g->{'cutso'}[0][0] || $g->{'cutsi'}[0][0] < $g->{'cutso'}[0][0])
+                || defined $g->{'cutso'}[2][0] && (!defined $g->{'cutsi'}[2][0] || $g->{'cutso'}[2][0] < $g->{'cutsi'}[2][0]))
+            { addpoint($g, unnormalpt($glyph, $j / 4, $i / 4)); }
+            if (defined $g->{'cutso'}[0][1] && (!defined $g->{'cutsi'}[0][1] || $g->{'cutso'}[0][1] > $g->{'cutsi'}[0][1])
+                || defined $g->{'cutsi'}[3][0] && (!defined $g->{'cutso'}[3][0] || $g->{'cutsi'}[3][0] < $g->{'cutso'}[3][0]))
+            { addpoint($g, unnormalpt($glyph, $j / 4, ($i + 1) / 4)); }
+            if (defined $g->{'cutso'}[1][0] && (!defined $g->{'cutsi'}[1][0] || $g->{'cutso'}[1][0] < $g->{'cutsi'}[1][0])
+                || defined $g->{'cutsi'}[2][1] && (!defined $g->{'cutso'}[2][1] || $g->{'cutsi'}[2][1] > $g->{'cutso'}[2][1]))
+            { addpoint($g, unnormalpt($glyph, ($j + 1) / 4, $i / 4)); }
+            if (defined $g->{'cutsi'}[1][1] && (!defined $g->{'cutso'}[1][1] || $g->{'cutsi'}[1][1] > $g->{'cutso'}[1][1])
+                || defined $g->{'cutso'}[3][1] && (!defined $g->{'cutsi'}[3][1] || $g->{'cutso'}[3][1] > $g->{'cutsi'}[3][1]))
+            { addpoint($g, unnormalpt($glyph, ($j + 1) / 4, ($i + 1) / 4)); }
+
+            # create box outlines
+            next if (!defined $g->{'bbox'}[0]);     # no points in this box so no outline
+#            push (@res, outlinebox( unnormalpt($glyph, $g->{'bbox'}[0], $g->{'bbox'}[2]),
+#                                    unnormalpt($glyph, $g->{'bbox'}[1], $g->{'bbox'}[3]),
+#                                    unnormald($glyph, $g->{'dbox'}[0], $g->{'dbox'}[2]),
+#                                    unnormald($glyph, $g->{'dbox'}[1], $g->{'dbox'}[3])));
+            push (@res, outlinebox( $g->{'bbox'}[0], $g->{'bbox'}[2], $g->{'bbox'}[1], $g->{'bbox'}[3],
+                                    $g->{'dbox'}[0], $g->{'dbox'}[2], $g->{'dbox'}[1], $g->{'dbox'}[3]));
+        }
+    }
+    return @res;
+}
+
+
 __END__
 
 =head1 TITLE
@@ -217,6 +425,7 @@ If no out_file is given then out_file becomes font_file.pdf (removing .ttf
 if present)
 
   -a ap.xml     Attachment point database file
+  -b            Draw bounding octogon
   -f            Don't try to save memory on large fonts (>1000 glyphs)
   -g            Add one glyph per page report following summary report
   -h            Mode for glyph per page output. Bitfield:

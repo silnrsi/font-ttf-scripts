@@ -1157,6 +1157,7 @@ sub subset_silf
     }
 
     # calculate substitution classes 
+    $silf->{'classes'} = [] if (!defined $silf->{'classes'});
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
         my ($subsetexists) = grep {defined $_ and $subsetter->keep_glyph($_)} @{$silf->{'classes'}[$i]};
