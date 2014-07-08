@@ -10,6 +10,7 @@ package Attach;
 use XML::Parser::Expat;
 use Getopt::Std;
 use Pod::Usage;
+use IO::File;
 
 our (@ISA, $VERSION);
 
@@ -28,7 +29,7 @@ sub make_cids
     my (@map, @res, $m, $pname);
     my ($c) = $font->{'cmap'}->read->find_ms;
 
-    if ($opts->{'a'} || defined $ARGV[2])
+    if ($opts->{'a'})
     {
         my ($xml) = XML::Parser::Expat->new();
         $xml->setHandlers('Start' => sub {
@@ -64,7 +65,7 @@ sub make_cids
             }
         });
 
-        $xml->parsefile($opts->{'a'} || $ARGV[2]) || die "Can't parse " . ($opts->{'a'} || $ARGV[2]);
+        $xml->parsefile($opts->{'a'}) || die "Can't parse " . $opts->{'a'};
     }
 
     @rev = $font->{'cmap'}->read->reverse('array' => 1);
@@ -162,6 +163,8 @@ sub row2
     return (@res);
 }
 
+my $specialfh;
+
 sub process_argv
 {
 	my ($self);
@@ -184,6 +187,11 @@ sub process_argv
 	$usort = 1 if $opts->{'o'} =~ /u/;  # enable Unicode sort
 	$psort = 1 if $opts->{'o'} =~ /p/;  # enable Postname sort
 			# gid sort is always last resort
+    if ($opts->{'b'} && $#ARGV >= 2)
+    {
+        $specialfh = IO::File->new($ARGV[2], "w") || die "Can't open $ARGV[2] for writing";
+        print $specialfh "<?xml version='1.0'?>\n<octaboxes>\n";
+    }
 }
 
 sub extra_points
@@ -201,10 +209,14 @@ sub extra_points
 
 sub outlinebox
 {
-    my ($xmin, $ymin, $xmax, $ymax, $amin, $smin, $amax, $smax, $col) = @_;
+    my ($xmin, $ymin, $xmax, $ymax, $amin, $smin, $amax, $smax, $col, $label) = @_;
     my ($x1, $x2, $y1, $y2);
     my (@res);
     $col = [.92, .37, .17] unless (defined $col);
+
+    if (defined $specialfh && $label)
+    { printf $specialfh "    <%s xmin='%d' xmax='%d' ymin='%d' ymax='%d' smin='%d' smax='%d' dmin='%d' dmax='%d'/>\n",
+                $label, $xmin, $xmax, $ymin, $ymax, $amin, $amax, $smin, $smax; }
 
     $x1 = $ymax + $smin; $x2 = $amax - $ymax;
     if ($x2 < $x1) { push (@res, ['m', 0.5 * ($amax + $smin), 0.5 * ($amax - $smin)]); }
@@ -283,6 +295,9 @@ sub overlay
     my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
     my (@res, @grid, $i, $j, $ei, $oldx, $oldy, $oldgx, $oldgy);
     return () unless ($opts->{'b'});
+
+    if ($specialfh)
+    { printf $specialfh "  <glyph gid='%d' uid='%04X' name='%s'>\n", $gid, $uid, $font->{'post'}{'VAL'}[$gid]; }
 
     foreach $i (0 .. 3)
     {
@@ -372,7 +387,7 @@ sub overlay
     }
 
     push (@res, outlinebox($glyph->{'xMin'}, $glyph->{'yMin'}, $glyph->{'xMax'}, $glyph->{'yMax'},
-                          $glyph->{'dbox'}[0], $glyph->{'dbox'}[2], $glyph->{'dbox'}[1], $glyph->{'dbox'}[3], [.375, .754, .078]));
+                          $glyph->{'dbox'}[0], $glyph->{'dbox'}[2], $glyph->{'dbox'}[1], $glyph->{'dbox'}[3], [.375, .754, .078], 'glyphbox'));
     # add extra corner points if the corner is within a stem
     foreach $i (0 .. 3)
     {
@@ -400,12 +415,22 @@ sub overlay
 #                                    unnormald($glyph, $g->{'dbox'}[0], $g->{'dbox'}[2]),
 #                                    unnormald($glyph, $g->{'dbox'}[1], $g->{'dbox'}[3])));
             push (@res, outlinebox( $g->{'bbox'}[0], $g->{'bbox'}[2], $g->{'bbox'}[1], $g->{'bbox'}[3],
-                                    $g->{'dbox'}[0], $g->{'dbox'}[2], $g->{'dbox'}[1], $g->{'dbox'}[3]));
+                                    $g->{'dbox'}[0], $g->{'dbox'}[2], $g->{'dbox'}[1], $g->{'dbox'}[3], undef, "subbox grid='$j,$i'"));
         }
     }
+    if ($specialfh)
+    { print $specialfh "  </glyph>\n"; }
     return @res;
 }
 
+sub final
+{
+    if ($specialfh)
+    {
+        print $specialfh "</octaboxes>\n";
+        $specialfh->close();
+    }
+}
 
 __END__
 
@@ -415,7 +440,9 @@ fret - Font REporting Tool
 
 =head1 SYNOPSIS
 
-  fret [-p package] [-a ap.xml] [-f] [-g] [-i re] [-r] [-s size] [-q] font_file [out_file]
+  fret [-p package] [-a ap.xml] [-f] [-g] [-i re] [-r] [-s size] [-q]
+            font_file [out_file] [bounding_file]
+
 Generates a report on a font according to a particular package. In some
 contexts the package may be over-ridden. Paper size may also be specified.
 
@@ -425,7 +452,7 @@ If no out_file is given then out_file becomes font_file.pdf (removing .ttf
 if present)
 
   -a ap.xml     Attachment point database file
-  -b            Draw bounding octogon
+  -b            Draw bounding octogon. Outputs bounding file if specified.
   -f            Don't try to save memory on large fonts (>1000 glyphs)
   -g            Add one glyph per page report following summary report
   -h            Mode for glyph per page output. Bitfield:

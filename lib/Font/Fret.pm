@@ -157,6 +157,7 @@ EOT
     { $font = Font::TTF::Font->open($ARGV[0]) || die "Can't open font file $ARGV[0]"; }
     $pdf->create_file($ARGV[1]);
     process_font($package, $font, $pdf, $root, $maxx, $maxy, "a0", %opt);
+    $package->final();
     $pdf->close_file;
 }
 
@@ -1039,6 +1040,14 @@ sub overlay
     return [];
 }
 
+=head2 final
+
+Called at the very end to tidy things up in the package
+
+=cut
+
+sub final
+{ }
 
 
 =head1 AUTHOR
