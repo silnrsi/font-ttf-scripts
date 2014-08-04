@@ -7,16 +7,16 @@ use Pod::Usage;
 use Getopt::Long;
 use IO::String;
 
-our $VERSION = 0.05;	# BH      2011-08-18
+our $VERSION = 0.05;    # BH      2011-08-18
 #   Refine parameter handling to make it more flexible
-# $VERSION = 0.04;		# BH      2011-05-25
+# $VERSION = 0.04;      # BH      2011-05-25
 #   Permit export and update to use the magic words like "graphite"
-# $VERSION = 0.03;		# BH      2009-02-02
+# $VERSION = 0.03;      # BH      2009-02-02
 #   Added -update option (to force update of one or more tables)
 #       Had to change inport code to use memory files so update could work)
-# $VERSION = 0.02;		# BH      2008-06-27     
+# $VERSION = 0.02;      # BH      2008-06-27     
 #       Added -list option (outputs a list of tables from input font).
-# $VERSION = 0.01;		# BH      2007-11-04     First release
+# $VERSION = 0.01;      # BH      2007-11-04     First release
 
 
 # Regarding $CHAIN_CALL
@@ -71,7 +71,7 @@ foreach my $tag (\@deletes, \@updates, \@exports, \@imports)
         }
         elsif (m/^all$/oi)
         {
-        	push @newtag, map {s/ //og; $_} sort grep {length($_) == 4} keys %{$f};
+            push @newtag, map {s/ //og; $_} sort grep {length($_) == 4} keys %{$f};
         }
         else
         {
@@ -93,16 +93,16 @@ if ($list)
 {
     foreach (sort grep {length($_) == 4} keys %{$f})
     {
-    	if ($verbose)
-    	{
-    		printf "%4s  csum = %08X  off = %7d  len = %6d", $_, $f->{$_}{' CSUM'}, $f->{$_}{' OFFSET'}, $f->{$_}{' LENGTH'};
-    		printf "  zlen = %6d", $f->{$_}{' ZLENGTH'} if defined($f->{$_}{' ZLENGTH'}) and $f->{$_}{' ZLENGTH'} != $f->{$_}{' LENGTH'};
-    		print "\n";
-    	}
-    	else
-    	{
-    		print "$_\n";
-    	}
+        if ($verbose)
+        {
+            printf "%4s  csum = %08X  off = %7d  len = %6d", $_, $f->{$_}{' CSUM'}, $f->{$_}{' ORIGINALOFFSET'} || $f->{$_}{' OFFSET'}, $f->{$_}{' LENGTH'};
+            printf "  zlen = %6d", $f->{$_}{' ZLENGTH'} if defined($f->{$_}{' ZLENGTH'}) and $f->{$_}{' ZLENGTH'} != $f->{$_}{' LENGTH'};
+            print "\n";
+        }
+        else
+        {
+            print "$_\n";
+        }
     }
 }
 
@@ -122,9 +122,9 @@ for (@imports)
     }
     unless ($fname)
     {
-    	$fname = $tag;
-    	$fname =~ s/[^a-zA-Z0-9]/_/og;	# In particular this maps OS/2 to OS_2
-    	$fname = "$ARGV[0].$fname.dat";
+        $fname = $tag;
+        $fname =~ s/[^a-zA-Z0-9]/_/og;  # In particular this maps OS/2 to OS_2
+        $fname = "$ARGV[0].$fname.dat";
     }
     $fname =~ s/[*?"<>|]//oig;      # "Characters disallowed in filenames
     
@@ -154,9 +154,9 @@ for (@exports)
 
     unless ($fname)
     {
-    	$fname = $tag;
-    	$fname =~ s/[^a-zA-Z0-9]/_/og;	# In particular this maps OS/2 to OS_2
-    	$fname = "$ARGV[0].$fname.dat";
+        $fname = $tag;
+        $fname =~ s/[^a-zA-Z0-9]/_/og;  # In particular this maps OS/2 to OS_2
+        $fname = "$ARGV[0].$fname.dat";
     }
     $fname =~ s/[*?"<>|]//oig;      # "Characters disallowed in filenames
     
@@ -172,14 +172,21 @@ for (@exports)
 
     # Get the data directly
 
-    # OK, I don't use read_dat() because tables like head and maxp have already
-    # been read and thus read_dat() will noop. 
-    # If we ever implement CHAIN_CALL this has got to be fixed up, but for 
-    # now we can hack it:
+    # For tables that have already been read we cannot use read_dat() so
+    # we read the data directly. (it will already have been uncompressed if needed).
+    # For tables that have not yet been read, use read_dat so they get uncompressed. 
+    # If we ever implement CHAIN_CALL this may need to be altered.
 
     my $dat;
-    $f->{$tag}{' INFILE'}->seek($f->{$tag}{' OFFSET'}, 0);
-    $f->{$tag}{' INFILE'}->read($dat, $f->{$tag}{' LENGTH'});
+    if ($f->{$tag}{' read'})
+    {
+        $f->{$tag}{' INFILE'}->seek($f->{$tag}{' OFFSET'}, 0);
+        $f->{$tag}{' INFILE'}->read($dat, $f->{$tag}{' LENGTH'});
+    } else
+    {
+        $f->{$tag}->read_dat;
+        $dat = $f->{$tag}{' dat'};
+    }
 
     # Export the table
     open(OUT, ">" . $fname) or die "Couldn't open '$fname' for writing. ";
@@ -226,10 +233,8 @@ for my $tag (keys %importeddata)
     $f->{$tag}{' INFILE'} = $fh;
     $f->{$tag}{' OFFSET'} = 0;
     $f->{$tag}{' LENGTH'} = bytes::length($importeddata{$tag});
-    
-    # Now we can set the data
-    # $f->{$tag}{' dat'} = $importeddata{$tag};
-    # $f->{$tag}{' read'} = 0;    # Make sure ' dat' is written to file. (Fix this up for CHAIN_CALL)
+
+    $f->{$tag}{' read'} = 0;    # Make sure correct data is written to file. (Fix this up for CHAIN_CALL)
 }
 
 # Finally rebuild any tables in the update list
@@ -241,46 +246,46 @@ for (@updates)
     my $tag = sprintf('%-4.4s', $_);
     unless (defined $f->{$tag})
     {
-    	warn ("No '$tag' table found -- cannot update\n");
+        warn ("No '$tag' table found -- cannot update\n");
     }
     else
     {
-	    if ($tag eq 'loca' or $tag eq 'glyf')
-	    {
-	    	# loca and glyf tables are interrelated. To update either, we must
-	    	# update both. But we only need to do this once.
-	    	
-	    	# make sure the other table is present:
-	    	my $othertag = $tag eq 'loca' ? 'glyf' : 'loca';
-	    	unless (defined $f->{$othertag})
-	    	{
-	    		warn ("No '$othertag' table found -- cannot update '$tag'\n");
-	    	}
-	    	elsif (!$f->{'loca'}->dirty)	# checks and sets dirty -- we only do this block one time
-	    	{
-	    		$f->{'glyf'}->read;  # forces reading of loca as well.
-	    	
-		        # read_dat every glyph
-		        $f->{'loca'}->read->glyphs_do ( 
-				    sub {
-				        my ($g, $gid) = @_;
-				        $g->read_dat;
-				    }
-				);
-				# Now dirty 'head' to fix all the bounding boxes
-				$f->{'head'}->dirty;
-				
-				$needupdate=1;
-		    }
-	    }
-	    else
-	    {
-	    	# other tables are simpler:
-	   	    $f->{$tag}->read->dirty(1);
-			$needupdate=1;
-	   	}
+        if ($tag eq 'loca' or $tag eq 'glyf')
+        {
+            # loca and glyf tables are interrelated. To update either, we must
+            # update both. But we only need to do this once.
+            
+            # make sure the other table is present:
+            my $othertag = $tag eq 'loca' ? 'glyf' : 'loca';
+            unless (defined $f->{$othertag})
+            {
+                warn ("No '$othertag' table found -- cannot update '$tag'\n");
+            }
+            elsif (!$f->{'loca'}->dirty)    # checks and sets dirty -- we only do this block one time
+            {
+                $f->{'glyf'}->read;  # forces reading of loca as well.
+            
+                # read_dat every glyph
+                $f->{'loca'}->read->glyphs_do ( 
+                    sub {
+                        my ($g, $gid) = @_;
+                        $g->read_dat;
+                    }
+                );
+                # Now dirty 'head' to fix all the bounding boxes
+                $f->{'head'}->dirty;
+                
+                $needupdate=1;
+            }
+        }
+        else
+        {
+            # other tables are simpler:
+            $f->{$tag}->read->dirty(1);
+            $needupdate=1;
+        }
 
-	}
+    }
 }
 $f->update if $needupdate;
 
