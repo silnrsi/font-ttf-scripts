@@ -160,6 +160,7 @@ sub out_classes
 
         $fh->print("cn${name}Dia = (");
         $count = 0; $sep = '';
+        $self->{'hasnclass'}{$l} = 0;
         for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
         {
             $psname = $f->{'post'}{'VAL'}[$c];
@@ -169,6 +170,7 @@ sub out_classes
             next if (defined $glyphs->[$c]{'props'}{'GDL_order'} && $glyphs->[$c]{'props'}{'GDL_order'} <= 1);
             next unless (vec($self->{'ismarks'}, $c, 1));
             $fh->print("$sep$glyphs->[$c]{'name'}");
+            $self->{'hasnclass'}{$l} = 1;
             if (++$count % 8 == 0)
             { $sep = ",\n    "; }
             else
@@ -418,7 +420,7 @@ EOT
     foreach $p (keys %{$lists})
     {
         next if ($p =~ m/^_/o);
-        $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ opt4(cnTakes${p}Dia) _ {user1 == 0};\n");
+        $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ " . ($self->{'hasnclass'}{$p} ? "opt4(cnTakes${p}Dia) " : "") . "_ {user1 == 0};\n");
     }
     $fh->print("endpass;\nendtable;\n");
 }
