@@ -236,11 +236,11 @@ for ($i = 0; $i < $struct->{'numg'}; $i++)
     next if ($char->{'used'});
 
     $char->{'gnum'} = $design->{'numg'}++;
-    foreach ($char->{'lines'})
+    foreach (@{$char->{'lines'}})
     {
         if (m/^Encoding:\s+/o)
         {
-            $_ = sprintf("Encoding: %d %04X %d\n", $char->{'encoded'}, $char->{'uni'}[0], $char->{'gnum'});
+            $_ = sprintf("Encoding: %d %04X %d\n", $char->{'gnum'}, $char->{'uni'}[0], $char->{'gnum'});
             last;
         }
     }
