@@ -27,7 +27,12 @@ my $namet = $f->{'name'}->read;
 my $gsubt = $f->{'GSUB'}->read;
 my $cmapt = $f->{'cmap'}->read;
 
-my ($featname, $nametype,$lastnid, %namestrings, @idlist);
+my ($featname, 
+	$nametype,
+	$lastnid, 
+	%namestrings,	# Hash, indexed by a name string, yielding array identifying all name table records that match this name string 
+								#			(where name table records are identified by an array: [$nid,$pid,$eid,$lid])
+	@idlist);
 
 if ($opt_d)
 {
@@ -37,7 +42,7 @@ if ($opt_d)
   
   foreach $feat (keys %{$gfeats})
   {
-    if ($feat ne 'FEAT_TAGS') {$gfeats->{$feat}{'PARMS'}=''}
+    if ($feat ne 'FEAT_TAGS') {delete $gfeats->{$feat}{'PARMS'}}
   }
   
 }
@@ -109,7 +114,7 @@ NID: foreach $nid(256 .. $lastnid){
       }
       elsif ($tag eq "name")
       {
-         if (not $featname) { xmlerror($xp, $tag, "Name element outside a cvar or sset element") ; return }
+        if (not $featname) { xmlerror($xp, $tag, "Name element outside a cvar or sset element") ; return }
         $nametype = $attrs{'type'};
         if (not $nametype) {$nametype="uilabel"}
         if (not $nametype =~ /^uilabel$|^tooltip$|^sampletext$/) { xmlerror($xp, $tag, "Invalid type attribute of $nametype") ; return }
@@ -195,74 +200,80 @@ NID: foreach $nid(256 .. $lastnid){
 
 # Now ready to start work
 
-   my ($ctrlitem, $gfeat, $ftype, $lang);
-   foreach $featname (sort keys %{$ctrl})
-   {
-     $gfeat=$gsubt->{'FEATURES'}{$featname};
-     if (not $gfeat){ print "No GSUB feature exists for $featname \n"; next }
-     
-     # Read existing feature parameters if they exist, or create a new one
-     $ctrlitem=$ctrl->{$featname};
-     $ftype=$ctrlitem->{'type'};     
-     
-     if ($ftype eq "sset")
+  my ($ctrlitem, $gfeat, $ftype, $lang);
+  foreach $featname (sort keys %{$ctrl})
+  {
+    my @ftags = grep {/^$featname/} keys ($gsubt->{'FEATURES'});
+    print "No GSUB feature exists for $featname \n" unless scalar(@ftags);
+    foreach my $ftag (@ftags)
     {
-       if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Sset->new() }
-       # First look for the string based on english name string
-       my $nameid=$ctrlitem->{'uilabel'}{'id'} || findstring($ctrlitem->{'uilabel'}{'nstrings'}{'en'} ); 
-       # Now add or update the strings if needed
-       addstrings ( $nameid, $ctrlitem->{'uilabel'}{'nstrings'});
-       $gfeat->{'PARMS'}{'UINameID'} = $nameid;
-    }
-         
-     else # $ftype must now be "cvar"
-     {
-       if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Cvar->new() }
-       # Process standard name strings
-       foreach $nametype ("uilabel", "tooltip", "sampletext")
-       {
-         if ($ctrlitem->{$nametype})
-         {
-           my $nameid=$ctrlitem->{$nametype}{'id'} || findstring($ctrlitem->{$nametype}{'nstrings'}{'en'} );
-           addstrings ( $nameid, $ctrlitem->{$nametype}{'nstrings'});
-           $gfeat->{'PARMS'}{$cvarmap{$nametype}} = $nameid;
-         }
-       }
-       # Process named parameters.  There should be firstid + numparam, firstid + npstrings or just npstrings
-       # If both numparam and npstrings are there, numparam is overwritten by number of npstrings
-       if ($ctrlitem->{'numparam'} || $ctrlitem->{'npstrings'})
-       {
-         my $firstid=$ctrlitem->{'firstid'};
-         my $numparam=$ctrlitem->{'numparam'};
-         if ($ctrlitem->{'npstrings'}) { $numparam=$#{$ctrlitem->{'npstrings'}{'en'}}+1 }
-         if (not $firstid)
-         { # Match strings if possible; otherwise add to end to name table
-           if ($namestrings{$ctrlitem->{'npstrings'}{'en'}[0]})
-           { # For each name table string that matches the first npstring, see if following name table strings match remainder
-             my @nsitem = @{$namestrings{$ctrlitem->{'npstrings'}{'en'}[0]}};
-             my ($i, $j);
-iloop:       foreach $i (0 .. $#nsitem)
-             {
-               ($nid,$pid,$eid,$lid) = @{$nsitem[$i]};
-               foreach $j (1 .. $numparam)
-               {
-                 if (not $ctrlitem->{'npstrings'}{'en'}[$j] = $namet->{'strings'}[$nid+$j][$pid][$eid]{$lid} )
-                 {
-                   next iloop
-                 }
-               }
-               $firstid=$nid;
-               last;
-             }
-           }
-         }
-         if (not $firstid) {$firstid=$lastnid+1} # Name strings don't match, so need to add at end of name table
-         if ($ctrlitem->{'npstrings'}) { addstrings($firstid, $ctrlitem->{'npstrings'}) }
-         $gfeat->{'PARMS'}{'NumNamedParms'}    = $numparam;
-         $gfeat->{'PARMS'}{'FirstNamedParmID'} = $firstid;
-       }
-       if ($ctrlitem->{'characters'}) { $gfeat->{'PARMS'}{'Characters'}=$ctrlitem->{'characters'}} 
-     }  
+      #print "processing $ftag...\n";
+      $gfeat=$gsubt->{'FEATURES'}{$ftag};
+      
+      # Read existing feature parameters if they exist, or create a new one
+      $ctrlitem=$ctrl->{$featname};
+      $ftype=$ctrlitem->{'type'};     
+      
+      if ($ftype eq "sset")
+      {
+        if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Sset->new() }
+        # First look for the string based on english name string
+        my $nameid=$ctrlitem->{'uilabel'}{'id'} || findstring($ctrlitem->{'uilabel'}{'nstrings'}{'en'} ); 
+        # Now add or update the strings if needed
+        addstrings ( $nameid, $ctrlitem->{'uilabel'}{'nstrings'});
+        $gfeat->{'PARMS'}{'UINameID'} = $nameid;
+      }
+          
+      else # $ftype must now be "cvar"
+      {
+        if (not $gfeat->{'PARMS'}) { $gfeat->{'PARMS'}=Font::TTF::Features::Cvar->new() }
+        # Process standard name strings
+        foreach $nametype ("uilabel", "tooltip", "sampletext")
+        {
+          if ($ctrlitem->{$nametype})
+          {
+            my $nameid=$ctrlitem->{$nametype}{'id'} || findstring($ctrlitem->{$nametype}{'nstrings'}{'en'} );
+            addstrings ( $nameid, $ctrlitem->{$nametype}{'nstrings'});
+            $gfeat->{'PARMS'}{$cvarmap{$nametype}} = $nameid;
+          }
+        }
+        # Process named parameters.  There should be firstid + numparam, firstid + npstrings or just npstrings
+        # If both numparam and npstrings are there, numparam is overwritten by number of npstrings
+        if ($ctrlitem->{'numparam'} || $ctrlitem->{'npstrings'})
+        {
+          my $firstid=$ctrlitem->{'firstid'};
+          my $numparam=$ctrlitem->{'numparam'};
+          if ($ctrlitem->{'npstrings'}) { $numparam=$#{$ctrlitem->{'npstrings'}{'en'}}+1 }
+          if (not $firstid)
+          { # Match strings if possible; otherwise add to end to name table
+            if ($namestrings{$ctrlitem->{'npstrings'}{'en'}[0]})
+            { # For each name table string that matches the first npstring, see if following name table strings match remainder
+              my @nsitem = @{$namestrings{$ctrlitem->{'npstrings'}{'en'}[0]}};
+              my ($i, $j);
+iloop:        foreach $i (0 .. $#nsitem)
+              {
+                ($nid,$pid,$eid,$lid) = @{$nsitem[$i]};
+                foreach $j (1 .. $numparam-1)
+                {
+                  if (not $ctrlitem->{'npstrings'}{'en'}[$j] eq $namet->{'strings'}[$nid+$j][$pid][$eid]{$lid} )
+                  {
+                    next iloop;
+                  }
+                }
+                $firstid=$nid;
+                last;
+              }
+              print "Didn't find (" . join(', ', map { sprintf("'%s'", $_)} @{$ctrlitem->{'npstrings'}{'en'}}) . ") -- adding them\n" unless $firstid;
+            }
+          }
+          if (not $firstid) {$firstid=$lastnid+1} # Name strings don't match, so need to add at end of name table
+          if ($ctrlitem->{'npstrings'}) { addstrings($firstid, $ctrlitem->{'npstrings'}) }
+          $gfeat->{'PARMS'}{'NumNamedParms'}    = $numparam;
+          $gfeat->{'PARMS'}{'FirstNamedParmID'} = $firstid;
+        }
+        if ($ctrlitem->{'characters'}) { $gfeat->{'PARMS'}{'Characters'}=$ctrlitem->{'characters'}} 
+      }
+    }  
   }
 }
 
@@ -285,10 +296,10 @@ sub xmlerror
 sub findstring
 {
   my $string = $_[0];
-if ($namestrings{$string}) 
+if (exists $namestrings{$string}) 
   { return $namestrings{$string}->[0][0] }
 else
-  { return $lastnid+1 }
+  { print "Didn't find '$_[0]' -- adding it\n"; return $lastnid+1 }
 }
 
 # add strings to the name table. NameID may have been set to an existing NameID or to $Lastnid+1
@@ -325,6 +336,8 @@ sub addstrings
   $lastnid=$#{$namet->{'strings'}};
 }
 
+=encoding utf8
+ 
 =head1 TITLE
 
 ttfeatparms - adds feature parameters to Opentype stylistic set or character variants features
@@ -448,6 +461,12 @@ English string.
 
     </featureparams>
 
+
+=head1 BUGS
+
+Could share featureparam structure for the same cvxx/ssxx feature 
+in multiple languages or scripts, but instead builds separate structure
+for each.
 
 =head1 AUTHOR
 
