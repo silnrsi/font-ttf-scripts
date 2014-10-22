@@ -1,4 +1,4 @@
-package Font::TTF::Scripts::afdko;
+package Font::TTF::Scripts::Fea;
 
 use Font::TTF::Font;
 use Font::TTF::Scripts::AP;
