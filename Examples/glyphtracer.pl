@@ -159,15 +159,19 @@ glyph in the GlyphClassDef, AttachList, LigatureCarretList, MarkAttachClassDef a
 
 =cut
 
-my (%MarkFilterSets);
+my (%MarkFilterSets, $MarkAttachClass);
 
 if ($f->{'GDEF'})
 {
 	my $t = $f->{'GDEF'}->read;
 	print "GDEF GlyphClassDef = $t->{'GLYPH'}{'val'}{$gid}\n" if exists $t->{'GLYPH'}{'val'}{$gid};
-	print "GDEF AttachList is defined\n" if exists $t->{'ATTACH'}{'COVERAGE'}{'val'}{$gid};
+	print "GDEF MarkAttachList is defined\n" if exists $t->{'ATTACH'}{'COVERAGE'}{'val'}{$gid};
 	print "GDEF LigatureCarretList is defined\n" if exists $t->{'LIG'}{'COVERAGE'}{'val'}{$gid};
-	print "GDEF MarkAttachClassDef = $t->{'MARKS'}{'val'}{$gid}\n" if exists $t->{'MARKS'}{'val'}{$gid};
+	if (exists $t->{'MARKS'}{'val'}{$gid})
+	{
+		$MarkAttachClass = $t->{'MARKS'}{'val'}{$gid};
+		print "GDEF MarkAttachClassDef = $MarkAttachClass\n";
+	}
 	if ($t->{'MARKSETS'})
 	{
 		foreach my $i (0 .. $#{$t->{'MARKSETS'}})
@@ -203,6 +207,8 @@ foreach my $tag (qw(GSUB GPOS))
 		my $found = 0;
 		if ($l->{'FLAG'} & 0x0010 && exists ($MarkFilterSets{$l->{'FILTER'}}))
 		{ print "$tag lookup[$li] MarkFilterSet\n"; $found = 1; }
+		if ($MarkAttachClass && ($l->{'FLAG'} >> 8) == $MarkAttachClass)
+		{ print "$tag lookup[$li] MarkAttachmentClass\n"; $found = 1; }
 		foreach my $si (0 .. $#{$l->{'SUB'}})
 		{
 			my $s = $l->{'SUB'}[$si];
