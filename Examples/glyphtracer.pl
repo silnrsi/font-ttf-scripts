@@ -194,6 +194,7 @@ foreach my $tag (qw(GSUB GPOS))
 {
 	next unless $f->{$tag};
 	my %lmap;	#mapping of referenced lookups to their parent (contextual chaining)
+	my @found;	# List of lookups that directly reference the target glyph
 	my $t = $f->{$tag}->read;
 	foreach my $li (0 .. $#{$t->{'LOOKUP'}})
 	{
@@ -255,36 +256,54 @@ foreach my $tag (qw(GSUB GPOS))
 			{print "$tag lookup[$li.$si] DeltaID\n"; $found = 1; }
 		}
 		
-		if ($found)
+		push @found, $li if $found;	# For now just keep a list of direct references.
+	}
+	
+	foreach my $li (@found)
+	{
+		# Some lookups referenced the glyph -- find out where the lookups are used:
+		my @where;
+		for my $stag (sort {$a cmp $b}keys $t->{'SCRIPTS'})
 		{
-			my @where;
-			for my $stag (sort {$a cmp $b}keys $t->{'SCRIPTS'})
+			my $s = $t->{'SCRIPTS'}{$stag};
+			for my $ltag ('DEFAULT', @{$s->{'LANG_TAGS'}})
 			{
-				my $s = $t->{'SCRIPTS'}{$stag};
-				for my $ltag ('DEFAULT', @{$s->{'LANG_TAGS'}})
+				my $lang = $s->{$ltag};
+				foreach my $ftag (@{$lang->{'FEATURES'}})
 				{
-					my $lang = $s->{$ltag};
-					# print "$stag/$ltag: ", join(",", @{$lang->{'FEATURES'}}), "\n";
-					foreach my $ftag (@{$lang->{'FEATURES'}})
+					#print "$stag/$ltag/$ftag lookups: ", join(',', @{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}}), "\n";
+					#print "  found ", scalar(grep($l == $_, @{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}})), "\n";
+					my $where = $ftag;
+					$where =~ s/ .*$//;
+					$where = "$stag/$ltag/$where";
+					$where =~ s/ //g;
+					foreach my $from (@{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}})
 					{
-						#print "$stag/$ltag/$ftag lookups: ", join(',', @{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}}), "\n";
-						#print "  found ", scalar(grep($l == $_, @{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}})), "\n";
-						if (scalar(grep($li == $_ || exists($lmap{$li}{$_}), @{$t->{'FEATURES'}{$ftag}{'LOOKUPS'}})))
-						{
-							my $where = $ftag;
-							$where =~ s/ .*$//;
-							$where = "$stag/$ltag/$where";
-							$where =~ s/ //g;
-							push @where, $where;
-						}
+						my $route = lookupRoute ($from, $li);
+						push @where, "$where -> lookup $route" if $route;
 					}
 				}
 			}
-			print "$tag lookup[$li] used:\n    ", scalar(@where) ? join ("\n    ", @where) : 'nowhere', "\n";
 		}
+		if (scalar(@where))
+		{	map {print "$tag $_\n"} @where;	}
+		else
+		{	print "$tag lookup[$li] UNUSED!\n";	}
+	}
+
+	# recursively identify route through chained lookups
+	sub lookupRoute
+	{
+		my ($from, $to) = @_;
+		return "$to" if $from == $to;
+		foreach my $parent (keys %{$lmap{$to}})
+		{
+			my $route = lookupRoute($from, $parent);
+			return "$route->$to" if $route;
+		}
+		return undef;
 	}
 }
-
 
 
 # Done
