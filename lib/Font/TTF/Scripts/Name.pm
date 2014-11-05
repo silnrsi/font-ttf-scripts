@@ -1,7 +1,10 @@
 package Font::TTF::Scripts::Name;
 
+use strict;
 require Exporter;
 use Encode;
+
+use vars qw(@ISA @EXPORT @EXPORT_OK);
 
 @ISA = qw(Exporter);
 @EXPORT = qw(ttfname);
@@ -20,12 +23,12 @@ sub ttfname
             my ($n1, $n2) = split('\.\.');
             $n2 = $n1 unless defined $n2;
             while ($n1 <= $n2)
-            { delete $name->{'strings'}[$n1++]; }
+            { $name->remove_name($n1++); }
         }
-        return $font;
+        $name->dirty;
     }
 
-    foreach $k (qw(n f))
+    foreach my $k (qw(n f w))
     {
         $opts{$k} = decode('utf-8', $opts{$k}) if (defined $opts{$k});
     }
@@ -49,8 +52,9 @@ sub ttfname
     if (defined $opts{'t'})
     {
         $name->set_name($opts{'t'}, $opts{'n'}, $opts{'l'}, @cover);
+        $name->dirty;
     }
-    else
+    elsif ($opts{'n'} || $opts{'f'})
     {
         my ($subfamily) = $opts{'w'} || $name->find_name(2);
         my ($family, $full, $post, $unique, @time);
@@ -100,6 +104,7 @@ sub ttfname
         $name->set_name(16, $family, $opts{'l'}, @cover);
         $name->set_name(17, $subfamily, $opts{'l'}, @cover);
         $name->set_name(18, $full, $opts{'l'}, @cover);
+        $name->dirty;
     }
     return $font;
 }

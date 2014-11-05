@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use strict;
 use Font::TTF::Font;
 use Getopt::Std;
 use Pod::Usage;
@@ -11,14 +12,18 @@ our ($if, $of, %opts);
 unless ($CHAIN_CALL)
 {
     getopts('f:hl:n:pqr:s:t:w:', \%opts);
+    
+    # NB: -q formerly meant "disable signon message" but is no longer used
+    #     (as there isn't a signon message). However permitted for backwards
+    #     compatibility.
 
-    unless (defined $ARGV[1] || defined $opts{h})
+    unless (defined $ARGV[1] || defined $opts{'h'})
     {
         pod2usage(1);
         exit;
     }
 
-    if ($opts{h})
+    if ($opts{'h'})
     {
         pod2usage( -verbose => 2, -noperldoc => 1);
         exit;
@@ -35,29 +40,30 @@ unless ($CHAIN_CALL)
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfname - renames font files
 
 =head1 SYNOPSIS
 
-  ttfname [-f "full_name"] -n "name" [-t num] [-q] infile.ttf outfile.ttf
+  ttfname [-n "name" | -s filename] [-t num] options infile.ttf outfile.ttf
+  ttfname -f "full_name"  options infile.ttf outfile.ttf
+
 Renames the TTF with the given name and outputs the newly named font to
 out.ttf.
 
 =head1 OPTIONS
 
-  -f "name"   specifies new full name (optional) as opposed to the
-              default calculated form.
+  -n "name"   specifies new font family name.
+  -f "name"   specifies new full name.
+  -s filename overrides -n and gets string from file. Useful for -t
+
   -l lang     language number to use (default all langs)
               if specified name entries will be added for all platforms and
                   encodings covered by the cmap if not already there
-  -n "name"   specifies new font family name (not optional)
   -p          Don't update postscript font name
-  -q          disable signon message
-  -r num      Removes all strings of the given ids. Space- or comma-separated
+  -r nums     Removes all strings of the given ids. Space- or comma-separated
               ids or id ranges (denoted by "..") may be specified.
-  -s filename overrides -n and gets string from file. Useful for -t
   -t num      overrides the normal naming areas to change another
               string -f becomes inactive. Use -l as well to create entry.
   -w "name"   overrides subfamily in the font (think weight). So a full name
