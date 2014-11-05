@@ -46,11 +46,7 @@ sub ttfname
         $opts{'l'} ||= 'en-US';
     }
 
-    if (defined $opts{'d'})
-    {
-        $name->remove_name($opts{'d'});
-    }
-    elsif (defined $opts{'t'})
+    if (defined $opts{'t'})
     {
         $name->set_name($opts{'t'}, $opts{'n'}, $opts{'l'}, @cover);
     }

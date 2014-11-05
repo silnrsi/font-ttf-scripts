@@ -10,7 +10,7 @@ our ($if, $of, %opts);
 
 unless ($CHAIN_CALL)
 {
-    getopts('d:f:hl:n:pqr:s:t:w:', \%opts);
+    getopts('f:hl:n:pqr:s:t:w:', \%opts);
 
     unless (defined $ARGV[1] || defined $opts{h})
     {
@@ -47,7 +47,6 @@ out.ttf.
 
 =head1 OPTIONS
 
-  -d num      removes the given string number, -n not required and ignored
   -f "name"   specifies new full name (optional) as opposed to the
               default calculated form.
   -l lang     language number to use (default all langs)
