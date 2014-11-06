@@ -11,22 +11,22 @@ my (@modules, $prog, $opt_v, $output, $exe);
 
 while(scalar (@ARGV) >= 0)
 {
-	my $arg = shift;
-	if ($arg =~ /^-\?/o)
-	{
-		pod2usage( -verbose => 2, -noperldoc => 1);
-		exit;
-	}
-	
-	if ($arg =~ /^-([mM])([^-].*)$/o)
-	{ push @modules, [ $1, $2 ]; }	# Save -m or -M and their args for later
-	elsif ($arg =~ /^-e$/o)
-	{ $prog .= shift() . "\n"; }	# Concatinate -e arguments -- that's the user's program.
-	elsif ($arg =~ /^-o(.*)$/o)
-	{
-		die "Only one -o option allowed." if defined $output;
-		$output = $1 || shift;		# Remember outputfile
-	}
+    my $arg = shift;
+    if ($arg =~ /^-\?/o)
+    {
+        pod2usage( -verbose => 2, -noperldoc => 1);
+        exit;
+    }
+    
+    if ($arg =~ /^-([mM])([^-].*)$/o)
+    { push @modules, [ $1, $2 ]; }  # Save -m or -M and their args for later
+    elsif ($arg =~ /^-e$/o)
+    { $prog .= shift() . "\n"; }    # Concatinate -e arguments -- that's the user's program.
+    elsif ($arg =~ /^-o(.*)$/o)
+    {
+        die "Only one -o option allowed." if defined $output;
+        $output = $1 || shift;      # Remember outputfile
+    }
     elsif ($arg =~ m/^-v$/o)
     { $opt_v = 1; }
     else
@@ -42,26 +42,26 @@ pod2usage(-msg => "missing infont.ttf parameter\n", -verbose => 1) unless define
 
 foreach (@modules)
 {
-	my ($c, $m) = @{$_};	# $c is either 'm' or 'M'; $m is the module name plus any extra info user gave
-	
-	$m =~ s/^\s+//o;
-	$m =~ s/\s+$//o;
-	
-	my $res;
-		
-	if ($m =~ /^(\S+)\s*=\s*(.*)$/o)		# 'module=something'
-	{
-		eval "\$res = require $1; $1->import(split(/,/,'$2'));" ;
-	}
-	elsif ($m =~ /^(\S+)\s+(.*)$/o)			# 'module something'
-	{
-		eval "\$res = require $1; $1->import($2);" ;
-	}
-	else			 	 					# 'module'  
-	{
-		eval "\$res = require $m; $m->import unless \$c eq 'm';"  ;
-	}	
-	die "Couldn't find module '$m'\n" unless $res;
+    my ($c, $m) = @{$_};    # $c is either 'm' or 'M'; $m is the module name plus any extra info user gave
+    
+    $m =~ s/^\s+//o;
+    $m =~ s/\s+$//o;
+    
+    my $res;
+        
+    if ($m =~ /^(\S+)\s*=\s*(.*)$/o)        # 'module=something'
+    {
+        eval "\$res = require $1; $1->import(split(/,/,'$2'));" ;
+    }
+    elsif ($m =~ /^(\S+)\s+(.*)$/o)         # 'module something'
+    {
+        eval "\$res = require $1; $1->import($2);" ;
+    }
+    else                                    # 'module'  
+    {
+        eval "\$res = require $m; $m->import unless \$c eq 'm';"  ;
+    }   
+    die "Couldn't find module '$m'\n" unless $res;
 }
 
 
@@ -70,12 +70,12 @@ my ($f);
 
 unless (defined $prog)
 {
-	# Take first next argument as a script
-	$prog = shift @ARGV;
-	my ($fh) = IO::File->new("< $prog") || die "Can't open '$prog': ";
-	local $/;
-	$prog = <$fh>;
-	$fh->close;
+    # Take first next argument as a script
+    $prog = shift @ARGV;
+    my ($fh) = IO::File->new("< $prog") || die "Can't open '$prog': ";
+    local $/;
+    $prog = <$fh>;
+    $fh->close;
 }
 {
     no strict;
@@ -123,6 +123,7 @@ foreach my $a (@ARGV)
             $f->update;
             $f->out($outfile) || die "Failed writing output font file '$outfile': $!\n";
         }
+        $f->release;
     }
 }
 
@@ -195,7 +196,7 @@ Martin Hosken L<Martin_Hosken@sil.org>
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+Copyright (c) 1998-2014, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
