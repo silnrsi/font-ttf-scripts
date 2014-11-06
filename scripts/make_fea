@@ -7,7 +7,7 @@ use Pod::Usage;
 
 our(%opts);
 GetOptions(\%opts, 'ap|a=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
-                'omitaps|o=s', 'renameaps|r', 
+                'omitaps|o=s', 'renameaps|r', 'classfile|c=s', 'classprops', 
                 'z=i', 'mark|m=s');
 
 unless ($ARGV[1] || $opts{'help'})
@@ -73,6 +73,7 @@ if ($opts{'renameaps'})
 
 $f->{'vecs'} = {};
 
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_classes($outfh);
 $f->out_pos_lookups($outfh);

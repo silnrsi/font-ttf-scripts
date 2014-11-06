@@ -1856,6 +1856,8 @@ sub addmappedclass
 sub addrowsfor
 {
     my ($self, $pass, $cinfo, $cols, $len, $row, $parent, $total) = @_;
+    # $parent is the row of interest
+    # $row is the row leading to $parent
     my ($res);
 
     if ($len == 0)
@@ -1930,6 +1932,7 @@ sub remove_trail
     my (@glyphs) = (@{$glyphlist});
     my (@paths, @collist);
     my ($fsm) = $pass->{'fsm'};
+    my ($doit) = 0;
 
     # Identify columns to split and split them
     # test each collection of glyphs with a given column id against that complete
@@ -1953,9 +1956,13 @@ sub remove_trail
             { $i++; }
         }
         if (defined $cinfo->{'glyphcols'} and scalar @{$cinfo->{'glyphcols'}[$c]} != scalar @glist)
-        { $self->splitcol($c, \@glist, $pass, $cinfo); }
+        {
+            if ($self->splitcol($c, \@glist, $pass, $cinfo) != $c)
+            { $doit = 1; }
+        }
     }
 
+    return if (!$doit);
     # get a list of paths to trim. Each path includes the final row and is from to end to start
     my (%rowmap);
     my (%colhash) = map {$pass->{'colmap'}{$_} => 1} @{$glyphlist};
@@ -2018,10 +2025,17 @@ sub remove_trail
 sub splitcol
 {
     my ($self, $col, $removes, $pass, $cinfo) = @_;
-    my ($new) = $pass->{'numColumns'}++;
     my (%others) = map {$_ => 1} @{$removes};
-    $cinfo->{'glyphcols'}[$col] = [grep {!defined $others{$_}} @{$cinfo->{'glyphcols'}[$col]}];
-    $cinfo->{'glyphcols'}[$new] = [@{$removes}];
+    my ($olds) = [grep {!defined $others{$_}} @{$cinfo->{'glyphcols'}[$col]}];
+    my ($new);
+    if (scalar @$olds)
+    {
+        $cinfo->{'glyphcols'}[$col] = $olds;
+        $new = $pass->{'numColumns'}++;
+        $cinfo->{'glyphcols'}[$new] = [@{$removes}];
+    }
+    else
+    { return $col; }
 
     foreach my $r (@{$pass->{'fsm'}})
     {
