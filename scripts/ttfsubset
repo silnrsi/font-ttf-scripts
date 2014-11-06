@@ -1466,6 +1466,7 @@ sub finalise_pass
         $lastrule = $rulemap[$i];
         my (@rinfo) = $self->unpack_code($pass->{'actionCode'}[$i]);
         my ($c) = 0;
+        my ($deleterule) = 0;
         foreach my $r (@rinfo)
         {
             # update action code if needbe
@@ -1479,7 +1480,7 @@ sub finalise_pass
                     # so that only a subset of the column has a path to this rule. Edit the fsm accordingly.
                     # This will grow the fsm. But later deduping can shrink it again. Actually a good form of
                     # optimisation.
-                    $self->remove_trail($subsetter, $cinfo, $pass, $i, $c, 
+                    $deleterule |= $self->remove_trail($subsetter, $cinfo, $pass, $i, $c, $r->[2],
                         $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]})
                             if (defined $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]});
                     # update the action code
@@ -1500,9 +1501,20 @@ sub finalise_pass
             }
             # log which glyph attributes are actually referenced and delete the rest.
         }
-        push (@rules, $self->pack_code(\@rinfo));
+        if ($deleterule)
+        {
+            @rulemap = map {$_ == $lastrule ? -1 : ($_ > $lastrule ? $_ - 1 : $_)} @rulemap;
+            splice(@revrulemap, $lastrule, 1);
+            $lastrule--;
+        }
+        else
+        {    
+            push (@rules, $self->pack_code(\@rinfo));
+        }
     }
 
+    if (scalar @rules != scalar @revrulemap)
+    { die "rules and revrulemap are different lengths!"; }
     # rebuild startStates given some of them may have been deleted.
     for ($i = 0; $i < scalar @{$pass->{'startStates'}}; $i++)
     {
@@ -1710,7 +1722,7 @@ sub finalise_pass
     $pass->{'rulePreContexts'} = [@prectxts];
     $pass->{'actionCode'} = [@rules];
     $pass->{'constraintCode'} = [@ruleconstraints];
-    $pass->{'numRules'} = $numrules;
+    $pass->{'numRules'} = scalar @rules;
     return 1;
 }
 
@@ -1926,13 +1938,15 @@ sub addrowsfor
 # deduping later will take care of that.        
 sub remove_trail
 {
-    my ($self, $subsetter, $cinfo, $pass, $rule, $index, $glyphlist) = @_;
+    my ($self, $subsetter, $cinfo, $pass, $rule, $index, $col, $glyphlist) = @_;
     $index += $pass->{'rulePreContexts'}[$rule];
     my ($countback) = $pass->{'ruleSortKeys'}[$rule] - $index;
     my (@glyphs) = (@{$glyphlist});
+    my (%outmap) = map {$_ => 1} @glyphs;
+    my (%inmap) = map {$_ => 1} grep {!defined $outmap{$_}} @{$cinfo->{'glyphcols'}[$col]};
     my (@paths, @collist);
     my ($fsm) = $pass->{'fsm'};
-    my ($doit) = 0;
+    my ($deleteme) = (length(@glyphs) > 0);
 
     # Identify columns to split and split them
     # test each collection of glyphs with a given column id against that complete
@@ -1941,7 +1955,7 @@ sub remove_trail
     # through the fsm
     while (@glyphs)
     {
-        my (@glist, $newc);
+        my (@glist);
         my ($g) = shift(@glyphs);
         my ($c) = $pass->{'colmap'}{$g};
         push (@glist, $g);
@@ -1955,14 +1969,17 @@ sub remove_trail
             else
             { $i++; }
         }
-        if (defined $cinfo->{'glyphcols'} and scalar @{$cinfo->{'glyphcols'}[$c]} != scalar @glist)
+        my ($new) = $self->splitcol($c, \@glist, $pass, $cinfo);
+        $deleteme = 0 if ($new != $c);
+        foreach my $r (@{$cinfo->{'rules'}[$rule]})
         {
-            if ($self->splitcol($c, \@glist, $pass, $cinfo) != $c)
-            { $doit = 1; }
+            foreach my $p (keys %{$cinfo->{'rowbackrefs'}[$r]})
+            { $pass->{'fsm'}[$p][$new] = 0; }
         }
     }
 
-    return if (!$doit);
+    return $deleteme;
+
     # get a list of paths to trim. Each path includes the final row and is from to end to start
     my (%rowmap);
     my (%colhash) = map {$pass->{'colmap'}{$_} => 1} @{$glyphlist};
@@ -2028,7 +2045,7 @@ sub splitcol
     my (%others) = map {$_ => 1} @{$removes};
     my ($olds) = [grep {!defined $others{$_}} @{$cinfo->{'glyphcols'}[$col]}];
     my ($new);
-    if (scalar @$olds)
+    if (scalar @{$olds})
     {
         $cinfo->{'glyphcols'}[$col] = $olds;
         $new = $pass->{'numColumns'}++;
