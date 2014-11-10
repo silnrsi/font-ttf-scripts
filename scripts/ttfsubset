@@ -13,7 +13,7 @@ our $CHAIN_CALL;
 our %opts;
 our $f;
 
-our $DEBUG = 0;
+our $DEBUG = 1;
 
 unless($CHAIN_CALL)
 {
@@ -1210,6 +1210,8 @@ sub subset_silf
     # also do class reduction.
     $subsetter->{'silf'}{'classes'} = [];   # for each class a hash of new gid to new class index
     $subsetter->{'silf'}{'classmap'} = [];  # size of each class, -1 for a deleted class
+    my ($numlin) = $self->{'numLinearClasses'};
+    my (@linclasses, @nonlinclasses);
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
         my ($c) = $silf->{'classes'}[$i];
@@ -1218,24 +1220,39 @@ sub subset_silf
         if (scalar @newclass)
         {
             my ($i) = 0;
-            push (@{$subsetter->{'silf'}{'classes'}}, [@newclass]);
-            push (@{$subsetter->{'silf'}{'classmap'}}, $#{$subsetter->{'silf'}{'classes'}}); # does this $# really work?
-            if ($DEBUG)
+            if ($i < $numlin)
             {
-                print "class(".($#{$subsetter->{'silf'}{'classes'}}).") ";
-                print join(",", @newclass)."\n";
+                push (@linclasses, [@newclass]);
+                push (@{$subsetter->{'silf'}{'classmap'}}, $#linclasses);
+            }
+            else
+            {
+                push (@nonlinclasses, [@newclass]);
+                push (@{$subsetter->{'silf'}{'classmap'}}, -(scalar @nonlinclasses));
             }
         }
         else
         {
-            push (@{$subsetter->{'silf'}{'classmap'}}, -1);
+            push (@{$subsetter->{'silf'}{'classmap'}}, undef);
             --$silf->{'numLinearClasses'} if ($i < $silf->{'numLinearClasses'});
         }
         next unless (defined $subsetter->{'silf'}{'class_pairs'}{$i});
         # iterate over class pairs containing arrays of glyphs to create real classes in silf.class and replace
         # the class pairs entry with the id of that new class.
         while(my ($k,$v) = each %{$subsetter->{'silf'}{'class_pairs'}{$i}})
-        { $subsetter->{'silf'}{'class_pairs'}{$i}{$k} = [map {$self->addmappedclass($_, $subsetter)} @{$v}]; }
+        {
+            $self->addmappedclass($v->[0], \@linclasses);
+            $self->addmappedclass($v->[1], \@nonlinclasses);
+        }
+    }
+    @{$subsetter->{'silf'}{'classes'}} = (@linclasses, @nonlinclasses);
+    $silf->{'numLinearClasses'} = scalar @linclasses;
+    foreach my $r (@{$subsetter->{'silf'}{'classmap'}})
+    {
+        if (!defined $r)
+        { $r = -1; }
+        elsif ($r < 0)
+        { $r = $silf->{'numLinearClasses'} - $r; }
     }
 
     # see what other rules we can delete
@@ -1835,14 +1852,14 @@ sub delrow
 # returns the new class id
 sub addmappedclass
 {
-    my ($self, $class, $subsetter) = @_;
+    my ($self, $class, $classes) = @_;
     my ($l) = scalar @{$class};
     my (@m) = map {$subsetter->map_glyph($_)} @{$class};
 
-    for (my $i = 0; $i < @{$subsetter->{'silf'}{'classes'}}; $i++)
+    for (my $i = 0; $i < @{$classes}; $i++)
     {
         my ($nomatch) = 0;
-        my ($c) = $subsetter->{'silf'}{'classes'}[$i];
+        my ($c) = $classes->[$i];
         next unless (scalar @{$c} == $l);
         foreach (my $j = 0; $j < $l; $j++)
         {
@@ -1855,10 +1872,8 @@ sub addmappedclass
         return $i if (!$nomatch);
     }
     my ($i) = 0;
-    push (@{$subsetter->{'silf'}{'classes'}}, [@m]);
-    if ($DEBUG)
-    { print "class(" . $#{$subsetter->{'silf'}{'classes'}} . ") " . join(",", @m) . ".\n"; } 
-    return $#{$subsetter->{'silf'}{'classes'}};
+    push (@{$classes}, [@m]);
+    return $#{$classes};
 }
 
 # given a list of columns, a starting row and a number of steps backwards to walk,
