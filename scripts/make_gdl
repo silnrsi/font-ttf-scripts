@@ -42,7 +42,7 @@ if ($opts{'help'})
 my %options;
 
 # Parse -e file if supplied
-if ($opts{'excludes'}) 
+if ($opts{'empty'}) 
 {
     my @glist;
 	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
