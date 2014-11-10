@@ -7,25 +7,25 @@ use Pod::Usage;
 
 our(%opts);
 GetOptions(\%opts, 
-	'ap|a=s', 
-	# 'b',				# used in make_volt
-	'classfile|c=s', 
-	'classprops',
-	# 'autodefines|d',	# used in make_gdl
-	# 'define|D=s%', 	# used in make_gdl
-	'empty|e=s', 
-	# 'forceadd|f=i', 	# used in make_volt
-	'help|h', 
-	'include|i=s@', 
-	'ligatures|l=s', 
-	'mark|m=s', 
-	# 'normalize|n=i', 	# used in make_gdl, make_volt
-	'omitaps|o=s', 
-	# 'positions|p=i', 	# used in make_gdl
-	# 'substitutions|s=i',	# used in make_gdl
-	# 'outVOLT|t',		# used in make_volt
-	'renameaps|r', 
-	'z=i');
+    'ap|a=s', 
+    # 'b',              # used in make_volt
+    'classfile|c=s', 
+    'classprops',
+    # 'autodefines|d',  # used in make_gdl
+    # 'define|D=s%',    # used in make_gdl
+    'empty|e=s', 
+    # 'forceadd|f=i',   # used in make_volt
+    'help|h', 
+    'include|i=s@', 
+    'ligatures|l=s', 
+    'mark|m=s', 
+    # 'normalize|n=i',  # used in make_gdl, make_volt
+    'omitaps|o=s', 
+    # 'positions|p=i',  # used in make_gdl
+    # 'substitutions|s=i',  # used in make_gdl
+    # 'outVOLT|t',      # used in make_volt
+    'renameaps|r', 
+    'z=i');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -45,23 +45,25 @@ my %options;
 if ($opts{'empty'}) 
 {
     my @glist;
-	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
-	while (<IN>)
-	{
-		s/[\r\n]*$//o;      # platform-safe chomp
-		s/;.*$//o;          # Strip comments
-		s/ //go;            # Strip whitespace
-		push (@glist, $_) unless $_ eq '';
-	}
+    open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
+    while (<IN>)
+    {
+        s/[\r\n]*$//o;      # platform-safe chomp
+        s/;.*$//o;          # Strip comments
+        s/ //go;            # Strip whitespace
+        push (@glist, $_) unless $_ eq '';
+    }
     close IN;
-	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+    $options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
+
+$options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
 my $f = Font::TTF::Scripts::Fea->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
 if (exists $f->{'WARNINGS'})
 {
-	warn $f->{'WARNINGS'};
+    warn $f->{'WARNINGS'};
 }
 
 
