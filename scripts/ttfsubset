@@ -13,7 +13,7 @@ our $CHAIN_CALL;
 our %opts;
 our $f;
 
-our $DEBUG = 1;
+our $DEBUG = 0;
 
 unless($CHAIN_CALL)
 {
