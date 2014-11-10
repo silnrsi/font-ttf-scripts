@@ -6,9 +6,26 @@ use Getopt::Long;
 use Pod::Usage;
 
 our(%opts);
-GetOptions(\%opts, 'ap|a=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
-                'omitaps|o=s', 'renameaps|r', 'classfile|c=s', 'classprops', 
-                'z=i', 'mark|m=s');
+GetOptions(\%opts, 
+	'ap|a=s', 
+	# 'b',				# used in make_volt
+	'classfile|c=s', 
+	'classprops',
+	# 'autodefines|d',	# used in make_gdl
+	# 'define|D=s%', 	# used in make_gdl
+	'empty|e=s', 
+	# 'forceadd|f=i', 	# used in make_volt
+	'help|h', 
+	'include|i=s@', 
+	'ligatures|l=s', 
+	'mark|m=s', 
+	# 'normalize|n=i', 	# used in make_gdl, make_volt
+	'omitaps|o=s', 
+	# 'positions|p=i', 	# used in make_gdl
+	# 'substitutions|s=i',	# used in make_gdl
+	# 'outVOLT|t',		# used in make_volt
+	'renameaps|r', 
+	'z=i');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -25,10 +42,10 @@ if ($opts{'help'})
 my %options;
 
 # Parse -e file if supplied
-if ($opts{'excludes'}) 
+if ($opts{'empty'}) 
 {
     my @glist;
-	open (IN, "<$opts{'excludes'}") or die "Couldn't open '$opts{'excludes'}' for reading.";
+	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
 	while (<IN>)
 	{
 		s/[\r\n]*$//o;      # platform-safe chomp
@@ -83,7 +100,7 @@ $outfh->close();
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 make_fea - Create GDL from a TrueType Font
 
@@ -97,6 +114,12 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
 =head1 OPTIONS
 
   -a file       Attachment point database
+  -c classfile  xml file of class and property information to merge in
+  --classproperties
+                specifies whether classes are made for property values in
+                the classfile
+  -e file       A file containing names (1 per line) of glyphs that are 
+                known to have no outline (thus shouldn't generate warnings). 
   -h            print manpage
   -i file       add #include statement at end of file
   -l type       type =
@@ -113,5 +136,20 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                     1 - normalise even if presentation is only references
                     2 - use postscript names in glyph definitions
 
+=head1 SEE ALSO
+
+ttfbuilder, make_gdl
+
+=head1 AUTHOR
+
+Martin Hosken L<Martin_Hosken@sil.org>
+(see CONTRIBUTORS for other authors).
+
+=head1 LICENSING
+
+Copyright (c) 1998-2014, SIL International (http://www.sil.org)
+
+This script is released under the terms of the Artistic License 2.0.
+For details, see the full text of the license in the file LICENSE.
 
 =cut

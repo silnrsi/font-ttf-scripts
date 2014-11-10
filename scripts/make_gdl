@@ -6,9 +6,26 @@ use Getopt::Long;
 use Pod::Usage;
 
 our(%opts);
-GetOptions(\%opts, 'ap|a=s', 'autodefines|d', 'empty|e=s', 'help|h', 'include|i=s@', 'ligatures|l=s',
-                'normalize|n=i', 'omitaps|o=s', 'positions|p=i', 'renameaps|r', 'substitutions|s=i',
-                'z=i', 'define|D=s%', 'mark|m=s', 'classfile|c=s', 'classprops');
+GetOptions(\%opts, 
+	'ap|a=s', 
+	# 'b',				# used in make_volt
+	'classfile|c=s', 
+	'classprops',
+	'autodefines|d', 
+	'define|D=s%', 
+	'empty|e=s', 
+	# 'forceadd|f=i', 	# used in make_volt
+	'help|h', 
+	'include|i=s@', 
+	'ligatures|l=s',
+	'mark|m=s', 
+	'normalize|n=i', 
+	'omitaps|o=s', 
+	'positions|p=i', 
+	'renameaps|r', 
+	'substitutions|s=i',
+	# 'outVOLT|t',		# used in make_volt
+	'z=i');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -28,7 +45,7 @@ my %options;
 if ($opts{'excludes'}) 
 {
     my @glist;
-	open (IN, "<$opts{'excludes'}") or die "Couldn't open '$opts{'excludes'}' for reading.";
+	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
 	while (<IN>)
 	{
 		s/[\r\n]*$//o;      # platform-safe chomp
@@ -88,7 +105,7 @@ $outfh->close();
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 make_gdl - Create GDL from a TrueType Font
 
@@ -256,7 +273,7 @@ Martin Hosken L<Martin_Hosken@sil.org>
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+Copyright (c) 1998-2014, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.

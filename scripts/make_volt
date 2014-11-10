@@ -2,31 +2,53 @@
 use strict;
 use Font::TTF::Font;
 use Font::TTF::Scripts::Volt;
-use Getopt::Std;
+use Getopt::Long;
 use Pod::Usage;
 
-our ($opt_a, $opt_b, $opt_e, $opt_f, $opt_h, $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_t, $opt_z);
-getopts('a:be:f:hi:l:m:no:tz:');
+our (%opts);
+# getopts('a:be:f:hi:l:m:no:tz:');
 
-unless ($ARGV[1] || $opt_h || ($opt_t && $ARGV[0]))
+GetOptions(\%opts, 
+	'ap|a=s', 
+	'b', 
+	# 'classfile|c=s', 	# used in make_gdl
+	# 'classprops',	# used in make_gdl
+	# 'autodefines|d',	# used in make_gdl
+	# 'define|D=s%', 	# used in make_gdl
+	'empty|e=s', 
+	'forceadd|f=i', 
+	'help|h', 
+	'include|i=s@', 
+	'ligatures|l=s', 
+	'mark|m=s', 
+	'normalize|n=i', 
+	'omitaps|o=s', 
+	# 'positions|p=i', 	# used in make_gdl
+	# 'renameaps|r', 	# used in make_gdl
+	# 'substitutions|s=i',	# used in make_gdl
+	'outVOLT|t', 
+	'z=i');
+
+
+unless ($ARGV[1] || $opts{'h'} || ($opts{'outvolt'} && $ARGV[0]))
 {
     pod2usage(1);
     exit;
 }
 
-if ($opt_h)
+if ($opts{'h'})
 {
     pod2usage(-verbose => 2, -noperldoc => 1);
     exit;
 }
 
-my %opts;
+my %options;
 
 # Parse -e file if supplied
-if ($opt_e) 
+if ($opts{'empty'}) 
 {
 	my @glist;
-	open (IN, "<$opt_e") or die "Couldn't open '$opt_e' for reading.";
+	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
 	while (<IN>)
 	{
 		s/[\r\n]*$//o;      # platform-safe chomp
@@ -35,12 +57,12 @@ if ($opt_e)
 		push (@glist, $_) unless $_ eq '';
 	}
     close IN;
-	$opts{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
-$opts{'-omittedAPs'} = $opt_o if $opt_o;
+$options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
-my $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a, %opts) || die "Can't read font information";
+my $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
 if (exists $f->{'WARNINGS'})
 {
@@ -48,23 +70,23 @@ if (exists $f->{'WARNINGS'})
 }
 
 
-my $comp = $1 if ($opt_l =~ s/(comp)$//o);
+my $comp = $1 if ($opts{'ligatures'} =~ s/(comp)$//o);
 
-$f->make_classes(-ligatures => $opt_l, -ligtype => $comp, -notmark => $opt_m);
-if ($opt_i)
+$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -notmark => $opts{'mark'});
+if ($opts{'include'})
 {
     my ($fh, $dat, @map, $vtext);
-    if ($fh = Font::TTF::Font->open($opt_i))
+    if ($fh = Font::TTF::Font->open($opts{'include'}))
     {
         $vtext = $fh->{'TSIV'}->read->{' dat'};
     }
-    elsif ($fh = IO::File->new("< $opt_i"))
+    elsif ($fh = IO::File->new("< $opts{'include'}"))
     {
         $vtext = join('', <$fh>);
         $fh->close();
     }
     else
-    { warn "Can't open $opt_i as a font or text file"; }
+    { warn "Can't open $opts{'include'} as a font or text file"; }
 
     if ($vtext)
     {
@@ -75,15 +97,15 @@ if ($opt_i)
 }
 $f->make_anchors;
 $f->make_groups;
-unless ($opt_f == 2)
+unless ($opts{'forceadd'} == 2)
 {
-	$f->make_lookups($opt_l, {-force => $opt_f, -notmark => $opt_m});
-	$f->normal_rules(($opt_z & 2), {-force => $opt_f} ) if ($opt_n);
+	$f->make_lookups($opts{'ligatures'}, {-force => $opts{'forceadd'}, -notmark => $opts{'mark'}});
+	$f->normal_rules(($opts{'z'} & 2), {-force => $opts{'forceadd'}} ) if ($opts{'normalize'});
 }
 
-my $res = $f->out_volt(-default_glyphtype => ($opt_b ? 'BASE' : undef));
+my $res = $f->out_volt(-default_glyphtype => ($opts{'b'} ? 'BASE' : undef));
 
-if ($opt_t)
+if ($opts{'outvolt'})
 { print $res; }
 else
 {
@@ -97,7 +119,7 @@ exit($f->{'error'});
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 make_volt - Create VOLT code from a TrueType Font
 
@@ -183,7 +205,6 @@ by glyph names and follow the approach taken in C<make_gdl>.
 
 ttfbuilder, make_gdl
 
-
 =head1 AUTHOR
 
 Martin Hosken L<Martin_Hosken@sil.org>
@@ -191,7 +212,7 @@ Martin Hosken L<Martin_Hosken@sil.org>
 
 =head1 LICENSING
 
-Copyright (c) 1998-2013, SIL International (http://www.sil.org)
+Copyright (c) 1998-2014, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
