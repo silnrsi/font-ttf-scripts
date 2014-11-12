@@ -10,47 +10,30 @@
 # 1.4   MJPH    17-FEB-2000     Fix typo for type 1 tables
 # 1.5   MJPH    19-SEP-2000     Add -n, -x
 # 1.6   MJPH    10-NOV-2000     Add -v
-# 1.7	RMH	     2-Dec-2003	    Add -w
+# 1.7   RMH      2-Dec-2003     Add -w
 # 1.7.1 MJPH    27-APR-2006     Add docs for man pages, up version report
 # 1.8   MJPH     8-NOV-2007     Support v3 OS/2 tables and some handling of those beyond
+# 1.9   RMH     12-NOV-2014     Fix table padding and checksum calculations; use Pod::Usage
 
 use Getopt::Std;
+use Pod::Usage;
 
 require 'ttfmod.pl';
 
-getopts("c:d:f:n:p:qt:u:v:x:w:");
+getopts("c:d:f:hn:p:qt:u:v:x:w:");
+
+if ($opt_h)
+{
+    pod2usage( -verbose => 2, -noperldoc => 1);
+    exit;
+}
+
 
 if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[1]))
-    {
-    die 'HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
-        [-t num] [-u hex] [-w width] <infile> <outfile>
-
-v1.8, 8-NOV-2007  (c) martin_hosken@sil.org
-
-Hacks the OS/2 table of a ttf file copying from infile to outfile.
-    -c      change codepage information (a 64 bit hex number)
-    -d      specifies output directory for processing multiple files. In which
-            case <outfile> is not used and <infile> may be a list including
-            wildcards.
-    -f      fsSelection value (16 bit hex) (e.g. 4240 for Thai fonts)
-    -n      sets usFirstCharIndex given a hex value
-    -p      change panose info
-                (10 bytes of hex in reverse order: 0A090807060504030201)
-    -q      Quiet mode (do not list names as they are processed)
-    -t      Sets fsType (embedding) information (decimal)
-    -u      change unicode info (a 128 bit hex number)
-    -v      sets vendor tag to the first 4 chars of the string
-    -w      set average char width (decimal)
-    -x      sets usLastCharIndex given a hex value
-
-For example, to convert a Win3.1 ANSI font to Win95 use the following:
-    hackos2 -c01 -u03 old.ttf new.ttf
-or for a Symbol font use:
-    hackos2 -c80000000 -u0 old.ttf new.ttf
-Or to revert:
-    hackos2 -cnone other.ttf new.ttf
-';
-    }
+{
+    pod2usage(1);
+    exit;
+}
 
 $old = select(STDERR); $| = 1; select($old);
 
@@ -140,7 +123,8 @@ sub hackos2
         { substr($dat, 58, 4) = pack("A4", $opt_v); }
     if (defined $opt_w)
         { substr($dat, 2, 2) = pack("n", $opt_w); }
-    $csum = unpack("%32N", $dat);
+    $dat .= "\0" x (4 - ($len & 3)) if ($len & 3);      # pad to long
+    $csum = unpack("%32N*", $dat);
     print OUTFILE $dat;
     ($len, $csum);
     }
@@ -183,7 +167,7 @@ sub makestr
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 hackos2 - edit the OS/2 table in a TrueType Font
 
@@ -192,9 +176,10 @@ hackos2 - edit the OS/2 table in a TrueType Font
   HACKOS2 [-c hex] [-d directory] [-f fsSelection] [-p hex] [-q]
           [-t num] [-u hex] [-w width] <infile> <outfile>
 
+Hacks the OS/2 table of a ttf file copying from infile to outfile.
+
 =head1 OPTIONS
 
-Hacks the OS/2 table of a ttf file copying from infile to outfile.
   -c      change codepage information (a 64 bit hex number)
   -d      specifies output directory for processing multiple files. In which
           case <outfile> is not used and <infile> may be a list including
@@ -211,13 +196,20 @@ Hacks the OS/2 table of a ttf file copying from infile to outfile.
   -x      sets usLastCharIndex given a hex value
 
 For example, to convert a Win3.1 ANSI font to Win95 use the following:
+
   hackos2 -c01 -u03 old.ttf new.ttf
+
 or for a Symbol font use:
+
   hackos2 -c80000000 -u0 old.ttf new.ttf
+
 Or to revert:
+
   hackos2 -cnone other.ttf new.ttf
 
 =head1 AUTHOR
+
+v1.9, 12-NOV-2014
 
 Martin Hosken L<Martin_Hosken@sil.org>
 (see CONTRIBUTORS for other authors).
