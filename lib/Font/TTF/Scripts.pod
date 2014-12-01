@@ -6,9 +6,10 @@ Font::TTF::Scripts - Smart font script supporting modules and scripts for TTF/OT
 
 This module contains a number of useful programs for hacking with TTF files:
 
-check_attach, eurofix, fret, hackos2, make_gdl, make_volt, psfix, thai2gdl,
-thai2ot, thai2volt, ttfbuilder, ttfenc, ttfname, ttfremap, ttfsetver,
-volt2xml, voltExportAnchors, voltFixup, voltImportAnchors
+check_attach, dumpfont, fret, hackos2, make_fea, make_gdl, make_volt, psfix, 
+std2ap, sfdmeld, sfdmerge, ttf2volt, ttf2woff, ttfascent, ttfbboxfix,
+ttfbuilder, ttfdeflang, ttfeval, ttffeatparms, ttflang2tuner, ttfname, ttfremap, 
+ttfsetver, ttfsubset, ttftable, typetuner, volt2ap, volt2ttf.
 
 Highlights include:
 
@@ -16,6 +17,7 @@ Highlights include:
   hackos2    - manipulates the OS/2 table of a font
   ttfbuilder - builds a font from another font, attaching glyphs, subsetting, etc.
   ttfname    - renames a font
+  ttfsubset  - removes parts of a font in order to produce a working, smaller, font.
 
 =head1 AUTHOR
 
