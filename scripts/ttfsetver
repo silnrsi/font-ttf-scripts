@@ -76,7 +76,7 @@ sub do_name
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfsetver - sets font version in a TrueType font
 

@@ -931,7 +931,7 @@ sub is_omitted
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 volt2ttf - compiles volt code into OT tables in a font
 
@@ -950,7 +950,7 @@ Compiles volt source into OT tables in the font.
   -h          Help
   -x file     Generate TypeTuner xml file including aliases
   -f file     TypeTuner features xml source file
-    
+
 =head1 DESCRIPTION
 
 volt2ttf is like loading a font into VOLT and hitting compile and saving the

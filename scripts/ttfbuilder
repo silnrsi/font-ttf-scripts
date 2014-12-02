@@ -1113,7 +1113,7 @@ sub mat_det
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfbuilder - assemble a font from another font
 
@@ -1146,7 +1146,7 @@ out.xml.
   -x file     Attachment database to read [repeatable, follows correspond -f
                 or occurs before -f to correspond to main font]
   -z file     Attachment database to output
-    
+
 =head1 DESCRIPTION
 
 ttfbuilder is a font subsetting program gone wild. Its aim is to allow a user to

@@ -214,7 +214,7 @@ sub align4
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttf2woff - create WOFF file from TTF file
 

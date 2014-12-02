@@ -299,7 +299,7 @@ unless ($CHAIN_CALL)
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttftable - import, export, or delete TrueType font tables
 
@@ -325,7 +325,7 @@ then writes the modified font to outfile.ttf if provided.
   -help                Help
 
 Option names may be abbreviated as much as you like; -export, -import, -delete and -update options may be repeated.
-    
+
 =head1 DESCRIPTION
 
 After opening font file infile.ttf, ttftable can export one or more of the 

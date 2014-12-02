@@ -172,7 +172,7 @@ sub error
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 check_attach - checks fonts against their attachment database
 

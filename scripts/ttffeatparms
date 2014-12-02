@@ -337,15 +337,15 @@ sub addstrings
 }
 
 =encoding utf8
- 
-=head1 TITLE
+
+=head1 NAME
 
 ttfeatparms - adds feature parameters to Opentype stylistic set or character variants features
 
 =head1 SYNOPSIS
 
 ttffeatparms [-d] [-c control.xml] infile.ttf outfile.ttf
-  
+
 Opens infile.ttf for reading, deletes existing feature parameters and/or adds new ones based
 on control file values, then writes the modified file to outfile.ttf.
 

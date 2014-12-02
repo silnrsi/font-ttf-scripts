@@ -74,7 +74,7 @@ print "\n</font>\n";
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 volt2ap - create attachment point database from VOLT source in a TrueType Font
 
@@ -86,7 +86,7 @@ volt2ap - create attachment point database from VOLT source in a TrueType Font
 
   -t file  Volt source as text file to use instead of what is in the font
   -h       Help
-    
+
 =head1 DESCRIPTION
 
 volt2ap parses the volt source in a font to extract attachment point information

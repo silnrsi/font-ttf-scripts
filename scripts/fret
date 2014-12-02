@@ -434,7 +434,7 @@ sub final
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 fret - Font REporting Tool
 

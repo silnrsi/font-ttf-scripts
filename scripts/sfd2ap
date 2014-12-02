@@ -160,7 +160,7 @@ sub parse_file
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 sfd2ap - export anchor points from a FontForge file
 

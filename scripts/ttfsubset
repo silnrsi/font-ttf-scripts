@@ -2148,7 +2148,7 @@ sub arraycmp
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfsubset - subset a font
 

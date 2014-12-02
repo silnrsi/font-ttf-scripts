@@ -241,7 +241,7 @@ sub canon
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 add_classes - add class information to an attachment point database
 

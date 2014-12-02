@@ -237,7 +237,7 @@ sub add_feat_alias
 }
 	
 
-=head1 TITLE
+=head1 NAME
 
 ttflang2tuner - Convert OpenType lang systems to TypeTuner configuration file
 

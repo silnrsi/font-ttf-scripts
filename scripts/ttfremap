@@ -193,7 +193,7 @@ $f->out($ARGV[1]);
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfremap - remaps the cmap of a TrueType Font
 
@@ -219,7 +219,7 @@ of lines of any of the following forms:
     g, gid_first, gid_last, uni_to
     n, name_first, uni_to
     n, name_first, name_last, uni_to
-    
+
 where uni_first (gid_first) is the first of a range of Unicodes (glyph IDs) 
 in the source font, uni_last (gid_last) is the last of that range (if not
 specified, default is same as uni_first (gid_last)), and uni_to 

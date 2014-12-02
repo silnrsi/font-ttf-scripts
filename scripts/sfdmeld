@@ -423,7 +423,7 @@ sub print_font
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 sfdmeld - merges sfd files
 

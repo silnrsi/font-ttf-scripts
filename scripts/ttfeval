@@ -127,7 +127,7 @@ foreach my $a (@ARGV)
     }
 }
 
-=head1 TITLE
+=head1 NAME
 
 ttfeval - wrapper for short L<Font::TTF> hacks
 

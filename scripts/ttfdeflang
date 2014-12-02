@@ -39,7 +39,7 @@ unless ($CHAIN_CALL)
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfname - renames font files
 

@@ -85,7 +85,7 @@ foreach (@tags)
 }
 
 
-=head1 TITLE
+=head1 NAME
 
 dumpfont - dump table structures from L<Font::TTF::Font>
 

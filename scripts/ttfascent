@@ -47,7 +47,7 @@ $f->out($ARGV[1]) if (defined $ARGV[1]);
 
 __END__
 
-=head1 TITLE
+=head1 NAME
 
 ttfascent - sets ascent and descent of a TrueType font
 
