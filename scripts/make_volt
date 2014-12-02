@@ -6,13 +6,11 @@ use Getopt::Long;
 use Pod::Usage;
 
 our (%opts);
-# getopts('a:be:f:hi:l:m:no:tz:');
-
 GetOptions(\%opts, 
 	'ap|a=s', 
 	'b', 
-	# 'classfile|c=s', 	# used in make_gdl
-	# 'classprops',	# used in make_gdl
+	'classfile|c=s',
+	'classprops',
 	# 'autodefines|d',	# used in make_gdl
 	# 'define|D=s%', 	# used in make_gdl
 	'empty|e=s', 
@@ -72,6 +70,7 @@ if (exists $f->{'WARNINGS'})
 
 my $comp = $1 if ($opts{'ligatures'} =~ s/(comp)$//o);
 
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -notmark => $opts{'mark'});
 if ($opts{'include'})
 {
@@ -134,6 +133,10 @@ Creates a copy of the infile font file adding a VOLT table to it.
 
   -a file       Attachment Point database .xml file
   -b            Set un-typed glyphs to type "BASE"
+  -c classfile  xml file of class and property information to merge in
+  --classproperties
+                specifies whether classes are made for property values in
+                the classfile
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 
   -f level      Force value for adding OpenType lookups:
