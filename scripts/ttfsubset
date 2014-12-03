@@ -1078,8 +1078,14 @@ sub canchangegids
     $self->{' PARENT'}{'Gloc'}->read();
     $maxpseudo = scalar @{$self->{' PARENT'}{'Gloc'}{'locations'}} - 1 - $subsetter->{'numg'};
     $subsetter->{'numPseudo'} = $maxpseudo;
-    foreach my $i (0 .. $maxpseudo - 1)
-    { $subsetter->add_glyph($subsetter->{'numg'} + $i); }
+    foreach my $s (@{$self->{'SILF'}})
+    {
+        $subsetter->add_glyph($s->{'lbGID'});
+        $s->{'lbGID'} = $subsetter->map_glyph($s->{'lbGID'});
+    }
+
+    #foreach my $i (0 .. $maxpseudo - 1)
+    #{ $subsetter->add_glyph($subsetter->{'numg'} + $i); }
     return 1;
 }
 
@@ -1271,7 +1277,15 @@ sub subset_silf
         { $subsetter->{'silf'}{'passes'}[$i] = undef; }
     }
 
-    $silf->{'maxGlyphID'} = $subsetter->{'gcount'}  + $subsetter->{'numPseudo'} - 1;
+    foreach my $k (keys $silf->{'pseudos'})
+    {
+        my ($g) = $silf->{'pseudos'}{$k};
+        if ($subsetter->keep_glyph($g))
+        { $silf->{'pseudos'}{$k} = $subsetter->map_glyph($g); }
+        else
+        { delete $silf->{'pseudos'}{$k}; }
+    }
+    $silf->{'maxGlyphID'} = $subsetter->{'gcount'} - 1;
     $silf->{'classes'} = $subsetter->{'silf'}{'classes'};
 }
 
@@ -1501,15 +1515,15 @@ sub finalise_pass
                         $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]})
                             if (defined $subsetter->{'silf'}{'class_pairs_removed'}{$r->[2]}{$r->[3]});
                     # update the action code
-                    ($r->[2], $r->[3]) = @{$subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]}};
+                    #($r->[2], $r->[3]) = @{$subsetter->{'silf'}{'class_pairs'}{$r->[2]}{$r->[3]}};
                 }
                 else
                 {
                     testclass($r->[2], $subsetter, "pass $pass->{'id'}, rule ${i}a");
                     testclass($r->[3], $subsetter, "pass $pass->{'id'}, rule ${i}b");
-                    $r->[2] = $subsetter->{'silf'}{'classmap'}[$r->[2]];
-                    $r->[3] = $subsetter->{'silf'}{'classmap'}[$r->[3]];
                 }
+                $r->[2] = $subsetter->{'silf'}{'classmap'}[$r->[2]];
+                $r->[3] = $subsetter->{'silf'}{'classmap'}[$r->[3]];
             }
             elsif ($r->[0] eq 'put_glyph_8bit_obs' or $r->[0] eq 'put_glyph')
             {
