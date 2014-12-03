@@ -82,4 +82,5 @@ For the Mac table
     (-m may be for 240 or 211 depending on Apple or MS)
 
 Copies are only made if there is no glyph there already.    
+
 =cut

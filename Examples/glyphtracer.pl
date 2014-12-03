@@ -25,7 +25,7 @@ by decimal numeric ID or, if the font has a post table, by postscript glyph name
 =head1 OPTIONS
 
   -h  Verbose help
-  
+
 =head1 DESCRIPTION
 
 Glyphtracer searches internal font tables infont for references to the specified glyph and, if found, prints

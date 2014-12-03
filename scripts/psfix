@@ -102,7 +102,7 @@ Creates Adobe Glyph List conformant names for each of the glyphs in a font.
 
 =head1 AUTHOR
 
-Martin Hosken L<Martin_Hosken@sil.org>
+Martin Hosken L<http://scripts.sil.org/FontUtils>.
 (see CONTRIBUTORS for other authors).
 
 =head1 LICENSING
