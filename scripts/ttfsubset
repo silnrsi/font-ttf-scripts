@@ -1277,7 +1277,7 @@ sub subset_silf
         { $subsetter->{'silf'}{'passes'}[$i] = undef; }
     }
 
-    foreach my $k (keys $silf->{'pseudos'})
+    foreach my $k (keys %{$silf->{'pseudos'}})
     {
         my ($g) = $silf->{'pseudos'}{$k};
         if ($subsetter->keep_glyph($g))
