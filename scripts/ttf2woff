@@ -90,7 +90,7 @@ if ($opts{'v'})
     ($whdr{'major'}, $whdr{'minor'}) = ($opts{v} =~ /(\d+)(?:\.(\d+))/);
 }
 out_whdr($ofh, \%whdr);
-my ($curroffset) = $ofh->tell();
+my ($curroffset) = align4($ofh, $ofh->tell());
 for (my $i = 0; $i < $whdr{'num'}; $i++)
 {
     my (%d);
@@ -99,7 +99,6 @@ for (my $i = 0; $i < $whdr{'num'}; $i++)
     my ($idat, $odat);
     my ($csum);
 
-    $curroffset = align4($ofh, $curroffset);
     $whdr{'dir'}[$tmap[$i]] = \%d;
     $whdr{'total'} += ($t->{' LENGTH'} + 3) & ~3;
     $d{'tag'} = $n;
@@ -135,7 +134,8 @@ for (my $i = 0; $i < $whdr{'num'}; $i++)
         $d{'len'} = $d{'orglen'};
         $ofh->print($idat);
     }
-    $curroffset = $ofh->tell();
+    # Per spec, all sfnt tables are padded -- not just the non-final tables:
+    $curroffset = align4($ofh, $ofh->tell());
 }
 
 # We should now have the full checksum of the input font... verify it.
@@ -159,12 +159,15 @@ if ($opts{'m'})
     my ($mfh) = IO::File->new("< $opts{'m'}") || die "Can't open $opts{'m'} for reading";
     local $/;
     my ($idat) = <$mfh>;
+    $mfh->close();
+    # Per spec, meta data is *always* compressed:
     my ($odat) = compress($idat, 9);
     $curroffset = align4($ofh, $curroffset);
     $whdr{'moffset'} = $curroffset;
     $whdr{'mlen'} = length($odat);
     $whdr{'morglen'} = length($idat);
     $ofh->print($odat);
+    # Per spec, meta data need not be padded if it is the last thing in the font:
     $curroffset = $ofh->tell();
 }
 
@@ -178,6 +181,7 @@ if ($opts{'p'})
     $whdr{'poffset'} = $curroffset;
     $whdr{'plen'} = length($idat);
     $ofh->print($idat);
+    # Per spec, private data is never padded: its end must coincide w/ end of file:
     $curroffset = $ofh->tell();
 }
 $whdr{'len'} = $curroffset;
