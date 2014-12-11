@@ -30,3 +30,4 @@ description-pak
 ^doc-pak
 \.swp
 ^\.hg/
+^bugs/

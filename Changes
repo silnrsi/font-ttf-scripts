@@ -1,11 +1,13 @@
-1.05 (date TBD)
+1.04_90 (r1053, 2014-10-11)
 
-* Improved subsetting logic, including support for Graphite subsetting
-* New make_fea generates AFDKO feature files
+* make_fea generates AFDKO feature files
 * make_gdl, make_volt, make_fea parameters harmonized; 
 *   added -c support to obviate make_classes
+* fret -b, to show octaboxes
 *
 * Bug fixes:
+*    ttfsubset
+*        fix graphite generation
 *    hackos2
 *        fix OS/2 table padding and checksum
 *    ttffeatparams 
