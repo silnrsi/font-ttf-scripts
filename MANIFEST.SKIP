@@ -34,3 +34,4 @@ description-pak
 ^scripts/.*?\.
 ^t/temp
 ^t/testfont\.pdf
+^\.
