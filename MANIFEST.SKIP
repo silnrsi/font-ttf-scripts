@@ -35,3 +35,4 @@ description-pak
 ^t/temp
 ^t/testfont\.pdf
 ^\.
+^MYMETA\..*$

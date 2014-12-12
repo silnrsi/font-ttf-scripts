@@ -133,7 +133,7 @@ ttfeval - wrapper for short L<Font::TTF> hacks
 
 =head1 SYNOPSIS
 
-tteval [options] [progfile] infont.ttf ...
+ttfeval [options] [progfile] infont.ttf ...
 
 =head1 OPTIONS
 
@@ -149,7 +149,7 @@ tteval [options] [progfile] infont.ttf ...
 
 =item B<-e> commandline
 
-Work essentially like the same options for Perl. If no B<-e> options are provided, the B<progfile> argument 
+work essentially like the same options for Perl. If no B<-e> options are provided, the B<progfile> argument 
 specifies the name of a file containing code to be executed. See L<perlrun>.
 
 =item B<-o> outfont
