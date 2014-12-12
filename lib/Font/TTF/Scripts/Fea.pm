@@ -130,6 +130,8 @@ sub out_pos_lookups
             { push (@marks, $c); }
         }
 
+        next unless (@marks);      # all attachment lookups must have at least one markClass
+
         foreach $mode (0 .. 1)
         {
             my $b = \@bases;
@@ -166,7 +168,7 @@ sub end_out
     my ($self, $fh, $includes) = @_;
 
     foreach (@{$includes})
-    { $fh->print("include($_);\n"); }
+    { $fh->print("include($_)\n") }
 }
 
 1;
