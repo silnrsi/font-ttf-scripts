@@ -31,3 +31,6 @@ description-pak
 \.swp
 ^\.hg/
 ^bugs/
+^scripts/.*?\.
+^t/temp
+^t/testfont\.pdf
