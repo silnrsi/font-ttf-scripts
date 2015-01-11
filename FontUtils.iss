@@ -10,6 +10,7 @@
 ;#define Debug
 
 #define MyFileName StringChange("TTFontUtils_" + MyVer, ".", "_")
+#define MyVer StringChange(MyVer, "_", ".")
 #define Parl AddBackslash(ParlPath) + "parl.exe"
 
 [Setup]

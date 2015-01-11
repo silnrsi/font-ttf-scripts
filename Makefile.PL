@@ -8,14 +8,10 @@ our ($opt_d, $opt_r, $opt_v);
 getopts('d:rv:');
 $opt_v ||= 1;
 
-my ($VERSION, $fversion, @extras, @scripts, @theselibs, $fhi, $fho, $perlbin);
-
-$VERSION = "1.04_92";
+my (@extras, @scripts, @theselibs, $fhi, $fho, $perlbin);
 
 # Fix up inno script by substituting {perl: $var}
 
-$fversion = $VERSION;
-$fversion =~ s/\./_/og;
 $perlbin = $Config{'sitebin'};
 
 @scripts = grep {-f && !m/\./o && !m/~$/o } glob("scripts/*");
@@ -94,10 +90,10 @@ EOT
 		$compile =~ s/\s*"?%1"?.*$//;
 		$compile = "start \"compile\" /wait $compile";
 	
-	    $res .= "exe : TTFontUtils_$fversion.exe\n\n";
+	    $res .= "exe : TTFontUtils_\$(VERSION_SYM).exe\n\n";
 	
-	    $res .= "TTFontUtils_$fversion.exe : scripts\\fontutils.par\n";
-	    $res .= "\tiscc.exe \"/dMyVer=$VERSION\" \"/dParlPath=$perlbin\" FontUtils.iss\n\n";
+	    $res .= "TTFontUtils_\$(VERSION_SYM).exe : scripts\\fontutils.par\n";
+	    $res .= "\tiscc.exe \"/dMyVer=\$(VERSION)\" \"/dParlPath=$perlbin\" FontUtils.iss\n\n";
 	    
 	    $res .= "scripts\\fontutils.par : ";
 	    $res .= join(' ', @scripts);
@@ -168,7 +164,7 @@ EOT
     
 WriteMakefile (
         NAME => "Font::TTF::Scripts",
-        VERSION => $VERSION,
+        VERSION_FROM => 'lib/Font/TTF/Scripts.pm',
         EXE_FILES => \@scripts,
 #        HTMLLIBPODS => {map {my $t = $_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @theselibs},
 #        HTMLSCRIPTPODS => {map {my $t=$_; $t=~s/\..*?$/.html/o; $t='blib/Html/'.$t; $_ => $t;} @scripts},
