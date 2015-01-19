@@ -96,7 +96,7 @@ $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'clas
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_classes($outfh);
 $f->out_pos_lookups($outfh);
-$f->end_out($outfh, $opts{'include'});
+$f->end_out($outfh, $opts{'include'}, %options);
 
 $outfh->close();
 
@@ -137,6 +137,7 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                     0 - use component properties to set ligature bounding boxes
                     1 - normalise even if presentation is only references
                     2 - use postscript names in glyph definitions
+                    3 - do not output ; after include statement
 
 =head1 SEE ALSO
 

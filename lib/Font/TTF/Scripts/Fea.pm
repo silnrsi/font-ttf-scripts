@@ -165,10 +165,10 @@ sub make_name
 
 sub end_out
 {
-    my ($self, $fh, $includes) = @_;
+    my ($self, $fh, $includes, %opts) = @_;
 
     foreach (@{$includes})
-    { $fh->print("include($_)\n") }
+    { $fh->print("include($_)" . ($opts & 8 ? "" : ";") . "\n"); }
 }
 
 1;
