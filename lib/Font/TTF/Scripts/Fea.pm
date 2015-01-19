@@ -168,7 +168,7 @@ sub end_out
     my ($self, $fh, $includes, %opts) = @_;
 
     foreach (@{$includes})
-    { $fh->print("include($_)" . ($opts & 8 ? "" : ";") . "\n"); }
+    { $fh->print("include($_)" . ($opts{'z'} & 8 ? "" : ";") . "\n"); }
 }
 
 1;
