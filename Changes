@@ -1,9 +1,11 @@
-1.04_90 (r1053, 2014-10-11)
+1.05 (r1063, 2015-01-19)
 
 * make_fea generates AFDKO feature files
 * make_gdl, make_volt, make_fea parameters harmonized; 
 *   added -c support to obviate make_classes
 * fret -b, to show octaboxes
+* rename Scripts.pod to Scripts.pm; use that file for version info
+* bump Font::TTF dependency to 1.05 so tests pass
 *
 * Bug fixes:
 *    ttfsubset

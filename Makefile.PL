@@ -174,7 +174,7 @@ WriteMakefile (
 		PREREQ_PM => {
 			'Algorithm::Diff' => 0,
             'IO::String' => 0,
-			'Font::TTF' => '1.04_90',
+			'Font::TTF' => '1.05',
 			'Text::PDF::File' => 0,
             'Text::Unicode::Equivalents' => 0,
             'XML::Parser' => 0

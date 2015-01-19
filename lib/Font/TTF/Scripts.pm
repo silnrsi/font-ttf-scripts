@@ -2,7 +2,7 @@ package Font::TTF::Scripts;
 
 use strict;
 
-our $VERSION = '1.04_94';
+our $VERSION = '1.05';
 
 1;
 
@@ -68,7 +68,7 @@ See F<Changes> file for a change log.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2014, SIL International (http://www.sil.org)
+Copyright (c) 1998-2015, SIL International (http://www.sil.org)
 
 This module and all the various scripts are released under the terms of the
 Artistic License 2.0. For details, see the full text of the license in the file
