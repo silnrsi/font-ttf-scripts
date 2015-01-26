@@ -5,13 +5,90 @@ use Font::TTF::Scripts::AP;
 use Unicode::Normalize;
 
 use strict;
-use vars qw($VERSION @ISA);
+use vars qw($VERSION @ISA %reserved);
 @ISA = qw(Font::TTF::Scripts::AP);
 
 $VERSION = "0.01";  # MJPH   30-APR-2014    Original
 
 *read_font = \&Font::TTF::Scripts::AP::read_font;
 
+map { $reserved{$_} = 1} (qw( 
+  anchor
+  anchorDef
+  anonymous anon
+  by
+  contour
+  cursive
+  device
+  enumerate enum
+  excludeDFLT
+  exclude_dflt
+  feature
+  from
+  ignore
+  IgnoreBaseGlyphs
+  IgnoreLigatures
+  IgnoreMarks
+  MarkAttachmentType
+  UseMarkFilteringSet
+  include
+  includeDFLT
+  include_dflt
+  language
+  languagesystem
+  lookup block statement
+  lookupflag
+  mark
+  markClass
+  nameid
+  NULL
+  parameters
+  position pos
+  required
+  RightToLeft
+  reversesub rsub
+  script
+  substitute sub
+  subtable
+  table
+  useExtension
+  valueRecordDef
+  HorizAxis.BaseTagList
+  HorizAxis.BaseScriptList
+  HorizAxis.MinMax
+  VertAxis.BaseTagList
+  VertAxis.BaseScriptList
+  VertAxis.MinMax
+  GlyphClassDef
+  Attach
+  LigatureCaretByDev
+  LigatureCaretByIndex
+  LigatureCaretByPos
+  MarkAttachClass
+  FontRevision
+  CaretOffset
+  Ascender
+  Descender
+  LineGap
+  Panose
+  TypoAscender
+  TypoDescender
+  TypoLineGap
+  winAscent
+  winDescent
+  UnicodeRange
+  CodePageRange
+  XHeight
+  CapHeight
+  Vendor
+  sizemenuname
+  VertTypoAscender
+  VertTypoDescender
+  VertTypoLineGap
+  VertOriginY
+  VertAdvanceY
+ ));
+ 
 sub start_afdko
 {
 }
@@ -160,7 +237,7 @@ sub out_pos_lookups
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
-    return "\\$gname";
+    return $reserved{$gname} ? "\\$gname" : $gname;
 }
 
 sub end_out
