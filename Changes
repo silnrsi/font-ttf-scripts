@@ -1,4 +1,4 @@
-1.05 (r1063, 2015-01-19)
+1.05 (r1069, 2015-01-26)
 
 * make_fea generates AFDKO feature files
 * make_gdl, make_volt, make_fea parameters harmonized; 
