@@ -623,6 +623,7 @@ sub make_classes
         $glyph->{'name'} = $gname;
         $self->{'glyph_names'}{$gname} = $i;
 
+        my ($maybebase) = 0;
         foreach $p (keys %{$glyph->{'points'}})
         {
             my ($pname) = $self->make_point($p, $glyph, \%opts);
@@ -635,8 +636,13 @@ sub make_classes
             push (@{$self->{'lists'}{$pname}}, $i);
             vec($self->{'vecs'}{$pname}, $i, 1) = 1 if ($self->{'vecs'});
             next if (defined $opts{'-notmark'} and $opts{'-notmark'} =~ m/\b$pname\b/);
-            vec($self->{'ismarks'}, $i, 1) = 1 if ($pname =~ m/^_/o);
+            if ($pname =~ m/^_/o)
+            { vec($self->{'ismarks'}, $i, 1) = 1; }
+            else
+            { $maybebase = 1; } 
         }
+        vec($self->{'bases'}, $i, 1) = 1 if ($maybebase);
+
         foreach (split('/', $glyph->{'post'}))
         { $namemap{$_} = $i; }
         if (defined $glyph->{'props'}{'classes'})
