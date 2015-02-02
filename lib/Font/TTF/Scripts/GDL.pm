@@ -142,7 +142,6 @@ sub out_classes
         else
         { $name =~ s/^_//o; }
 
-        $fh->print("#define HAS_c${name}Dia 1\n") if ($opts{'-defines'} && $name !~ m/^Takes/o);
         $fh->print("c${name}Dia = (");
         $count = 0; $sep = '';
         foreach $cl (@{$lists->{$l}})
@@ -177,6 +176,16 @@ sub out_classes
             { $sep = ", "; }
         }
         $fh->print(");\n\n");
+    }
+    if ($opts{'-defines'})
+    {
+        foreach $l (sort keys %{$lists})
+        {
+            next if ($l =~ m/^_/o);
+            next if (!scalar @{$lists->{$l}} || !scalar @{$lists->{"_$l"}});
+            next if (!$self->{'hasnclass'}{$l} || !$self->{'hasnclass'}{"_$l"});
+            $fh->print("#define HAS_c${l}Dia 1\n");
+        }
     }
 
 
@@ -420,6 +429,7 @@ EOT
     foreach $p (keys %{$lists})
     {
         next if ($p =~ m/^_/o);
+        next if (!scalar @{$lists->{$p}} || !scalar @{$lists->{"_$p"}});
         $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ " . ($self->{'hasnclass'}{$p} ? "opt4(cnTakes${p}Dia) " : "") . "_ {user1 == 0};\n");
     }
     $fh->print("endpass;\nendtable;\n");
