@@ -1225,7 +1225,6 @@ sub subset_silf
         my (@newclass) = map {$subsetter->map_glyph($_)} grep {$subsetter->keep_glyph($_)} @{$silf->{'classes'}[$i]};
         if (scalar @newclass)
         {
-            my ($i) = 0;
             if ($i < $numlin)
             {
                 push (@linclasses, [@newclass]);
@@ -1258,7 +1257,7 @@ sub subset_silf
         if (!defined $r)
         { $r = -1; }
         elsif ($r < 0)
-        { $r = $silf->{'numLinearClasses'} - $r; }
+        { $r = $silf->{'numLinearClasses'} - $r - 1; }
     }
 
     # see what other rules we can delete
