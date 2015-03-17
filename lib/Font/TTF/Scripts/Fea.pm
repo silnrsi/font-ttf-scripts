@@ -239,7 +239,8 @@ sub out_pos_lookups
             my $b = \@bases;
             $b = \@mbases if ($mode);
             next if (!scalar @{$b});
-            my ($name) = "base_${l}_" . ($mode ? "mark" : "base");
+            my $type = $mode ? "mark" : "base";
+            my ($name) = "base_${l}_$type";
             $fh->print("lookup $name {\n");
             $fh->print("  lookupflag 0;\n");
             foreach $c (@marks)
@@ -252,7 +253,7 @@ sub out_pos_lookups
             {
                 my ($g) = $glyphs->[$c];
                 my ($p) = $g->{'points'}{$l};
-                $fh->print("  pos base [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> mark \@$l;\n");
+                $fh->print("  pos $type [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> mark \@$l;\n");
             }
             $fh->print("} $name;\n\n");
         }
