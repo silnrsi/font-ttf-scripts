@@ -242,7 +242,10 @@ sub out_pos_lookups
             my $type = $mode ? "mark" : "base";
             my ($name) = "base_${l}_$type";
             $fh->print("lookup $name {\n");
-            $fh->print("  lookupflag 0;\n");
+            if ($mode)
+            { $fh->print("  lookupflag UseMarkFilteringSet \@cTakes${l}Dia;\n"); }
+            else 
+            { $fh->print("  lookupflag 0;\n"); }
             foreach $c (@marks)
             {
                 my ($g) = $glyphs->[$c];
