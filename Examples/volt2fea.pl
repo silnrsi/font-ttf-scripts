@@ -238,40 +238,39 @@ sub out_fea_lookups
     			next;
     		}
     		
-	    	foreach my $rule (@{$l->{'contexts'}})
+	    	foreach my $context (@{$l->{'contexts'}})
 	    	{
-	    		$res .= $indent1;
-	    		$res .= 'ignore ' if $rule->[0] eq 'EXCEPT_CONTEXT';
-	    		$res .= "$l->{'lookup'}[0] ";	# Type of lookup (sub or pos)  [AFDKO doc seems to suggest this always 'sub' ?]
-	    		for my $i (1 .. $#{$rule})
+	    		my ($before, $after);
+	    		$before = $indent1;
+	    		$before .= 'ignore ' if $context->[0] eq 'EXCEPT_CONTEXT';
+	    		$before .= "$l->{'lookup'}[0] ";	# Type of lookup (sub or pos)  [AFDKO doc seems to suggest this always 'sub' ?]
+	    		for my $i (1 .. $#{$context})
 	    		{
-	    			next unless $rule->[$i][0] eq 'LEFT';
-	    			$res .= $self->get_fea_ctx_as_class( [ $rule->[$i][1] ]);
+	    			($context->[$i][0] eq 'LEFT' ? $before : $after) .=
+		    			$self->get_fea_ctx_as_class( [ $context->[$i][1] ]);
 	    		}
 				if ($l->{'lookup'}[0] eq 'sub')
 				{
-	    			$res .= $self->get_fea_ctx ($l->{'lookup'}[1][0][0], "lookup $l->{'_target'}");
+					my @match = map {$_->[0][0]} @{$l->{'lookup'}[1]};
+					$res .= $before
+						. $self->get_fea_ctx_as_class (\@match, "lookup $l->{'_target'}")
+						. $after . ";\n";
 	    		}
 	    		else
 	    		{
 	    			if (exists $l->{'lookup'}[1][0]{'context'})
 	    			{
 	    				# Mark attach or single adjust
-	    				$res .= $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, "lookup $l->{'_target'}");
+	    				$res .= $before
+	    					. $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, "lookup $l->{'_target'}")
+	    					. $after . ";\n";
 	    			}
 	    			else
 	    			{
 	    				$res .= "# TODO: Chaining positioning rule target goes here # ";
 	    			}
 	    		}
-	    		for my $i (1 .. $#{$rule->[1]})
-	    		{
-	    			next unless $rule->[$i][0] eq 'RIGHT';
-	    			$res .= $self->get_fea_ctx_as_class( [ $rule->[$i][1] ]);
-	    		}
-	    		$res .= ";\n";
 	    	}
-	    		
     	}
     	else
     	{
@@ -352,7 +351,7 @@ sub get_fea_simple_lookup
  		}
  		
  		# Sadly, Adobe doesn't permit compact notation using groups in 1-to-many (decomposition) rules e.g:
- 		#     sub sub @AlefPlusMark by absAlef @AlefMark ;
+ 		#     sub @AlefPlusMark by absAlef @AlefMark ;
  		# or many-to-1 (ligature) rules, e.g.:
  		#     sub @ShaddaKasraMarks absShadda by @ShaddaKasraLigatures ;
 
