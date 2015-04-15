@@ -251,10 +251,19 @@ sub out_fea_lookups
 	    		}
 				if ($l->{'lookup'}[0] eq 'sub')
 				{
-					my @match = map {$_->[0][0]} @{$l->{'lookup'}[1]};
-					$res .= $before
-						. $self->get_fea_ctx_as_class (\@match, "lookup $l->{'_target'}")
-						. $after . ";\n";
+					# Apparently all "input" strings have to be the same length
+					# and we synthesize classes that match each position, but
+					# mark only the first such with the target lookup.
+					$res .= $before;
+					my $lastRule  = $#{$l->{'lookup'}[1]};
+					my $lastInput = $#{$l->{'lookup'}[1][0][0]};
+					
+					foreach my $i (0 .. $lastInput)
+					{
+						my @input = map {$l->{'lookup'}[1][$_][0][$i] } (0 .. $lastRule);
+						$res .= $self->get_fea_ctx_as_class (\@input, $i == 0 ? "lookup $l->{'_target'}" : '');
+					}
+					$res .= $after . ";\n";
 	    		}
 	    		else
 	    		{
@@ -465,7 +474,8 @@ sub get_fea_simple_lookup
 				# List of APs mentioned in the "to" part of this lookup
 				my @aps = map {$_->[1]} @{$rule->{'to'}} ;
 				@aps = sort(uniq(@aps));
-				$self->error("GPOS lookup $l->{'id'} will attach all marks with anchor(s) " . join(', ', @aps) . ".\n");
+				# Non fatal warning message:
+				print STDERR "GPOS lookup $l->{'id'} will attach all marks with anchor(s) " . join(', ', @aps) . ".\n";
 				
 				# Unfortunately the FEA syntax is very clunky and the stationary glyphs have to be enumerated
 				foreach my $gid ( @{$self->get_ctx_flat($rule->{'context'})})
@@ -603,7 +613,7 @@ sub get_fea_pos
 # Same as get_fea_ctx execept it insures that the result string is a single 
 # fea item by surrounding with [ ] if needed.
 #
-# If $mark is supplied, the the entire class is marked, not individual terms within. I.e.
+# If $mark is defined, the the entire class is marked, not individual terms within. I.e.
 # the quote is after the closing square brace if braces are needed.
 
 sub get_fea_ctx_as_class
@@ -614,7 +624,7 @@ sub get_fea_ctx_as_class
 	return undef unless defined $res;
 	$res =~ s/ $//;
 	$res = "[ $res ]" if $res =~ / /;
-	$res .= "' $mark" if $mark;
+	$res .= "' $mark" if defined($mark);
 	return "$res ";
 }
 
@@ -648,7 +658,7 @@ sub get_fea_ctx
 		{
 			for my $gid ($ctx->[1] .. $ctx->[0] eq 'GLYPH' ? $ctx->[1] : $ctx->[2]) 
 			{
-				push @res, $self->make_feaname($gid) . ($mark ? "'" : '');
+				push @res, $self->make_feaname($gid) . (defined($mark) ? "'" : '');
 			}
 		}
 		elsif ($ctx->[0] eq 'ENUM')
@@ -661,10 +671,10 @@ sub get_fea_ctx
 		elsif ($ctx->[0] eq 'GROUP')
 		{
 			return (wantarray ? ( ) : undef) unless $self->{'completed'}{$ctx->[1]};
-			push @res, "\@$ctx->[1]" . ($mark ? "'" : '');
+			push @res, "\@$ctx->[1]" . (defined($mark) ? "'" : '');
 		}
 	}
-	$res[0] .= " $mark" if $mark;	
+	$res[0] .= " $mark" if defined($mark);	
 	return wantarray ? @res :  join(' ', @res) . ' ';
 }
 
@@ -862,3 +872,4 @@ This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
     
 =cut
+n
