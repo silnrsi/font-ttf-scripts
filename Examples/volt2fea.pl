@@ -170,7 +170,7 @@ sub out_fea_lookups
     
     startsection ($fh, "Lookups");
 
-    my ($res, $prevname);
+    my ($res, $prevname, $subindex);
 
     for (my $i = 0; $i <= scalar(@{$dat->{'lookups'}}); $i++)   # Yes, this loops one extra time so we can close the final lookup
     {
@@ -224,6 +224,7 @@ sub out_fea_lookups
 
 			$res .= "\nlookup $lname {\n  lookupflag " . $self->get_fea_lookupflag($l) . ";\n"; 
     		$prevname = $lname;
+    		$subindex = 0;		# Which subtable we're on, starting with 0.
    	    	
    	    }
 
@@ -249,40 +250,48 @@ sub out_fea_lookups
 	    			($context->[$i][0] eq 'LEFT' ? $before : $after) .=
 		    			$self->get_fea_ctx_as_class( [ $context->[$i][1] ]);
 	    		}
+				$res .= $before;
 				if ($l->{'lookup'}[0] eq 'sub')
 				{
 					# Apparently all "input" strings have to be the same length
 					# and we synthesize classes that match each position, but
 					# mark only the first such with the target lookup.
-					$res .= $before;
 					my $lastRule  = $#{$l->{'lookup'}[1]};
 					my $lastInput = $#{$l->{'lookup'}[1][0][0]};
 					
 					foreach my $i (0 .. $lastInput)
 					{
 						my @input = map {$l->{'lookup'}[1][$_][0][$i] } (0 .. $lastRule);
-						$res .= $self->get_fea_ctx_as_class (\@input, $i == 0 ? "lookup $l->{'_target'}" : '');
+						$res .= $self->get_fea_ctx_as_class (\@input, $i == 0 && $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
 					}
-					$res .= $after . ";\n";
 	    		}
 	    		else
 	    		{
-	    			if (exists $l->{'lookup'}[1][0]{'context'})
+	    			if (exists $l->{'lookup'}[1][0]{'to'})
 	    			{
-	    				# Mark attach or single adjust
-	    				$res .= $before
-	    					. $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, "lookup $l->{'_target'}")
-	    					. $after . ";\n";
+	    				# Mark attach
+	    				# The glyph to mark as "input" is the mark, not base or base+mark
+	    				my @input = map {$_->[0]} (@{$l->{'lookup'}[1][0]{'to'}});
+	    				$res .= $self->get_fea_ctx_as_class (\@input, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
+	    			}
+	    			elsif (exists $l->{'lookup'}[1][0]{'context'})
+	    			{
+	    				# Single adjust
+	    				$res .= $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
 	    			}
 	    			else
 	    			{
 	    				$res .= "# TODO: Chaining positioning rule target goes here # ";
 	    			}
 	    		}
+				$res .= $after . ";\n";
+
 	    	}
     	}
     	else
     	{
+    		# emit subtable separator for all but first:
+    		$res .= "  subtable ;\n" if $subindex++;
     		$res .= $self->get_fea_simple_lookup($l);
     	}
 	}
@@ -620,9 +629,12 @@ sub get_fea_ctx_as_class
 {
 	# Same as get_fea_ctx, but puts brackets around result if more than one item
 	my ($self, $ctxs, $mark) = @_;
-	my $res = $self->get_fea_ctx($ctxs);
-	return undef unless defined $res;
-	$res =~ s/ $//;
+	my @res = $self->get_fea_ctx($ctxs);
+	return undef unless defined $res[0];
+	# Since this is a class, no need to have duplicate values
+	@res = uniq(@res);
+	my $res;
+	$res = join(' ', @res);
 	$res = "[ $res ]" if $res =~ / /;
 	$res .= "' $mark" if defined($mark);
 	return "$res ";
@@ -816,13 +828,13 @@ sub startsection
 	$fh->print ("#**********************************\n");
 }
 
-# Find uniq elements of list (in arbitrary order)
+# Find uniq elements of list (in original order order)
 # (from http://perlmaven.com/unique-values-in-an-array-in-perl)
 
-sub uniq 
-{ 
-	keys { map { $_ => 1 } @_ }
-};
+sub uniq {
+  my %seen;
+  return grep { !$seen{$_}++ } @_;
+}
 
 1;
 
