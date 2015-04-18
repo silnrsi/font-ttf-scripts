@@ -9,8 +9,6 @@ our $VERSION = 0.1;     #
 
 our %opts;
 
-###TODO: identify what options are valid:
-
 pod2usage(-verbose => 1) unless getopts('a:d:ht:', \%opts) && ($#ARGV == 1 || $opts{'h'});
 
 pod2usage( -verbose => 2, -noperldoc => 1) if $opts{'h'};
@@ -212,7 +210,7 @@ sub out_fea_lookups
 			    	}
 			    	last if $lname2 ne $lname;	# End of chaining lookup
 			    	my $fullname = $lname2 . (defined($subname2) ? "_$subname2" : '') . '_target'; 
-   	    			$res .= "\nlookup $fullname {" . ($l2->{'comment'} ? " # $l2->{'comment'}" : '') . "\n${indent1}lookupflag " . $self->get_fea_lookupflag($l2) . ";\n";
+   	    			$res .= "\nlookup $fullname {" . ($l2->{'comment'} ? " # $l2->{'comment'}" : '') . "\n  lookupflag " . $self->get_fea_lookupflag($l2) . ";\n";
    	    			$res .= $self->get_fea_simple_lookup($l2);
    	    			$res .= "} $fullname ;\n";
    	    			# Remember target lookup:
@@ -241,16 +239,24 @@ sub out_fea_lookups
     		
 	    	foreach my $context (@{$l->{'contexts'}})
 	    	{
-	    		my ($before, $after);
-	    		$before = $indent1;
-	    		$before .= 'ignore ' if $context->[0] eq 'EXCEPT_CONTEXT';
-	    		$before .= "$l->{'lookup'}[0] ";	# Type of lookup (sub or pos)  [AFDKO doc seems to suggest this always 'sub' ?]
+	    		$res .= $indent1;
+	    		$res .= 'ignore ' if $context->[0] eq 'EXCEPT_CONTEXT';
+	    		$res .= "$l->{'lookup'}[0] ";	# Type of lookup (sub or pos)  [AFDKO doc seems to suggest this always 'sub' ?]
+	    		my (@backtrack, @lookahead, $notGlyph);
 	    		for my $i (1 .. $#{$context})
 	    		{
-	    			($context->[$i][0] eq 'LEFT' ? $before : $after) .=
-		    			$self->get_fea_ctx_as_class( [ $context->[$i][1] ]);
+	    			my $c = $self->get_fea_ctx_as_class( [ $context->[$i][1] ]);
+	    			if ($context->[$i][0] eq 'LEFT')
+	    			{ push @backtrack, $c;}
+	    			else
+	    			{ push @lookahead, $c; }
+	    			# Because of a bug in Fontforge (as of v1:2.0.201412), we need to know whether any of
+	    			# the context items are something other than simple glyphs:
+	    			$notGlyph++ if $c =~ m'^[[@]';
 	    		}
-				$res .= $before;
+	    		# Ok, this is to work around fontforge failing to get the backtrack order right for glyph-based contextuals:
+	    		$backtrack[0] = "[ $backtrack[0]]" if $#backtrack > 0 && $notGlyph == 0;	# Force it to be class-based if needed.
+				$res .= join('', @backtrack);
 				if ($l->{'lookup'}[0] eq 'sub')
 				{
 					# Apparently all "input" strings have to be the same length
@@ -284,8 +290,8 @@ sub out_fea_lookups
 	    				$res .= "# TODO: Chaining positioning rule target goes here # ";
 	    			}
 	    		}
-				$res .= $after . ";\n";
-
+				$res .= join('', @lookahead);
+				$res .= ";\n";
 	    	}
     	}
     	else
@@ -502,22 +508,22 @@ sub get_fea_simple_lookup
 						$self->error("Glyph $gname has only one component but is declared to be a LIGATURE\n") if $g->{'type'} eq 'LIGATURE';
 					}
 					
-					$res .= "${indent1}pos " . lc(defined $g->{'type'} ? $g->{'type'} : 'base'). " $gname\n";
+					$res .= "${indent1}pos " . lc(defined $g->{'type'} ? $g->{'type'} : 'base'). " $gname";
 					foreach my $comp (0 .. ($g->{'component_num'} || 1) - 1)
 					{
-						$res .= "${indent2}ligComponent\n" if $comp > 0;
+						$res .= "\n${indent2}ligComponent\n" if $comp > 0;
 						my $needNullAnchor = 1;
 						foreach my $ap (@aps)
 						{
 							if (defined($g->{'anchors'}{$ap}[$comp]))
 							{
 								$needNullAnchor = 0;
-								$res .= "$indent2 " . $self->get_fea_anchor($g->{'anchors'}{$ap}[$comp]{'pos'}) . " mark \@MARK_$ap\n";
+								$res .= "\n$indent2 " . $self->get_fea_anchor($g->{'anchors'}{$ap}[$comp]{'pos'}) . " mark \@MARK_$ap";
 							}
 						}
-						$res .= "$indent2 <anchor NULL>\n" if $needNullAnchor;
+						$res .= "\n$indent2 <anchor NULL>\n" if $needNullAnchor;
 					}
-					$res .= "$indent2;\n";
+					$res .= " ;\n";
 				}
 			}
 				
