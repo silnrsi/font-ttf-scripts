@@ -79,7 +79,7 @@ sub out_fea_glyphs
     
     for my $gname (sort keys $dat->{'glyph_names'})
     {
-    	next if $gname =~ /^\./;	# ignore .null, .notdef, etc.
+    	next if $gname =~ /^(\.|nonmarkingreturn|tab)/;	# ignore .null, .notdef, etc.
     	my $gid = $dat->{'glyph_names'}{$gname};
     	$gname = $self->make_feaname($gid);
 	    my $g = $dat->{'glyphs'}[$gid];
@@ -414,6 +414,8 @@ sub get_fea_simple_lookup
 			}
 			# This is what we'd like to do:
 			$res .= "${indent1}# sub " . $self->get_fea_ctx($rule->[0]) . "by " . $self->get_fea_ctx($rule->[1]) . ";\n";
+
+			# but this is what we have to do:
 			my $lhsgroup = $self->get_ctx_flat($self->{'voltdat'}{'groups'}{substr($lhs[$lhsIndex], 1)});
 			my $rhsgroup = $self->get_ctx_flat($self->{'voltdat'}{'groups'}{substr($rhs[$rhsIndex], 1)});
 			for $_ (0 .. $#{$lhsgroup})
@@ -493,7 +495,7 @@ sub get_fea_simple_lookup
 				print STDERR "GPOS lookup $l->{'id'} will attach all marks with anchor(s) " . join(', ', @aps) . ".\n";
 				
 				# Unfortunately the FEA syntax is very clunky and the stationary glyphs have to be enumerated
-				foreach my $gid ( @{$self->get_ctx_flat($rule->{'context'})})
+				foreach my $gid ( uniq(@{$self->get_ctx_flat($rule->{'context'})}) )
 				{
 					my $g = $dat->{'glyphs'}[$gid];
 					my $gname = $self->make_feaname($gid);
@@ -543,13 +545,13 @@ sub get_fea_lookupflag
 {
 	my ($self, $l) = @_;
 	my @res;
-	push @res, 'RightToLeft' if $l->{'dir'} eq 'RTL';
+	push @res, 'RightToLeft' if $l->{'dir'} eq 'RTL' && $l->{'lookup'}[0] eq 'pos' && $l->{'lookup'}[1][0]{'type'} eq 'ATTACH_CURSIVE';
 	push @res, 'IgnoreBaseGlyphs' if $l->{'base'} eq 'SKIP_BASE';
 	push @res, 'IgnoreMarks' if $l->{'marks'} eq 'SKIP_MARKS';
   # push @res, 'IgnoreLigatures' if 0;  # Don't think VOLT supports this
 	push @res, "MarkAttachmentType \@$l->{'all'}" if $l->{'marks'} eq 'PROCESS_MARKS' && $l->{'all'} ne 'ALL';
 	push @res, "UseMarkFilteringSet \@$l->{'all'}" if $l->{'marks'} eq 'MARK_GLYPH_SET';
-	return scalar(@res) == 0 ? '0 ' :  join(', ', @res) . ' ';
+	return scalar(@res) == 0 ? '0 ' :  join(' ', @res) . ' ';
 }
 
 #################################
@@ -890,4 +892,5 @@ This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
     
 =cut
-n
+
+
