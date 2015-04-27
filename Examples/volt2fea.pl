@@ -755,6 +755,17 @@ sub dfltFirst
 	return $a cmp $b;
 }
 
+# sub used to sort OpenType script or langauge entries by their tag
+# putting default script/lang first:
+sub OTtagsort
+{
+	if ($a->{'tag'} =~ /dflt/oi)
+	{
+		return $b->{'tag'} =~ /dflt/oi ? 0 : -1;
+	}
+	return $a->{'tag'} cmp $b->{'tag'};
+}
+
 sub out_fea_features
 {
 	my ($self, $fh) = @_;
@@ -762,16 +773,24 @@ sub out_fea_features
 
     startsection ($fh, "Features");
     
-    # First, gotta turn the structure inside out for Adobe:
+    # First, gotta turn the structure inside out for Adobe.
+    # While doing this, emit the language system records
+    # (thus the need to sort script and lang tags)
+    
 	my (%features);
-    foreach my $s (values(%{$dat->{'scripts'}}))
+    $fh->print("\n");
+    foreach my $s (sort OTtagsort values %{$dat->{'scripts'}})
     {
     	my $stag = $s->{'tag'};
     	my $sname = $s->{'name'};
-		foreach my $l (@{$s->{'langs'}})
+		foreach my $l (sort OTtagsort @{$s->{'langs'}})
     	{
 			my $ltag = $l->{'tag'};
 			my $lname = $l->{'name'};
+			
+			# While here, go ahead and emit the language system records:
+			$fh->print("languagesystem $stag $ltag", $ltag ne 'dflt' ? ' exclude_dflt' : '' ," ;\n");
+			
     		foreach my $f (values (%{$l->{'features'}}))
     		{
     			my $ftag = $f->{'tag'};
