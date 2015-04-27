@@ -748,23 +748,10 @@ sub make_feaname
 sub dfltFirst
 {
 	if (lc($a) eq "dflt")
-	{
-		return lc($a) eq 'dflt' ? 0 : -1;
-	}
-	return +1 if lc($b) eq "dflt";
-	return $a cmp $b;
+	{ return lc($a) eq 'dflt' ? 0 : -1;	}
+	return lc($b) eq "dflt" ? +1 : $a cmp $b;
 }
 
-# sub used to sort OpenType script or langauge entries by their tag
-# putting default script/lang first:
-sub OTtagsort
-{
-	if ($a->{'tag'} =~ /dflt/oi)
-	{
-		return $b->{'tag'} =~ /dflt/oi ? 0 : -1;
-	}
-	return $a->{'tag'} cmp $b->{'tag'};
-}
 
 sub out_fea_features
 {
@@ -779,17 +766,19 @@ sub out_fea_features
     
 	my (%features);
     $fh->print("\n");
-    foreach my $s (sort OTtagsort values %{$dat->{'scripts'}})
+    foreach my $stag (sort dfltFirst keys %{$dat->{'scripts'}})
     {
-    	my $stag = $s->{'tag'};
+    	my $s = $dat->{'scripts'}{$stag};
     	my $sname = $s->{'name'};
-		foreach my $l (sort OTtagsort @{$s->{'langs'}})
+    	
+    	# Because langs are an array we'll just accumulate tags for the moment
+    	# and sort them later:
+    	my @langs;
+		foreach my $l (@{$s->{'langs'}})
     	{
 			my $ltag = $l->{'tag'};
 			my $lname = $l->{'name'};
-			
-			# While here, go ahead and emit the language system records:
-			$fh->print("languagesystem $stag $ltag", $ltag ne 'dflt' ? ' exclude_dflt' : '' ," ;\n");
+			push @langs, $ltag;
 			
     		foreach my $f (values (%{$l->{'features'}}))
     		{
@@ -804,6 +793,10 @@ sub out_fea_features
     			$features{$ftag}{'scripts'}{$stag}{'langs'}{$ltag}{'lookups'} = $f->{'lookups'};
     		}
     	}
+    	foreach my $ltag (sort dfltFirst @langs)
+    	{
+			$fh->print("languagesystem $stag $ltag ;\n");
+		}
     }
 
 	# Create a lookup name to index mapping for sorting lookup names:
@@ -822,7 +815,7 @@ sub out_fea_features
     		
     		foreach my $ltag (sort dfltFirst keys %{$features{$ftag}{'scripts'}{$stag}{'langs'}})
     		{
-    			$fh->print("${indent2}language $ltag;  # $features{$ftag}{'scripts'}{$stag}{'langs'}{$ltag}{'name'}\n");
+    			$fh->print("${indent2}language $ltag", $ltag ne 'dflt' ? ' exclude_dflt' : '', ";  # $features{$ftag}{'scripts'}{$stag}{'langs'}{$ltag}{'name'}\n");
     			my %seen;
     			foreach my $lkup (sort {$lmap{$a} <=> $lmap{$b} } @{$features{$ftag}{'scripts'}{$stag}{'langs'}{$ltag}{'lookups'}})
     			{
