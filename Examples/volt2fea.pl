@@ -5,7 +5,7 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-our $VERSION = 0.1;     #   
+our $VERSION = 0.8;     #   
 
 our %opts;
 
@@ -65,6 +65,7 @@ sub VoltToFEA
 	
 	$fv->out_fea_glyphs($fh);
 	$fv->out_fea_groups($fh);
+	$fv->out_fea_langsys($fh);
 	$fv->out_fea_lookups($fh);
 	$fv->out_fea_features($fh);
 }
@@ -752,7 +753,27 @@ sub dfltFirst
 	return lc($b) eq "dflt" ? +1 : $a cmp $b;
 }
 
+sub out_fea_langsys
+{
+	my ($self, $fh) = @_;
+	my $dat = $self->{'voltdat'};
 
+    startsection ($fh, "Language Systems");
+    $fh->print("\n");
+    
+    foreach my $stag (sort dfltFirst keys %{$dat->{'scripts'}})
+    {
+    	my $s = $dat->{'scripts'}{$stag};
+    	# Too bad the 'langs' item is an array instead of a hash.
+    	my %langs;
+    	map {$langs{$_->{'tag'}} = 1 } @{$s->{'langs'}};
+    	foreach my $ltag (sort dfltFirst keys %langs)
+    	{
+			$fh->print("languagesystem $stag $ltag ;\n");
+		}
+    }
+}
+	
 sub out_fea_features
 {
 	my ($self, $fh) = @_;
@@ -765,20 +786,15 @@ sub out_fea_features
     # (thus the need to sort script and lang tags)
     
 	my (%features);
-    $fh->print("\n");
-    foreach my $stag (sort dfltFirst keys %{$dat->{'scripts'}})
+    foreach my $stag (keys %{$dat->{'scripts'}})
     {
     	my $s = $dat->{'scripts'}{$stag};
     	my $sname = $s->{'name'};
     	
-    	# Because langs are an array we'll just accumulate tags for the moment
-    	# and sort them later:
-    	my @langs;
 		foreach my $l (@{$s->{'langs'}})
     	{
 			my $ltag = $l->{'tag'};
 			my $lname = $l->{'name'};
-			push @langs, $ltag;
 			
     		foreach my $f (values (%{$l->{'features'}}))
     		{
@@ -793,10 +809,6 @@ sub out_fea_features
     			$features{$ftag}{'scripts'}{$stag}{'langs'}{$ltag}{'lookups'} = $f->{'lookups'};
     		}
     	}
-    	foreach my $ltag (sort dfltFirst @langs)
-    	{
-			$fh->print("languagesystem $stag $ltag ;\n");
-		}
     }
 
 	# Create a lookup name to index mapping for sorting lookup names:
@@ -878,11 +890,18 @@ Opens VOLT project (a .ttf file) then writes an equivalent FEA file
 
 =head1 DESCRIPTION
 
-volt2fea attempts to convert a VOLT project to an AFDKO feature file.
+volt2fea attempts to convert a VOLT project to an AFDKO feature (FEA) file.
+
+Note that the FEA file is written in terms of the glyph names found in the
+input font, not from the VOLT names in the project (which may be different).
+
+This code attempts to write FEA files that are compatible with both AFDKO
+and Fontforge, but your mileage may vary since both have some bugs in the 
+way stuff is parsed.
 
 =head1 BUGS
 
-For anchor attachment lookups this code assumes that any time a rule references
+For anchor attachment lookups this code assumes that anytime a rule references
 a particular anchor point that all mark glyphs of that class may be included in the 
 rule. VOLT authors may have included only the marks that the rule is likely to "see"
 but limiting the feature file to such subsets requires lookup-specific markClasses.
