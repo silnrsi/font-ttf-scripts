@@ -607,7 +607,7 @@ sub make_classes
 {
     my ($self, %opts) = @_;
     my ($numg) = $self->{'numg'};
-    my (%classes, %namemap);
+    my (%classes, %namemap, %fixedclasses);
     my ($g, $gname, $i, $j, $glyph, %used, $p, $name);
 
     for ($i = 0; $i < $numg; $i++)
@@ -651,8 +651,25 @@ sub make_classes
             foreach $c (split(' ', $glyph->{'props'}{'classes'}))
             {
                 $c =~ s/^c//o;
-                push (@{$classes{$c}}, $glyph->{'gnum'});
+                if ($c =~ s/\[(\d+)\]$//o)
+                {
+                    if ($fixedclasses{$c}[$1])
+                        { $self->error("Duplicate fixed class position $1 in class $c between $fixedclasses{$c}[$1] and $glyph->{'gnum'}"); }
+                    $fixedclasses{$c}[$1] = $glyph->{'gnum'};
+                }
+                else
+                { push (@{$classes{$c}}, $glyph->{'gnum'}); }
             }
+        }
+    }
+    foreach (my ($k, $v) = each %fixedclasses)
+    {
+        my ($c) = 0;
+        foreach (my ($a) = @{$v})
+        {
+            if (defined $a)
+            { splice(@{$classes{$k}}, $c, 0, $a); }
+            $c++;
         }
     }
 
