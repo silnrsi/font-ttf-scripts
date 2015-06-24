@@ -662,14 +662,19 @@ sub make_classes
             }
         }
     }
-    foreach (my ($k, $v) = each %fixedclasses)
+    while (my ($k, $v) = each %fixedclasses)
     {
-        my ($c) = 0;
-        foreach (my ($a) = @{$v})
+        if (!defined $classes{$k})
+        { $classes{$k} = $v; }
+        else
         {
-            if (defined $a)
-            { splice(@{$classes{$k}}, $c, 0, $a); }
-            $c++;
+            my ($c) = 0;
+            foreach (my ($a) = @{$v})
+            {
+                if (defined $a)
+                { splice(@{$classes{$k}}, $c, 0, $a); }
+                $c++;
+            }
         }
     }
 
