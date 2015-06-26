@@ -555,6 +555,8 @@ sub get_points
     my ($onoff, $ends, $corners);
     my ($comp, $g);
 
+    if (!defined $glyph)
+    { return ([], [], [], undef); }
     $glyph->read_dat;
     if ($glyph->{'numberOfContours'} < 0)
     {
