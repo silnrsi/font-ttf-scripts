@@ -9,9 +9,9 @@ use Font::TTF::Dumper;
 use Pod::Usage;
 use Getopt::Std;
 
-our ($opt_a, $opt_t, $opt_v);
+our ($opt_a, $opt_d, $opt_t, $opt_v);
 
-getopts('a:t:v:');
+getopts('a:dt:v:');
 
 unless (defined $ARGV[0])
 {
@@ -50,6 +50,8 @@ else
     push @tags, 'AP' if $opt_a;
 }
 
+my %opts = (d => $opt_d);
+;
 foreach (@tags)
 {
     next unless $_;
@@ -62,21 +64,21 @@ foreach (@tags)
             while (<$inf>)
             { $volt_text .= $_; }
             $inf->close;
-            print Font::TTF::Dumper::ttfdump($fv->parse_volt($volt_text), $_);
+            print Font::TTF::Dumper::ttfdump($fv->parse_volt($volt_text), $_, %opts);
         }
         elsif (defined $f->{'TSIV'})
-        { print Font::TTF::Dumper::ttfdump($fv->parse_volt(), $_);  }
+        { print Font::TTF::Dumper::ttfdump($fv->parse_volt(), $_, %opts);  }
         else
         { warn "Font doesn't contain a table with tag '$_'\n"; }
     }
     elsif (length($_) == 4 and exists $f->{$_})
     {
         $f->{$_}->read;
-        print Font::TTF::Dumper::ttfdump(\$f->{$_}, $_); 
+        print Font::TTF::Dumper::ttfdump(\$f->{$_}, $_, %opts); 
     }
     elsif ($_ eq 'AP')
     {
-        print Font::TTF::Dumper::ttfdump($ap, "AP");
+        print Font::TTF::Dumper::ttfdump($ap, "AP", %opts);
     }
     else
     {
@@ -91,7 +93,7 @@ dumpfont - dump table structures from L<Font::TTF::Font>
 
 =head1 SYNOPSIS
 
-     dumpfont [-t taglist] [-a attach.xml] [-v voltsource.vtp] font.ttf
+  dumpfont [-t taglist] [-a attach.xml] [-v voltsource.vtp] [-d] font.ttf
 
 Opens the fontfile with Font::TTF::Font->open and then uses L<Data::Dumper> to pretty-print 
 the resultant data structures for one or more font tables to STDOUT.
@@ -99,7 +101,11 @@ the resultant data structures for one or more font tables to STDOUT.
 C<taglist> is a comma-or space-separated list of tags specifying which tables to dump.
 If -a is supplied then C<taglist> may contain 'AP' to request dump of the attachment
 point structure. If -v is supplied or if the font has a 'TSIV' table, then the
-VOLT source will first be parsed then dumped. If -t not provided, dumps all tables. 
+VOLT source will first be parsed then dumped. If -t not provided, dumps all tables.
+
+Normally dumpfont minimizes output by crossreferencing previously dumped structures, 
+but this can make it difficult to diff two fonts. -d suppresses this behavior
+except where needed to break reference cycles. 
 
 By design, dumpfont silently ignores any ' PARENT' or ' CACHE' elements, as well as
 any element whose value is a Font::TTF::Font object, in any of the data structures. 
