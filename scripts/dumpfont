@@ -80,6 +80,17 @@ foreach (@tags)
     {
         print Font::TTF::Dumper::ttfdump($ap, "AP", %opts);
     }
+    elsif ($_ =~ /woff/oi)
+    {
+    	if (exists $f->{' WOFF'})
+    	{
+    		$f->{' WOFF'}{'metaData'}->read_dat if defined $f->{' WOFF'}{'metaData'};
+    		# $f->{' WOFF'}{'privateData'}->read_dat if defined $f->{' WOFF'}{'privateData'};
+    		print Font::TTF::Dumper::ttfdump(\$f->{' WOFF'}, $_, %opts); 
+    	}
+    	else
+    	{ warn "Font isn't WOFF format\n";}
+    }
     else
     {
         warn "Font doesn't contain a table with tag '$_'\n";
@@ -102,6 +113,7 @@ C<taglist> is a comma-or space-separated list of tags specifying which tables to
 If -a is supplied then C<taglist> may contain 'AP' to request dump of the attachment
 point structure. If -v is supplied or if the font has a 'TSIV' table, then the
 VOLT source will first be parsed then dumped. If -t not provided, dumps all tables.
+If C<taglist> contain 'woff' then the metadata from WOFF-formatted fonts will be dumped.
 
 Normally dumpfont minimizes output by crossreferencing previously dumped structures, 
 but this can make it difficult to diff two fonts. -d suppresses this behavior
@@ -117,7 +129,7 @@ Martin Hosken L<http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2014, SIL International (http://www.sil.org)
+Copyright (c) 1998-2015, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
