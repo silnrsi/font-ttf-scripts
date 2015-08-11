@@ -309,80 +309,83 @@ sub overlay
 
     $glyph->get_points();
     $ei = 0;
-    for ($i = 0; $i < @{$glyph->{'x'}}; $i++)
+    if (defined $glyph->{'x'})
     {
-        my ($x, $y) = ($glyph->{'x'}[$i], $glyph->{'y'}[$i]);
-        my ($x1, $y1) = normalpt($glyph, $x, $y);
-        my ($gx, $gy) = (int($x1 * 4 - .001), int($y1 * 4 - .001));
-        addpoint($grid[$gx][$gy], $x, $y, $glyph);
-        if (defined $oldgx)
+        for ($i = 0; $i < @{$glyph->{'x'}}; $i++)
         {
-            # handle curve lines crossing grid lines
-            while ($oldgx < $gx)
+            my ($x, $y) = ($glyph->{'x'}[$i], $glyph->{'y'}[$i]);
+            my ($x1, $y1) = normalpt($glyph, $x, $y);
+            my ($gx, $gy) = (int($x1 * 4 - .001), int($y1 * 4 - .001));
+            addpoint($grid[$gx][$gy], $x, $y, $glyph);
+            if (defined $oldgx)
             {
-                my ($nbx) = ($oldgx + 1) / 4.;
-                my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
-                my ($nby) = $t * $y1 + (1 - $t) * $oldy;
-                my ($bgy) = int($nby * 4 - .001);
-                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
-                addpoint($grid[$oldgx][$bgy], $bx, $by);
-                addminmax($grid[$oldgx][$bgy]{'cutso'}[1], $by);
-                ++$oldgx;
-                addpoint($grid[$oldgx][$bgy], $bx, $by);
-                addminmax($grid[$oldgx][$bgy]{'cutsi'}[0], $by);
+                # handle curve lines crossing grid lines
+                while ($oldgx < $gx)
+                {
+                    my ($nbx) = ($oldgx + 1) / 4.;
+                    my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
+                    my ($nby) = $t * $y1 + (1 - $t) * $oldy;
+                    my ($bgy) = int($nby * 4 - .001);
+                    my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                    addpoint($grid[$oldgx][$bgy], $bx, $by);
+                    addminmax($grid[$oldgx][$bgy]{'cutso'}[1], $by);
+                    ++$oldgx;
+                    addpoint($grid[$oldgx][$bgy], $bx, $by);
+                    addminmax($grid[$oldgx][$bgy]{'cutsi'}[0], $by);
+                }
+                while ($oldgx > $gx)
+                {
+                    my ($nbx) = $oldgx / 4.;
+                    my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
+                    my ($nby) = $t * $y1 + (1 - $t) * $oldy;
+                    my ($bgy) = int($nby * 4 - .001);
+                    my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                    addpoint($grid[$oldgx][$bgy], $bx, $by);
+                    addminmax($grid[$oldgx][$bgy]{'cutso'}[0], $by);
+                    --$oldgx;
+                    addpoint($grid[$oldgx][$bgy], $bx, $by);
+                    addminmax($grid[$oldgx][$bgy]{'cutsi'}[1], $by);
+                }
+                while ($oldgy < $gy)
+                {
+                    my ($nby) = ($oldgy + 1) / 4.;
+                    my ($t) = ($nby - $oldy) / ($y1 - $oldy);
+                    my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
+                    my ($bgx) = int($nbx * 4 - .001);
+                    my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                    addpoint($grid[$bgx][$oldgy], $bx, $by);
+                    addminmax($grid[$bgx][$oldgy]{'cutso'}[3], $bx);
+                    ++$oldgy;
+                    addpoint($grid[$bgx][$oldgy], $bx, $by);
+                    addminmax($grid[$bgx][$oldgy]{'cutsi'}[2], $bx);
+                }
+                while ($oldgy > $gy)
+                {
+                    my ($nby) = $oldgy / 4.;
+                    my ($t) = ($nby - $oldy) / ($y1 - $oldy);
+                    my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
+                    my ($bgx) = int($nbx * 4 - .001);
+                    my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
+                    addpoint($grid[$bgx][$oldgy], $bx, $by);
+                    addminmax($grid[$bgx][$oldgy]{'cutso'}[2], $bx);
+                    --$oldgy;
+                    addpoint($grid[$bgx][$oldgy], $bx, $by);
+                    addminmax($grid[$bgx][$oldgy]{'cutsi'}[3], $bx);
+                }
             }
-            while ($oldgx > $gx)
+            if ($glyph->{'endPoints'}[$ei] == $i)
             {
-                my ($nbx) = $oldgx / 4.;
-                my ($t) = ($nbx - $oldx) / ($x1 - $oldx);
-                my ($nby) = $t * $y1 + (1 - $t) * $oldy;
-                my ($bgy) = int($nby * 4 - .001);
-                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
-                addpoint($grid[$oldgx][$bgy], $bx, $by);
-                addminmax($grid[$oldgx][$bgy]{'cutso'}[0], $by);
-                --$oldgx;
-                addpoint($grid[$oldgx][$bgy], $bx, $by);
-                addminmax($grid[$oldgx][$bgy]{'cutsi'}[1], $by);
+                ++$ei;
+                $oldgx = undef;
+                $oldgy = undef;
             }
-            while ($oldgy < $gy)
+            else
             {
-                my ($nby) = ($oldgy + 1) / 4.;
-                my ($t) = ($nby - $oldy) / ($y1 - $oldy);
-                my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
-                my ($bgx) = int($nbx * 4 - .001);
-                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
-                addpoint($grid[$bgx][$oldgy], $bx, $by);
-                addminmax($grid[$bgx][$oldgy]{'cutso'}[3], $bx);
-                ++$oldgy;
-                addpoint($grid[$bgx][$oldgy], $bx, $by);
-                addminmax($grid[$bgx][$oldgy]{'cutsi'}[2], $bx);
+                $oldx = $x1;
+                $oldy = $y1;
+                $oldgx = $gx;
+                $oldgy = $gy;
             }
-            while ($oldgy > $gy)
-            {
-                my ($nby) = $oldgy / 4.;
-                my ($t) = ($nby - $oldy) / ($y1 - $oldy);
-                my ($nbx) = $t * $x1 + (1 - $t) * $oldx;
-                my ($bgx) = int($nbx * 4 - .001);
-                my ($bx, $by) = unnormalpt($glyph, $nbx, $nby);
-                addpoint($grid[$bgx][$oldgy], $bx, $by);
-                addminmax($grid[$bgx][$oldgy]{'cutso'}[2], $bx);
-                --$oldgy;
-                addpoint($grid[$bgx][$oldgy], $bx, $by);
-                addminmax($grid[$bgx][$oldgy]{'cutsi'}[3], $bx);
-            }
-        }
-        if ($glyph->{'endPoints'}[$ei] == $i)
-        {
-            ++$ei;
-            $oldgx = undef;
-            $oldgy = undef;
-        }
-        else
-        {
-            $oldx = $x1;
-            $oldy = $y1;
-            $oldgx = $gx;
-            $oldgy = $gy;
         }
     }
 
