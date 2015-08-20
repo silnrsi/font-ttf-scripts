@@ -3,7 +3,6 @@
 
 use strict;
 use Font::TTF::Font;
-use Font::TTF::Scripts::AP;
 use Font::TTF::Scripts::Volt;
 use Font::TTF::Dumper;
 use Pod::Usage;
@@ -21,22 +20,10 @@ unless (defined $ARGV[0])
 
 
 
-my ($f, $fv, $ap);
+my ($f, $fv);
 
-if ($opt_t =~ /\bTSIV\b/ || $opt_v)
-{
-    $fv = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font '$ARGV[0]': $!\n";
-    $f = $fv->{'font'};
-}
-elsif ($opt_a)
-{
-    $ap = Font::TTF::Scripts::AP->read_font($ARGV[0], $opt_a) || die "Can't read font '$ARGV[0]': $!\n";
-    $f = $ap->{'font'};
-}
-else
-{
-    $f = Font::TTF::Font->open($ARGV[0]) || die "Can't open font file '$ARGV[0]': $!\n";
-}
+$fv = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opt_a) || die "Can't read font '$ARGV[0]': $!\n";
+$f = $fv->{'font'};
 
 my @tags;
 
@@ -44,11 +31,11 @@ if ($opt_t)
 {   @tags = map {pack('A4',$_)} split(/\s*[,\s]\s*/, $opt_t); }
 else
 {   
-    @tags = grep {length($_) == 4} keys %{$f};
-    push @tags, 'TSIV' if ($opt_v && $opt_t !~ /\bTSIV\b/);
-    @tags = sort @tags;
-    push @tags, 'AP' if $opt_a;
+    @tags = sort grep {length($_) == 4} keys %{$f};
+    push @tags, 'AP  ' if $opt_a;
 }
+push @tags, 'TSIV' if ($opt_v && !grep(/TSIV/, @tags));
+
 
 my %opts = (d => $opt_d);
 ;
@@ -61,13 +48,13 @@ foreach (@tags)
         {
             my $volt_text;
             my ($inf) = IO::File->new("< $opt_v") || die "Can't open file $opt_v";
-            while (<$inf>)
-            { $volt_text .= $_; }
+            local $/ = undef;
+            $volt_text .= <$inf>;
             $inf->close;
-            print Font::TTF::Dumper::ttfdump($fv->parse_volt($volt_text), $_, %opts);
+            print Font::TTF::Dumper::ttfdump($fv->parse_volt($volt_text), 'volt', %opts);
         }
         elsif (defined $f->{'TSIV'})
-        { print Font::TTF::Dumper::ttfdump($fv->parse_volt(), $_, %opts);  }
+        { print Font::TTF::Dumper::ttfdump($fv->parse_volt(), 'volt', %opts);  }
         else
         { warn "Font doesn't contain a table with tag '$_'\n"; }
     }
@@ -76,9 +63,9 @@ foreach (@tags)
         $f->{$_}->read;
         print Font::TTF::Dumper::ttfdump(\$f->{$_}, $_, %opts); 
     }
-    elsif ($_ eq 'AP')
+    elsif ($_ eq 'AP  ' && $opt_a)
     {
-        print Font::TTF::Dumper::ttfdump($ap, "AP", %opts);
+        print Font::TTF::Dumper::ttfdump(\$fv, "AP", %opts);
     }
     elsif ($_ =~ /woff/oi)
     {
@@ -111,7 +98,7 @@ the resultant data structures for one or more font tables to STDOUT.
 
 C<taglist> is a comma-or space-separated list of tags specifying which tables to dump.
 If -a is supplied then C<taglist> may contain 'AP' to request dump of the attachment
-point structure. If -v is supplied or if the font has a 'TSIV' table, then the
+point structure. If -v is supplied or the tables to dump includes the 'TSIV' table, then the
 VOLT source will first be parsed then dumped. If -t not provided, dumps all tables.
 If C<taglist> contain 'woff' then the metadata from WOFF-formatted fonts will be dumped.
 
