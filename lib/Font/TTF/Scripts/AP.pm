@@ -323,9 +323,9 @@ sub read_font
             if (defined $attrs{'GID'})
             {
                 $ig = $attrs{'GID'};
-                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of Unicode ID: $attrs{'UID'}")
+                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph ($ug) of Unicode ID: $attrs{'UID'}")
                         if (defined $ug && $ug != $ig);
-                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph of postscript name $attrs{'PSName'}")
+                $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} different to glyph ($pg) of postscript name $attrs{'PSName'}")
                         if (defined $pg && $pg != $ig);
                 $self->APerror($xml, $cur_glyph, undef, "Specified glyph id $attrs{'GID'} is >= number of glyphs in font ($numg)")
                         if ($ig < 0 || ($f && $ig >= $numg));

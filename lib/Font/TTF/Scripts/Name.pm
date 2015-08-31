@@ -41,7 +41,7 @@ sub ttfname
         $fh->close();
     }
 
-    if (defined $opts{'l'} || ($opts{'t'} && (!$name->{'strings'}[$opts{'t'}] || !scalar @{$name->{'strings'}[$opts{'t'}]})))
+    if (defined $opts{'l'} || (defined $opts{'t'} && (!$name->{'strings'}[$opts{'t'}] || !scalar @{$name->{'strings'}[$opts{'t'}]})))
     {
         ## my ($cmap) = $font->{'cmap'}->read;
         ## @cover = map {[$_->{'Platform'}, $_->{'Encoding'}]} @{$cmap->{'Tables'}};
