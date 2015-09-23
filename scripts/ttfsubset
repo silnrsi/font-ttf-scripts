@@ -7,7 +7,7 @@ use IO::File;
 use Pod::Usage;
 
 use strict;
-our $VERSION = 0.1;     #   
+our $VERSION = 0.1;
 
 our $CHAIN_CALL;
 our %opts;
@@ -1150,6 +1150,14 @@ sub subset
 # classes
 # class_map
 
+sub _shiftpassbit
+{
+    my ($x, $p) = @_;
+    my ($m) = (1 << $p) - 1;
+    my ($l) = 65536 - (1 << ($p + 1));
+    return ($x & $m) + (($x & $l) >> 1);
+}
+   
 sub subset_silf
 {
     my ($self, $silf, $subsetter) = @_;
@@ -1261,19 +1269,53 @@ sub subset_silf
     }
 
     # see what other rules we can delete
+    my (@lowpasses, @highpasses, $pcount);
     for (my $i = 0; $i < scalar @{$silf->{'PASS'}}; $i++)
     { 
         unless ($self->finalise_pass($silf->{'PASS'}[$i], $subsetter, $subsetter->{'silf'}{'passes'}[$i]))
-        #unless ($self->finalise_pass($silf->{'PASS'}[$i], $subsetter, {}))
         {
             splice(@{$silf->{'PASS'}}, $i, 1);
             splice(@{$subsetter->{'silf'}{'passes'}}, $i, 1);
+            if ($i + $pcount < 16)
+            { push (@lowpasses, $i + $pcount); }
+            elsif ($i < 32)
+            { push (@highpasses, $i + $pcount - 16); }
+            printf "Deleting pass %d\n", $i if ($DEBUG);
             foreach ('substPass', 'posPass', 'justPass', 'bidiPass')
             { $silf->{$_}-- if ($i < $silf->{$_} and $silf->{$_} != 0xFF); }
             $i--;
+            $pcount++;
         }
         else
         { $subsetter->{'silf'}{'passes'}[$i] = undef; }
+        
+    }
+    if (@lowpasses || @highpasses)
+    {
+        printf "Shifting passbits in %d glyphs\n", $subsetter->{'gcount'} if ($DEBUG);
+        for (my $j = 0; $j < $subsetter->{'gcount'}; $j++)
+        {
+            my $x = $self->{' PARENT'}{'Glat'}{'attribs'}[$j]{$silf->{'passBits'}};
+            if (@lowpasses)
+            {
+                foreach my $k (reverse @lowpasses)
+                { $x = _shiftpassbit($x, $k); }
+            }
+            if (@highpasses)
+            {
+                my $y = $self->{' PARENT'}{'Glat'}{'attribs'}[$j]{$silf->{'passBits'} + 1};
+                foreach my $k (reverse @highpasses)
+                { $y = _shiftpassbit($y, $k); }
+                if (@lowpasses)
+                {
+                    my $t = $y & ((1 << scalar @lowpasses) - 1);
+                    $x |= $t << (16 - scalar @lowpasses);
+                    $y >>= 16 - scalar @lowpasses;
+                }
+                $self->{' PARENT'}{'Glat'}{'attribs'}[$j]{$silf->{'passBits'} + 1} = $y;
+            }
+            $self->{' PARENT'}{'Glat'}{'attribs'}[$j]{$silf->{'passBits'}} = $x;
+        }
     }
 
     foreach my $k (keys %{$silf->{'pseudos'}})
