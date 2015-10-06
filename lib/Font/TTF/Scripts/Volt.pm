@@ -1138,7 +1138,7 @@ sub parse_volt
                 $res->{'lookups'}[-1]{'lookup'} = ['sub', [@content]];
 
                 unless ($str =~ m/\GEND_SUBSTITUTION\s+/ogc)
-                { die "Expected END_SUBSTITUION in LOOKUP $name, found: " . substr($str, pos($str), 20); }
+                { die "Expected END_SUBSTITUTION in LOOKUP $name, found: " . substr($str, pos($str), 20); }
             }
             else        # presume pos
             {
