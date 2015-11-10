@@ -8,8 +8,8 @@
 # 1.1   MJPH    20-MAR-1998     Add -l, -s
 
 require 'ttfmod.pl';
-require 'getopts.pl';
-do Getopts("f:l:n:qs:t:");
+use Getopt::Std;
+do getopts("f:l:n:qs:t:");
 
 
 if (!defined $ARGV[1] || !defined $opt_n)

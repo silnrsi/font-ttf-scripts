@@ -6,8 +6,8 @@
 #                in either SF or CSV format.
 # 1.2.0     25-MAR-1998     Tidy up to package with the rest
 
-require 'getopts.pl';
-do Getopts("qsuzp:");
+use Getopt::Std;
+getopts("qsuzp:");
 
 if (!defined $ARGV[0])
     {

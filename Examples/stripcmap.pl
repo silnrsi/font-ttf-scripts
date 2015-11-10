@@ -1,8 +1,8 @@
 #! /usr/bin/perl
 use Font::TTF::Font;
-require 'getopts.pl';
+use Getopt::Std;
 
-Getopts("umws");
+getopts("umws");
 
 unless (defined $ARGV[1])
 {

@@ -2,8 +2,8 @@
 # 1.0   RMH    14-Feb-00     Insert a raw TTF table into a font file
 
 use Font::TTF::Font;
-require 'getopts.pl';
-Getopts('d:t:');
+use Getopt::Std;
+getopts('d:t:');
 
 ($inFontFile, $inDataFile, $outFontFile) = @ARGV;
 

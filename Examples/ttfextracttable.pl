@@ -2,8 +2,8 @@
 # 1.1   RMH    06-Feb-00     Extract a raw TTF table to a file
 
 use Font::TTF::Font;
-require 'getopts.pl';
-Getopts('at:');
+use Getopt::Std;
+getopts('at:');
 
 unless (defined $ARGV[0])
 {
