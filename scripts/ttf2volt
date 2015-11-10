@@ -1719,6 +1719,46 @@ print STDERR $xx;
 
 #])}
 
+=head1 NAME
+
+ttf2volt - create VOLT project from existing OpenType font file
+
+=head1 SYNOPSIS
+
+  ttf2volt [options] infontfile [outfontfile]
+
+Creates a VOLT project from an existing OpenType font file.
+
+=head1 OPTIONS
+
+  -a        allow non-adobe glyph names
+  -g n      group creation threshold
+  -l file   emit log messages to named file
+  -r        retain GPOS, GSUB, and GDEF tables in output font
+  -s        do not send warnings to stdout (will still go to log)
+  -t file   name of replacement VOLT tags file if needed.
+  -v file   Volt project source (.vtp) file to create
+
+=head1 DESCRIPTION
+
+Attempts to create a VOLT project from an existing OpenType font by reading and
+interpreting the existing GDEF, GPOS, and GSUB tables. Not every OpenType
+rule can be mimiced in VOLT; warnings are issued when ttf2volt cannot
+handle something.
+
+In normal usage, specify either outfontfile (to create a font
+ready to be opened by VOLT) and/or the -v option (to create a
+VOLT project source that can be imported into the font).
+    
+The group creation threshold option sets the minimum number of glyphs
+that ttf2volt will put into a group for the purposes of building
+a lookup.
+
+Lookups currently supported  (type[.format]):
+
+GSUB:   1 2 3 4   6.3
+GPOS    1 2 3 4 5     8.3
+
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>.
