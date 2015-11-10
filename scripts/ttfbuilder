@@ -1150,7 +1150,7 @@ out.xml.
 =head1 DESCRIPTION
 
 ttfbuilder is a font subsetting program gone wild. Its aim is to allow a user to
-describe a new font in terms of the glyph pallette of a source font. Thus the new
+describe a new font in terms of the glyph palette of a source font. Thus the new
 font may include ligatures of glyphs in the source font, or positional movements
 or whatever.
 

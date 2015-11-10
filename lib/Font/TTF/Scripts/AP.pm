@@ -208,7 +208,7 @@ $VERSION = "0.09";  # MH  Add classes property support
 Reads the TrueType font file C<$ttf_file> and the attachment point database (APDB) file
 C<$ap_file>, and builds a structure to represent the APDB.
 
-Options that may be supplied throught the C<%opts> hash include:
+Options that may be supplied through the C<%opts> hash include:
 
 =over 4
 
