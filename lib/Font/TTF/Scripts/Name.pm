@@ -111,6 +111,10 @@ sub ttfname
 
 1;
 
+=head1 NAME
+
+Font::TTF::Scripts::Name - set name of font
+
 
 =head1 AUTHOR
 

@@ -59,6 +59,11 @@ sub ttfdeflang
 
 1;
 
+=head1 NAME
+
+Font::TTF::Scripts::Deflang - Creates a font with the given language id as being default.
+
+
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>. 

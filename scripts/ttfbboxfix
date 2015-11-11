@@ -79,6 +79,25 @@ print "$count bounding box ", ($count == 1 ? "difference" : "differences"), ($AR
 
 $f->out($ARGV[1]) if $ARGV[1];
 
+=head1 NAME
+
+ttfbboxfix - re-calculates bounding boxes for all glyphs in a font
+
+=head1 SYNOPSIS
+
+  ttfbboxfix [-v] in.ttf [out.ttf]
+
+Re-calculates bounding boxes for all glyphs in a font.
+
+=head1 OPTIONS
+
+  -v verbose output to stdout
+
+=head1 DESCRIPTION
+
+Re-calculates bounding boxes for all glyphs in a font. 
+if <outfile> is provided, rewrite corrected font.
+
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>.

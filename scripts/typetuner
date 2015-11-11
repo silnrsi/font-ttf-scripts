@@ -1298,6 +1298,59 @@ sub cmd_line_exec(@)
 
 cmd_line_exec(@ARGV);
 
+=head1 NAME
+
+typetuner - create fonts which users can then alter (also using TypeTuner) to 
+            change default glyphs and behaviors.
+
+=head1 SYNOPSIS
+
+	typetuner -x <xml> <ttf> (create settings xml file from ttf)
+	typetuner <xml> <ttf> (apply settings xml file to ttf)
+	
+	or typetuner [<switches>] <command> [files, ...]
+
+Enables font developers to create fonts which users can then alter
+(also using TypeTuner) to change default glyphs and behaviors.
+
+=head1 OPTIONS
+
+  -h - help via the usage message
+  -d - debug output
+  -f - for add & extract subcommands, don't check whether proper element at start of file
+  -t - output feat_set.xml file with all settings at non-default values for testing TypeTuner
+  -m - maximum length of featset suffix for font name
+  -n - string to use a suffix at end of font name instead of featset string
+  -o - name for output font file instead of generating by appending _tt
+  -v - version number (bypasses adding featset suffix to the version)
+  -x - for simplified command line, call createset
+
+=head1 DESCRIPTION
+
+usage: 
+	TypeTuner -x <xml> <ttf> (create settings xml file from ttf)
+	TypeTuner <xml> <ttf> (apply settings xml file to ttf)
+	
+	or TypeTuner [<switches>] <command> [files, ...]
+	
+switches:
+	-m	specify maximum length of generated font name suffix
+	-n	specify font name suffix instead of using generated one
+	-o	specify output font.ttf file name
+
+commands:
+	createset <font.ttf | feat_all.xml> feat_set.xml 
+	
+	setmetrics font_old.ttf feat_set.xml
+	
+	applyset     feat_set.xml font.ttf
+	applyset_xml feat_all.xml feat_set.xml font.ttf
+	
+	extract font.ttf feat_set.xml
+	add     feat_all.xml font.ttf
+	delete  font.ttf
+
+
 =head1 AUTHOR
 
 Alan Ward L<http://scripts.sil.org/FontUtils>.

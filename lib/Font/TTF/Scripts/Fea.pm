@@ -279,6 +279,11 @@ sub end_out
 
 1;
 
+=head1 NAME
+
+Font::TTF::Scripts::Fea - Creates font specific AFDKO fea source file from 
+                          a font and optional attachment point database
+
 =head1 See also
 
 L<Font::TTF::Scripts::AP>
