@@ -109,7 +109,7 @@ official list of registered glyph names.
 For each font file supplied on the command line, ttfpstest scans the post table
 looking for potential glyph naming problems.
 
-Each glyph name is tested to see if it conforms to the AGLFN (Adobe Glyph Naming for New Fonts) standard. 
+Each glyph name is tested to see if it is a recognizable Adobe Glyph Name. 
 
 With the -c option, then for glyph names that have no extensions (such as ".ss04") and represent a 
 single Unicode character (i.e. not a ligature), the program verifies that the cmap entry for that 
@@ -118,6 +118,10 @@ Unicode character is, in fact, that glyph.
 All descrepancies are written to STDOUT.
 
 The -v option causes something to be written to STDOUT for every glyph.
+
+=head1 SEE ALSO
+
+L<Adobe Glyph List on GitHub|https://github.com/adobe-type-tools/agl-aglfn>
 
 =head1 AUTHOR
 
