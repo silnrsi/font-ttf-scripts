@@ -1272,7 +1272,7 @@ sub subset_silf
     my (@lowpasses, @highpasses, $pcount);
     for (my $i = 0; $i < scalar @{$silf->{'PASS'}}; $i++)
     { 
-        unless ($self->finalise_pass($silf->{'PASS'}[$i], $subsetter, $subsetter->{'silf'}{'passes'}[$i]))
+        if (defined $silf->{'PASS'}[$i]{'fsm'} && !$self->finalise_pass($silf->{'PASS'}[$i], $subsetter, $subsetter->{'silf'}{'passes'}[$i]))
         {
             splice(@{$silf->{'PASS'}}, $i, 1);
             splice(@{$subsetter->{'silf'}{'passes'}}, $i, 1);
@@ -1355,6 +1355,7 @@ sub markdels
         $cinfo->{'rowfwdrefs'}[$i] = {};
         $cinfo->{'rowbackrefs'}[$i] = {};
     }
+    return unless (defined $pass->{'fsm'});
     for (my $i = 0; $i < scalar @{$pass->{'fsm'}}; $i++)
     {
         my ($fsm) = $pass->{'fsm'}[$i];
@@ -1504,7 +1505,7 @@ sub finalise_pass
             }
             else
             {
-                # print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n";
+                # print "rule($i->$numrules): " . join(",", @{$cinfo->{'rules'}[$i]}) . "\n" if ($DEBUG);
                 push (@{$actdedup{$pass->{'actionCode'}[$i]}{$pass->{'constraintCode'}[$i]}{$pass->{'ruleSortKeys'}[$i]}{$pass->{'rulePreContexts'}[$i]}}, $numrules);
                 push (@revrulemap, $i);
                 push (@rulemap, $numrules++);
