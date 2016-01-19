@@ -24,7 +24,7 @@ GetOptions(\%opts,
 	# 'positions|p=i', 	# used in make_gdl
 	# 'renameaps|r', 	# used in make_gdl
 	# 'substitutions|s=i',	# used in make_gdl
-	'outVOLT|t', 
+	'outvolt|t', 
 	'z=i');
 
 
