@@ -1,8 +1,8 @@
 #! /usr/bin/perl
-require 'getopts.pl';
+use Getopt::Std;
 use Font::TTF::Font;
 
-Getopts('u:s:');
+getopts('u:s:');
 
 unless (defined $ARGV[1])
 {

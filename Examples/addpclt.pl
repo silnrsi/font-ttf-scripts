@@ -6,8 +6,8 @@
 # 1.0.0 MJPH    18-MAR-1998     Original
 
 require 'ttfmod.pl';
-require 'getopts.pl';
-do Getopts("d:z");
+use Getopt::Std;
+do getopts("d:z");
 
 $[ = 0;
 if ((defined $opt_d && !defined $ARGV[0]) || (!defined $opt_d && !defined $ARGV[1]))
