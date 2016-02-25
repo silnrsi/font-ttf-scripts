@@ -429,7 +429,7 @@ EOT
     foreach $p (keys %{$lists})
     {
         next if ($p =~ m/^_/o);
-        next if (!scalar @{$lists->{$p}} || !scalar @{$lists->{"_$p"}});
+        next if (!scalar @{$lists->{$p}} || ref($lists->{"_$p"}) ne 'ARRAY' || !scalar @{$lists->{"_$p"}});
         # $fh->print("cTakes${p}Dia c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}; user1 = 1} / ^ _ " . ($self->{'hasnclass'}{$p} ? "opt4(cnTakes${p}Dia) " : "") . "_ {user1 == 0};\n");
         $fh->print("c${p}Dia {attach {to = \@1; at = ${p}S; with = ${p}M}} / cTakes${p}Dia " . ($self->{'hasnclass'}{$p} ? "opt4(cnTakes${p}Dia) " : "") . "_;\n");
     }
