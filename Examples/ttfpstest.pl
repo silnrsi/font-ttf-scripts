@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use	strict;
 use	Font::TTF::Font;
 use	Font::TTF::PSNames qw(parse);
