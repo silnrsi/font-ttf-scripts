@@ -4,6 +4,7 @@ use Font::TTF::Scripts::GDL;
 use IO::File;
 use Getopt::Long;
 use Pod::Usage;
+use File::Basename;
 
 our(%opts);
 GetOptions(\%opts, 
@@ -21,6 +22,7 @@ GetOptions(\%opts,
 	'mark|m=s', 
 	'normalize|n=i', 
 	'omitaps|o=s', 
+	'package=s',
 	'positions|p=i', 
 	'renameaps|r', 
 	'substitutions|s=i',
@@ -57,10 +59,25 @@ if ($opts{'empty'})
 	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
+# Process -o if supplied
 $options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
-my $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
-
+# Open font, using custom module if --package suppplied
+my $f;
+if ($opts{'package'})
+{
+	my $pkg = $opts{'package'};
+	require $pkg;
+	# Assume the package name is the basename of the filename:
+	($pkg, undef, undef) = fileparse($opts{'package'}, qr/\.[^.]*/);
+	$f = $pkg->read_font($ARGV[0], $opts{'ap'}, %options);
+}
+else
+{
+	$f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options);
+}
+die "Can't read font information" unless $f;
+ 
 if (exists $f->{'WARNINGS'})
 {
 	warn $f->{'WARNINGS'};
@@ -139,6 +156,10 @@ Creates font specific GDL from a font and optional attachment point database
   -m "list"     List of APs to ignore when deciding whether a glyph is a mark
   -n num        Add a normalization substitution with the given pass number
   -o "list"     List of AP names to omit
+  --package file
+                Use the named file instead of Font::TTF::Scripts::GDL.pm to
+                open the font. Assumes the internal package name is the
+                same as the basename of file (sans any extension).
   -p num        Add auto positioning attachment rules with the given pass number
   -r            Rename point names such that final M gets initial _ and final S
                 is removed. Typically for Fontographer fonts.
