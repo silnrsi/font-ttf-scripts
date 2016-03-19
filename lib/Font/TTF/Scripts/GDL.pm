@@ -55,7 +55,7 @@ sub out_gdl
 
                 if ($opts{'-split_ligs'})
                 {
-                    if (defined $glyph->{'compunds'}{$pl})
+                    if (defined $glyph->{'compounds'}{$pl})
                     { $glyph->{'compounds'}{$pl}[3] = $pt->{'x'}; }
                     else
                     { $glyph->{'compounds'}{$pl} = [0, 0, $pt->{'x'}, $ytop]; }
