@@ -134,8 +134,7 @@ Creates a copy of the infile font file adding a VOLT table to it.
   -a file       Attachment Point database .xml file
   -b            Set un-typed glyphs to type "BASE"
   -c classfile  xml file of class and property information to merge in
-  --classproperties
-                specifies whether classes are made for property values in
+  --classprops  specifies whether classes are made for property values in
                 the classfile
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 

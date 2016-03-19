@@ -122,8 +122,7 @@ Creates font specific GDL from a font and optional attachment point database
 
   -a file       Attachment point database
   -c classfile  xml file of class and property information to merge in
-  --classproperties
-                specifies whether classes are made for property values in
+  --classprops  specifies whether classes are made for property values in
                 the classfile
   -d            Output per class #defines for key classes
   -D name=val   Add #defines to output gdl

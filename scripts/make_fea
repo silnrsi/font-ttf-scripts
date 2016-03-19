@@ -117,8 +117,7 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
 
   -a file       Attachment point database
   -c classfile  xml file of class and property information to merge in
-  --classproperties
-                specifies whether classes are made for property values in
+  --classprops  specifies whether classes are made for property values in
                 the classfile
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warnings). 
