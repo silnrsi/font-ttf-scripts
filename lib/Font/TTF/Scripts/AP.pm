@@ -766,12 +766,14 @@ sub make_name
     $gname;
 }
 
-=head2 $ap->make_point ($pname, $glyph)
+=head2 $ap->make_point ($pname, $glyph, \%opts)
 
 Given an an attachment point name and a reference to its C<glyph> structure, returns
 a replacement name, e.g., one that might be an acceptable identifier in
 a programming language, or undef to indicate the attachment point should be omitted.
 By default this returns $pname, but the function could be overridden when subclassing.
+
+$opts->{'-ignoredAPs'} can be set to a list of AP names that should be ignored.
 
 =cut
 
