@@ -19,6 +19,7 @@ GetOptions(\%opts,
     'include|i=s@', 
     'ligatures|l=s', 
     'mark|m=s', 
+    'markattach=s%',
     # 'normalize|n=i',  # used in make_gdl, make_volt
     'omitaps|o=s', 
     # 'positions|p=i',  # used in make_gdl
@@ -90,12 +91,24 @@ if ($opts{'renameaps'})
     }
 }
 
+my %markattaches = ();
+if ($opts{'markattach'} and %{$opts{'markattach'}})
+{
+    while (my ($k, $v) = each %{$opts{'markattach'}})
+    {
+        foreach my $a (split(/[,;.\/ ]+/, $k))
+        {
+            $markattaches{$a} = $v;
+        }
+    }
+}
+
 $f->{'vecs'} = {};
 
 $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_classes($outfh);
-$f->out_pos_lookups($outfh);
+$f->out_pos_lookups($outfh, -m => \%markattaches);
 $f->end_out($outfh, $opts{'include'}, %opts);
 
 $outfh->close();

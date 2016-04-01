@@ -247,7 +247,17 @@ sub out_pos_lookups
             my ($name) = "base_${l}_$type";
             $fh->print("lookup $name {\n");
             if ($mode)
-            { $fh->print("  lookupflag UseMarkFilteringSet \@cMarkFilter_${l};\n"); }
+            {
+                if (defined $opts{'-m'}{$l})
+                {
+                    if ($opts{'-m'}{$l})
+                    { $fh->print("    lookupflag MarkAttachmentType \@$opts{'-m'}{$l};\n"); }
+                    else
+                    { $fh->print("    lookupflag 0;\n"); }
+                }
+                else
+                { $fh->print("  lookupflag UseMarkFilteringSet \@cMarkFilter_${l};\n"); }
+            }
             else 
             { $fh->print("  lookupflag 0;\n"); }
             foreach $c (@marks)
