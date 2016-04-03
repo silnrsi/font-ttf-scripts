@@ -91,6 +91,9 @@ map { $reserved{$_} = 1} (qw(
  
 sub start_afdko
 {
+    my ($self, $fh, %opts) = @_;
+    if ($opts{'preinclude'})
+    { $fh->print("include($opts{'preinclude'})" . ($opts{'z'} & 8 ? "" : ";") . "\n"); }
 }
 
 sub out_classes
