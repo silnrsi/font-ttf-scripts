@@ -140,29 +140,6 @@ for (@imports)
     close IN;
 }    
 
-# Remove any scripts before exporting
-
-if (@scripts)
-{
-    my (%allscripts) = ();
-    foreach (@scripts)
-    {
-        foreach my $s (grep {$_} split(/[\s,:;|]+/))
-        {
-            $allscripts{$s} = 1;
-        }
-    }
-    foreach my $n ('GSUB', 'GPOS')
-    {
-        next unless defined $f->{$n};
-        my ($table) = $f->{$n}->read();
-        foreach my $k (keys %{$table->{'SCRIPTS'}})
-        {
-            delete $table->{'SCRIPTS'}{$k} if (defined $allscripts{$k});
-        }
-    }
-}
-        
 # Now that we've read all the input files (which may also be output files!), we can do the export:
 
 for (@exports)
@@ -229,6 +206,29 @@ for (@exports)
     close OUT;
 }
 
+# Remove any scripts after exporting
+
+if (@scripts)
+{
+    my (%allscripts) = ();
+    foreach (@scripts)
+    {
+        foreach my $s (grep {$_} split(/[\s,:;|]+/))
+        {
+            $allscripts{$s} = 1;
+        }
+    }
+    foreach my $n ('GSUB', 'GPOS')
+    {
+        next unless defined $f->{$n};
+        my ($table) = $f->{$n}->read();
+        foreach my $k (keys %{$table->{'SCRIPTS'}})
+        {
+            delete $table->{'SCRIPTS'}{$k} if (defined $allscripts{$k});
+        }
+    }
+}
+        
 
 # Remove tables the user doesn't want:
 
