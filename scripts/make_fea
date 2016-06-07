@@ -61,7 +61,7 @@ if ($opts{'empty'})
 
 $options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
-my $f = Font::TTF::Scripts::Fea->read_font($ARGV[0], $opts{'ap'}, %opts) || die "Can't read font information";
+my $f = Font::TTF::Scripts::Fea->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
 if (exists $f->{'WARNINGS'})
 {
