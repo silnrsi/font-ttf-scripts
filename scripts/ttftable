@@ -31,7 +31,7 @@ our $VERSION = 0.05;    # BH      2011-08-18
 
 our $CHAIN_CALL;
 
-our (@exports, @imports, @deletes, @updates, $textmode, $list, $verbose);
+our (@exports, @imports, @deletes, @updates, @scripts, $textmode, $list, $verbose);
 
 my $f;
 
@@ -44,6 +44,7 @@ unless ($CHAIN_CALL)
         'import=s' =>  \@imports,
         'delete|remove=s' => \@deletes,
         'update=s' =>   \@updates,
+        'script=s' => \@scripts,
         'text'  =>      \$textmode,
         'list'  =>      \$list,
         'verbose'  =>   \$verbose,
@@ -139,6 +140,29 @@ for (@imports)
     close IN;
 }    
 
+# Remove any scripts before exporting
+
+if (@scripts)
+{
+    my (%allscripts) = ();
+    foreach (@scripts)
+    {
+        foreach my $s (grep {$_} split(/[\s,:;|]+/))
+        {
+            $allscripts{$s} = 1;
+        }
+    }
+    foreach my $n ('GSUB', 'GPOS')
+    {
+        next unless defined $f->{$n};
+        my ($table) = $f->{$n}->read();
+        foreach my $k (keys %{$table->{'SCRIPTS'}})
+        {
+            delete $table->{'SCRIPTS'}{$k} if (defined $allscripts{$k});
+        }
+    }
+}
+        
 # Now that we've read all the input files (which may also be output files!), we can do the export:
 
 for (@exports)
@@ -317,7 +341,8 @@ then writes the modified font to outfile.ttf if provided.
   -import tag[,tag...] List of tables to import from default datafiles
   -import "tag=fname"  Name of table to import from named datafile
   -delete tag[,tag...] List of tables to remove from font
-  -update tag[,tag...] Force a re-build of the named tables 
+  -update tag[,tag...] Force a re-build of the named tables
+  -script tag[,tag...] Remove the given script tags from the opentype tables
   -list                Write a list of table tags from infile.ttf to STDOUT
   -verbose             Verbose output
   -text                Use text mode i/o for datafiles
@@ -380,6 +405,9 @@ external files can contain only one table.
   
   # Create a new font by deleting all OpenType tables
   ttftable -d opentype myfont.ttf newfont.ttf
+
+  # Create a new font by deleting the given scripts from the OpenType tables
+  ttftable -s mymr,DFLT myfont.ttf newfont.ttf
    
 
 =head1 BUGS

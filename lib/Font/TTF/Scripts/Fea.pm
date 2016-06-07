@@ -91,6 +91,9 @@ map { $reserved{$_} = 1} (qw(
  
 sub start_afdko
 {
+    my ($self, $fh, %opts) = @_;
+    if ($opts{'preinclude'})
+    { $fh->print("include($opts{'preinclude'})" . ($opts{'z'} & 8 ? "" : ";") . "\n"); }
 }
 
 sub out_classes
@@ -128,7 +131,7 @@ sub out_classes
         }
         $fh->print("];\n\n");
 
-        next unless defined $vecs->{$l};
+        #next unless defined $vecs->{$l};
 
         $fh->print("\@cn${name}Dia = [");
         $count = 0; $sep = '';
@@ -147,6 +150,10 @@ sub out_classes
             { $sep = " "; }
         }
         $fh->print("];\n\n");
+        if ($name !~ /^Takes/o)
+        {
+            $fh->print("\@cMarkFilter_${name} = [\@c${name}Dia \@cTakes${name}Dia];\n");
+        }
     }
 
     $fh->print("\@cGDEF_Bases = [");
@@ -243,7 +250,17 @@ sub out_pos_lookups
             my ($name) = "base_${l}_$type";
             $fh->print("lookup $name {\n");
             if ($mode)
-            { $fh->print("  lookupflag UseMarkFilteringSet \@cTakes${l}Dia;\n"); }
+            {
+                if (defined $opts{'-m'}{$l})
+                {
+                    if ($opts{'-m'}{$l})
+                    { $fh->print("    lookupflag MarkAttachmentType \@$opts{'-m'}{$l};\n"); }
+                    else
+                    { $fh->print("    lookupflag 0;\n"); }
+                }
+                else
+                { $fh->print("  lookupflag UseMarkFilteringSet \@cMarkFilter_${l};\n"); }
+            }
             else 
             { $fh->print("  lookupflag 0;\n"); }
             foreach $c (@marks)
