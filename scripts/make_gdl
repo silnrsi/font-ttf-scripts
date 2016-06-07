@@ -8,26 +8,28 @@ use File::Basename;
 
 our(%opts);
 GetOptions(\%opts, 
-	'ap|a=s', 
-	# 'b',				# used in make_volt
-	'classfile|c=s', 
-	'classprops',
-	'autodefines|d', 
-	'define|D=s%', 
-	'empty|e=s', 
-	# 'forceadd|f=i', 	# used in make_volt
-	'help|h', 
-	'include|i=s@', 
-	'ligatures|l=s',
-	'mark|m=s', 
-	'normalize|n=i', 
-	'omitaps|o=s', 
-	'package=s',
-	'positions|p=i', 
-	'renameaps|r', 
-	'substitutions|s=i',
-	# 'outVOLT|t',		# used in make_volt
-	'z=i');
+    'ap|a=s', 
+    # 'b',              # used in make_volt
+    'classfile|c=s',
+    'classprops',
+    'autodefines|d',
+    'define|D=s%',
+    'empty|e=s',
+    # 'forceadd|f=i',   # used in make_volt
+    'help|h',
+    'include|i=s@',
+    'ligatures|l=s',
+    'mark|m=s',
+    # 'markattach=s%',  # used in make_fea
+    'normalize|n=i',
+    'omitaps|o=s',
+    'package=s',
+    'positions|p=i',
+    # 'preinclude=s',   # used in make_fea
+    'renameaps|r',
+    'substitutions|s=i',
+    # 'outVOLT|t',      # used in make_volt
+    'z=i');
 
 unless ($ARGV[1] || $opts{'help'})
 {
@@ -47,16 +49,16 @@ my %options;
 if ($opts{'empty'}) 
 {
     my @glist;
-	open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
-	while (<IN>)
-	{
-		s/[\r\n]*$//o;      # platform-safe chomp
-		s/;.*$//o;          # Strip comments
-		s/ //go;            # Strip whitespace
-		push (@glist, $_) unless $_ eq '';
-	}
+    open (IN, "<$opts{'empty'}") or die "Couldn't open '$opts{'empty'}' for reading.";
+    while (<IN>)
+    {
+        s/[\r\n]*$//o;      # platform-safe chomp
+        s/;.*$//o;          # Strip comments
+        s/ //go;            # Strip whitespace
+        push (@glist, $_) unless $_ eq '';
+    }
     close IN;
-	$options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
+    $options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
 # Process -o if supplied
@@ -66,21 +68,21 @@ $options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 my $f;
 if ($opts{'package'})
 {
-	my $pkg = $opts{'package'};
-	require $pkg;
-	# Assume the package name is the basename of the filename:
-	($pkg, undef, undef) = fileparse($opts{'package'}, qr/\.[^.]*/);
-	$f = $pkg->read_font($ARGV[0], $opts{'ap'}, %options);
+    my $pkg = $opts{'package'};
+    require $pkg;
+    # Assume the package name is the basename of the filename:
+    ($pkg, undef, undef) = fileparse($opts{'package'}, qr/\.[^.]*/);
+    $f = $pkg->read_font($ARGV[0], $opts{'ap'}, %options);
 }
 else
 {
-	$f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options);
+    $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options);
 }
 die "Can't read font information" unless $f;
  
 if (exists $f->{'WARNINGS'})
 {
-	warn $f->{'WARNINGS'};
+    warn $f->{'WARNINGS'};
 }
 
 
