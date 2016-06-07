@@ -4,29 +4,31 @@ use Font::TTF::Scripts::Fea;
 use IO::File;
 use Getopt::Long;
 use Pod::Usage;
+use File::Basename;
 
 our(%opts);
 GetOptions(\%opts, 
     'ap|a=s', 
     # 'b',              # used in make_volt
-    'classfile|c=s', 
+    'classfile|c=s',
     'classprops',
     # 'autodefines|d',  # used in make_gdl
     # 'define|D=s%',    # used in make_gdl
-    'empty|e=s', 
+    'empty|e=s',
     # 'forceadd|f=i',   # used in make_volt
-    'help|h', 
-    'include|i=s@', 
-    'ligatures|l=s', 
-    'mark|m=s', 
+    'help|h',
+    'include|i=s@',
+    'ligatures|l=s',
+    'mark|m=s',
     'markattach=s%',
     # 'normalize|n=i',  # used in make_gdl, make_volt
-    'omitaps|o=s', 
-    'preinclude=s',
+    'omitaps|o=s',
+    'package=s',
     # 'positions|p=i',  # used in make_gdl
+    'preinclude=s',
+    'renameaps|r',
     # 'substitutions|s=i',  # used in make_gdl
     # 'outVOLT|t',      # used in make_volt
-    'renameaps|r', 
     'z=i');
 
 unless ($ARGV[1] || $opts{'help'})
@@ -59,10 +61,25 @@ if ($opts{'empty'})
     $options{'-knownemptyglyphs'} = \@glist if scalar(@glist);
 }
 
+# Process -o if supplied
 $options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
-my $f = Font::TTF::Scripts::Fea->read_font($ARGV[0], $opts{'ap'}, %opts) || die "Can't read font information";
-
+# Open font, using custom module if --package suppplied
+my $f;
+if ($opts{'package'})
+{
+    my $pkg = $opts{'package'};
+    require $pkg;
+    # Assume the package name is the basename of the filename:
+    ($pkg, undef, undef) = fileparse($opts{'package'}, qr/\.[^.]*/);
+    $f = $pkg->read_font($ARGV[0], $opts{'ap'}, %options);
+}
+else
+{
+    $f = Font::TTF::Scripts::Fea->read_font($ARGV[0], $opts{'ap'}, %options);
+}
+die "Can't read font information" unless $f;
+ 
 if (exists $f->{'WARNINGS'})
 {
     warn $f->{'WARNINGS'};
@@ -145,6 +162,12 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                     lastcomp - treat extensions as part of elements, as last
   -m "list"     List of APs to ignore when deciding whether a glyph is a mark
   -o "list"     List of AP names to omit
+  --package file
+                Use the named file instead of Font::TTF::Scripts::GDL.pm to
+                open the font. Assumes the internal package name is the
+                same as the basename of file (sans any extension).
+  --preinclude file
+                add #include statement at begining of file
   -r            Rename point names such that final M gets initial _ and final S
                 is removed. Typically for Fontographer fonts.
   -z bitfield   Bitfield of various controls:
