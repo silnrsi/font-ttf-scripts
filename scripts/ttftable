@@ -154,6 +154,7 @@ if (@scripts)
     }
     foreach my $n ('GSUB', 'GPOS')
     {
+        next unless defined $f->{$n};
         my ($table) = $f->{$n}->read();
         foreach my $k (keys %{$table->{'SCRIPTS'}})
         {
