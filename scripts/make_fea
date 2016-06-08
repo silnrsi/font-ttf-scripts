@@ -12,8 +12,8 @@ GetOptions(\%opts,
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
-    # 'autodefines|d',  # used in make_gdl
-    # 'define|D=s%',    # used in make_gdl
+    # 'autodefines',    # used in make_gdl
+    # 'define|d=s%',    # used in make_gdl
     'empty|e=s',
     # 'forceadd|f=i',   # used in make_volt
     'help|h',

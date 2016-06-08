@@ -12,8 +12,8 @@ GetOptions(\%opts,
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
-    'autodefines|d',
-    'define|D=s%',
+    'autodefines',
+    'define|d=s%',
     'empty|e=s',
     # 'forceadd|f=i',   # used in make_volt
     'help|h',
@@ -143,8 +143,8 @@ Creates font specific GDL from a font and optional attachment point database
   -c classfile  xml file of class and property information to merge in
   --classprops  specifies whether classes are made for property values in
                 the classfile
-  -d            Output per class #defines for key classes
-  -D name=val   Add #defines to output gdl
+  --autodefines Output per class #defines for key classes
+  -d name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warnings). 
   -h            print manpage
