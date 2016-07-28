@@ -13,7 +13,7 @@ our $f;
 
 unless($CHAIN_CALL)
 {
-    getopts('cd:fh', \%opts);
+    getopts('cd:fghp', \%opts);
 
     pod2usage( -verbose => 2, -noperldoc => 1) if $opts{'h'};
 
@@ -32,10 +32,18 @@ if ($opts{'c'})
 }
 
 my $head = $f->{'head'}->read;
+my $maxp = $f->{'maxp'}->read;
 my $cmap = $f->{'cmap'}->find_ms;
 die "No Unicode cmap in '$ARGV[0]'\n" unless $cmap;
 my $hmtx = $f->{'hmtx'}->read;
 die "No hmtx table in '$ARGV[0]'\n" unless $hmtx;
+
+my $post;
+if ($opts{'p'})
+{
+    $post = $f->{'post'}->read;
+    die "No post table in '$ARGV[0]'\n" unless $post;
+}
 
 my $loca;
 if (defined $f->{'loca'})
@@ -57,20 +65,55 @@ else
 	print join($delim, $head->{'unitsPerEm'}, map {$head->{$_}} (qw(xMin xMax yMin yMax))), "\n\n";
 }
 
-if ($loca)
+if ($opts{'g'})
 {
-	print join($delim, qw(Unicode Glyph AdvWidth LSdBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
+    print join($delim, qw(Glyph Unicode)), $delim;
 }
 else
 {
-	print join($delim, qw(Unicode Glyph AdvWidth LSdBearing)), "\n";
+    print join($delim, qw(Unicode Glyph)), $delim;
 }
 
-for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
+if ($loca)
 {
-	my $gid = $cmap->{'val'}{$u};
-	next if $gid == 0;
-	my $usv = sprintf("U+%04X", $u);
+	print join($delim, qw(AdvWidth LSdBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
+}
+else
+{
+	print join($delim, qw(AdvWidth LSdBearing)), "\n";
+}
+
+if ($opts{'g'})
+{
+    my @map;
+    @map = $f->{'cmap'}->reverse(array => 1);
+    for my $gid (0 .. $maxp->{'numGlyphs'}-1)
+    {
+        my $usv;
+        $usv = join(' ', map {sprintf("U+%04X", $_)} sort @{$map[$gid]}) if defined $map[$gid];
+        print join($delim, $gid, $usv), $delim;
+        DoTheRest($gid);
+    }
+}
+else
+{
+    for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
+    {
+    	my $gid = $cmap->{'val'}{$u};
+    	next if $gid == 0;
+    	my $usv = sprintf("U+%04X", $u);
+        print join($delim, $usv, $gid), $delim;
+        DoTheRest($gid);
+    }
+}
+
+sub DoTheRest
+{
+    my $gid = shift;
+    if ($opts{'p'})
+    {
+        print $post->{'VAL'}[$gid], $delim;
+    }
 	my $g = $loca->{'glyphs'}[$gid];
 	my ($xMin, $xMax, $yMin, $yMax) = (0,0,0,0);
 	if ($loca && defined $g)
@@ -80,16 +123,16 @@ for my $u (sort {$a <=> $b} keys %{$cmap->{'val'}})
 	}
 	if ($loca && (defined($g) or $opts{'f'}))
 	{
-		print join($delim, $usv, $gid, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid], $xMin, $xMax, $yMin, $yMax,$hmtx->{'lsb'}[$gid] + ($xMax - $xMin)/2), "\n";
+		print join($delim, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid], $xMin, $xMax, $yMin, $yMax,$hmtx->{'lsb'}[$gid] + ($xMax - $xMin)/2), "\n";
 	}
 	elsif ($hmtx->{'lsb'}[$gid])
 	{
 		# This case would be unusual, but just in case it happens:
-		print join($delim, $usv, $gid, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid]), "\n";
+		print join($delim, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid]), "\n";
 	}
 	else
 	{
-		print join($delim, $usv, $gid, $hmtx->{'advance'}[$gid]), "\n";
+		print join($delim, $hmtx->{'advance'}[$gid]), "\n";
 	}
 } 
 
@@ -110,16 +153,25 @@ Opens infont and outputs the resulting font and glyph metrics as CSV data.
   -c        Create output file name from input font file name
   -d delim  String to use for field delimiter rather than ', '
   -f        Output zeros rather than omit empty glyph metrics
+  -g        Process font in glyph order, outputing all glyphs
   -h        Get full help
+  -p        Include glyph psname
 
 =head1 DESCRIPTION
 
 ttfmetrics reads a single font and outputs CSV (Comma-Separated Value) text
-of the font-wide metrics and, for all encoded glyphs, the individual glyph metrics. 
+of the font-wide metrics and individual glyph metrics. 
 
-If the C<-c> option is not supplied, the output is to STDOUT. If C<-c> is
+By default, ttfmetrics outputs glyph metrics for only the encoded glyphs, and
+the data is sorted by USV. C<-g> causes all glyphs, not just encoded glyphs, 
+to be output, in glyph order rather than character order, and the columns are 
+rearranged accordingly. Note that multiply-encode glyphs will have multiple USVs.
+
+If C<-p> is provided then glyph names are included in the output.
+
+By default the output is to STDOUT. If C<-c> is
 supplied, output is to a file whose name is constructed by replacing the
-file name suffix (e.g., C<-.ttf>) with C<_metrics.csv>.
+file name suffix (e.g., C<.ttf>) with C<_metrics.csv>.
 
 The default field delimiter is comma followed by space. This default 
 can be overridden with the C<-d> option.
