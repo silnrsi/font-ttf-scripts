@@ -1,6 +1,6 @@
 =head1 INTRODUCTION
 
-This module contains various scripts using the Font::TTF module. 
+This module contains various scripts using the Font::TTF module.
 
 Any suggestions, improvements, additions, subclasses, etc. would be gratefully
 received and probably included in a future release. Please send them to me.
@@ -57,13 +57,7 @@ To tidy up, type:
 
     make realclean
 
-Win32 users should use pmake instead of make. Alternatively installation can be
-done on Win32 by typing:
-
-    Setup
-
-Or using the install feature in tools like WinZip.
-
+Windows users should use dmake instead of make.
 
 =head1 AUTHOR
 
@@ -72,11 +66,10 @@ Martin Hosken L<http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2014, SIL International (http://www.sil.org)
+Copyright (c) 1998-2016, SIL International (http://www.sil.org)
 
 This module and all the various scripts are released under the terms of the
 Artistic License 2.0. For details, see the full text of the license in the file
 LICENSE.
 
 The fonts in the test suite are released under the Open Font License 1.1, see t/OFL.txt.
-

@@ -1,7 +1,46 @@
+1.06 (in development)
+
+* Source repo moved from Subversion to Github
+* Various POD improvements
+* make_gdl
+*    now supports -o
+* make_fea
+*    new options: --markattach, --preinclude
+* make_gdl, make_fea, make_volt
+*    new options: --package, --classwarn
+* ttftable
+*    can now remove script tags from OT tables
+* dumpfont
+*   new option: -d
+*   now supports dumping woff metadata
+
+* New/updated Examples
+*    volt2fea.pl -- convert VOLT project to FEA
+*    pstest.pl -- verify all glyphs are AGL conforming
+*    ttfmetrics.pl -- new options: -g, -p
+*
+* Notable bug fixes:
+*    Now installs on Windows Perl 5.22 and up
+*    make_gdl
+*       improved attachment processing
+*       doesn't crash if the matching "moving APs" (e.g., "_above") don't exist.
+*       removed non-functioning -d option; use --autodefines instead
+*    make_fea
+*       many bugfixes and improvements
+*    ttfsubset
+*       fix graphite generation
+*    fret
+*       now handles glyphs that reference empty glyphs
+*    dumpfont
+*       more robust option handling to eliminate crashes
+*    ttfname
+*       -t 0 now works
+*
+
 1.05 (r1069, 2015-01-26)
 
 * make_fea generates AFDKO feature files
-* make_gdl, make_volt, make_fea parameters harmonized; 
+* make_gdl, make_volt, make_fea parameters harmonized;
 *   added -c support to obviate make_classes
 * fret -b, to show octaboxes
 * rename Scripts.pod to Scripts.pm; use that file for version info
@@ -12,10 +51,10 @@
 *        fix graphite generation
 *    hackos2
 *        fix OS/2 table padding and checksum
-*    ttffeatparams 
+*    ttffeatparams
 *        correctly handles multiple cvxx/ssxx features
 *        selects correct existing strings
-*    ttf2woff 
+*    ttf2woff
 *        catches checksum/alignment issues rather than silently build faulty font
 *    sfdmeld
 *        fix adding new glyphs from struct to design
@@ -33,16 +72,16 @@
 1.04  (r969, 2013-11-10)
 
 * Bug fixes and/or new capabilities:
-*    ttfbuilder 
+*    ttfbuilder
 *        glyph rotation
 *    make_gdl
 *        -D and -ignore options
 *    ttfsubset
-*        major upgrade with better subsetting 
+*        major upgrade with better subsetting
 *        support for Silf table, glyph ranges
-*    ttfname 
+*    ttfname
 *        can remove multiple names at once
-*    volt2ttf 
+*    volt2ttf
 *        chaining lookups
 *        mark filter sets
 *        handle missing APs
@@ -50,12 +89,12 @@
 *        better integration with TypeTuner
 *        SKIP_BASE, ENUM and ECEPT_CONTEXT fixes
 *        support pair-position format 1
-*    dumpfont 
+*    dumpfont
 *        TSIV now parsed before dumping
 *    ttfprintinfo
 *        sorts language & feature tags
 *    ttf2woff
-*    psfix 
+*    psfix
 *        major overhaul, new options
 *    ttfeval
 *        can now read program from a file
