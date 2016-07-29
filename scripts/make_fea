@@ -12,6 +12,7 @@ GetOptions(\%opts,
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
+    'classwarn',
     # 'autodefines',    # used in make_gdl
     # 'define|d=s%',    # used in make_gdl
     'empty|e=s',
@@ -80,12 +81,6 @@ else
 }
 die "Can't read font information" unless $f;
  
-if (exists $f->{'WARNINGS'})
-{
-    warn $f->{'WARNINGS'};
-}
-
-
 my $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
 my $comp = $1 if ($opts{'ligatures'} =~ s/(comp)$//oi);
@@ -123,12 +118,17 @@ if ($opts{'markattach'} and %{$opts{'markattach'}})
 
 $f->{'vecs'} = {};
 
-$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_classes($outfh);
 $f->start_afdko($outfh, %opts);
 $f->out_pos_lookups($outfh, -m => \%markattaches);
 $f->end_out($outfh, $opts{'include'}, %opts);
+
+if (exists $f->{'WARNINGS'})
+{
+    warn $f->{'WARNINGS'};
+}
 
 $outfh->close();
 
@@ -151,6 +151,8 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
   -c classfile  xml file of class and property information to merge in
   --classprops  specifies whether classes are made for property values in
                 the classfile
+  --classwarn   issue warnings if classfile contains references to glyphs
+                that are not in the font.
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warnings). 
   -h            print manpage

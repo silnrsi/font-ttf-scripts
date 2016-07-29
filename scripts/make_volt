@@ -11,6 +11,7 @@ GetOptions(\%opts,
 	'b', 
 	'classfile|c=s',
 	'classprops',
+    'classwarn',
 	# 'autodefines|d',	# used in make_gdl
 	# 'define|D=s%', 	# used in make_gdl
 	'empty|e=s', 
@@ -62,15 +63,9 @@ $options{'-omittedAPs'} = $opts{'omitaps'} if $opts{'omitaps'};
 
 my $f = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opts{'ap'}, %options) || die "Can't read font information";
 
-if (exists $f->{'WARNINGS'})
-{
-	warn $f->{'WARNINGS'};
-}
-
-
 my $comp = $1 if ($opts{'ligatures'} =~ s/(comp)$//o);
 
-$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -notmark => $opts{'mark'});
 if ($opts{'include'})
 {
@@ -114,6 +109,11 @@ else
     $f->{'font'}->out($ARGV[1]);
 }
 
+if (exists $f->{'WARNINGS'})
+{
+    warn $f->{'WARNINGS'};
+}
+
 exit($f->{'error'});
 
 __END__
@@ -136,6 +136,8 @@ Creates a copy of the infile font file adding a VOLT table to it.
   -c classfile  xml file of class and property information to merge in
   --classprops  specifies whether classes are made for property values in
                 the classfile
+  --classwarn   issue warnings if classfile contains references to glyphs
+                that are not in the font.
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warning). 
   -f level      Force value for adding OpenType lookups:

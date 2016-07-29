@@ -519,7 +519,11 @@ sub add_classfile
                 foreach my $e (('', split(' ', $currclass->[1])))
                 {
                     my ($c) = canon("$g$e");
-                    next unless (defined $cglyphs{$c});
+                    unless (defined $cglyphs{$c})
+                    {
+                        $self->error("Class $currclass->[0] references non-existant glyph $c\n") if ($opts{'-w'});
+                        next;
+                    }
 
                     if ($tag eq 'class')
                     { $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[$0]"; }

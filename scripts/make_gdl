@@ -12,6 +12,7 @@ GetOptions(\%opts,
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
+    'classwarn',
     'autodefines',
     'define|d=s%',
     'empty|e=s',
@@ -79,12 +80,6 @@ else
     $f = Font::TTF::Scripts::GDL->read_font($ARGV[0], $opts{'ap'}, %options);
 }
 die "Can't read font information" unless $f;
- 
-if (exists $f->{'WARNINGS'})
-{
-    warn $f->{'WARNINGS'};
-}
-
 
 my $outfh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
 
@@ -111,7 +106,7 @@ if ($opts{'renameaps'})
 
 $f->{'vecs'} = {};
 
-$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}) if ($opts{'classfile'});
+$f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->start_gdl($outfh);
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
 $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
@@ -121,6 +116,11 @@ $f->normal_rules($outfh, $opts{'normalize'}, ($opts{'z'} & 2)) if ($opts{'normal
 $f->lig_rules($outfh, $opts{'substitutions'}, $opts{'ligatures'}) if ($opts{'ligatures'});
 $f->pos_rules($outfh, $opts{'positions'}) if ($opts{'positions'});
 $f->end_gdl($outfh, $opts{'include'}, $opts{'define'});
+
+if (exists $f->{'WARNINGS'})
+{
+    warn $f->{'WARNINGS'};
+}
 
 $outfh->close();
 
@@ -143,6 +143,8 @@ Creates font specific GDL from a font and optional attachment point database
   -c classfile  xml file of class and property information to merge in
   --classprops  specifies whether classes are made for property values in
                 the classfile
+  --classwarn   issue warnings if classfile contains references to glyphs
+                that are not in the font.
   --autodefines Output per class #defines for key classes
   -d name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
