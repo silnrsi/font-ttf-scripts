@@ -451,7 +451,6 @@ sub has
 Font::TTF::Scripts::GDL - create GDL (Graphite Description Language) from a
                           TrueType font
 
-
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>. 

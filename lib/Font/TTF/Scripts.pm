@@ -2,7 +2,7 @@ package Font::TTF::Scripts;
 
 use strict;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 1;
 
@@ -15,6 +15,8 @@ Font::TTF::Scripts - Smart font script supporting modules and scripts for TTF/OT
 This module contains a number of useful command-line programs for hacking with TTF/OTF files. Highlights include:
 
   fret       - produces PDF report of an uninstalled font including all glyphs
+  make_gdl   - build GDL source code Graphite fonts
+  make_fea   - build Feature source code for OpenType fonts
   hackos2    - manipulates the OS/2 table of a font
   ttf2woff   - create WOFF version of a font
   ttfbuilder - builds a font from another font, attaching glyphs, subsetting, etc.
@@ -62,6 +64,8 @@ L<volt2ttf>.
 Martin Hosken L<http://scripts.sil.org/FontUtils>.
 (see CONTRIBUTORS for other authors).
 
+Repository available at L<https://github.com/silnrsi/font-ttf-scripts.git>
+
 =head1 HISTORY
 
 See F<Changes> file for a change log.
@@ -73,3 +77,7 @@ Copyright (c) 1998-2016, SIL International (http://www.sil.org)
 This module and all the various scripts are released under the terms of the
 Artistic License 2.0. For details, see the full text of the license in the file
 LICENSE.
+
+The fonts in the test suite are released under the Open Font License 1.1, see F<t/OFL.txt>.
+
+=cut
