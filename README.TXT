@@ -64,6 +64,8 @@ Windows users should use dmake instead of make.
 Martin Hosken L<http://scripts.sil.org/FontUtils>.
 (see CONTRIBUTORS for other authors).
 
+Repository available at L<https://github.com/silnrsi/font-ttf-scripts.git>
+
 =head1 LICENSING
 
 Copyright (c) 1998-2016, SIL International (http://www.sil.org)

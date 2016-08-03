@@ -115,7 +115,6 @@ sub ttfname
 
 Font::TTF::Scripts::Name - set name of font
 
-
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>. 

@@ -481,7 +481,6 @@ sub cut
 
 Font::TTF::Scripts::Thai - handling of legacy (non-Unicode) Thai fonts
 
-
 =head1 AUTHOR
 
 Martin Hosken L<http://scripts.sil.org/FontUtils>. 
