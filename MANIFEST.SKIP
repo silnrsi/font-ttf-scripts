@@ -1,5 +1,4 @@
 blib/
-.git/
 \.\$\$\$
 \.tmp
 \.temp
@@ -13,6 +12,7 @@ Build/
 exes/
 \.cvsignore
 ^#
+\.git/
 \.svn/
 Makefile$
 \.par$
