@@ -203,7 +203,7 @@ NID: foreach $nid(256 .. $lastnid){
   my ($ctrlitem, $gfeat, $ftype, $lang);
   foreach $featname (sort keys %{$ctrl})
   {
-    my @ftags = grep {/^$featname/} keys ($gsubt->{'FEATURES'});
+    my @ftags = grep {/^$featname/} keys %{$gsubt->{'FEATURES'}};
     print "No GSUB feature exists for $featname \n" unless scalar(@ftags);
     foreach my $ftag (@ftags)
     {
