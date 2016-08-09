@@ -12,7 +12,7 @@ Build/
 exes/
 \.cvsignore
 ^#
-\.git/
+(^|/)\.git
 \.svn/
 Makefile$
 \.par$
@@ -37,4 +37,4 @@ description-pak
 ^t/testfont\.pdf
 ^\.
 ^MYMETA\..*$
-addbats.pl
+^addbats\.pl
