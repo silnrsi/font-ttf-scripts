@@ -21,10 +21,10 @@ system($^X, $fret, "-d", "1000000000", "t/testfont.ttf");
 # Unfortunately the PDFs won't ever compare exactly, so we can't really do this:
 $res = compare("t/testfont.pdf", "t/base/testfont.pdf");
 
-# Rather, we'll just make sure the files are the same length:
+# Rather, we'll just make sure the files are similar length:
 $lgt = ((stat('t/testfont.pdf'))[7]);
 $lgtref = ((stat('t/base/testfont.pdf'))[7]);
-$res = ($lgt == $lgtref);
+$res = (abs($lgt - $lgtref) < 4);
 ok($res, "PDF length should be $lgtref is $lgt");
 unlink "t/testfont.pdf" if ($res);
 
