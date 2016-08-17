@@ -1,4 +1,4 @@
-1.06 (in development)
+1.06  Development
 
 * Source repo moved from Subversion to Github
 * Various POD improvements
@@ -37,7 +37,7 @@
 *       -t 0 now works
 *
 
-1.05 (r1069, 2015-01-26)
+1.05 2015-01-26 r1069
 
 * make_fea generates AFDKO feature files
 * make_gdl, make_volt, make_fea parameters harmonized;
@@ -62,14 +62,14 @@
 *        vixed various problems related to WOFF fonts
 *
 
-1.04.1 (r995, 2014-01-09)
+1.04.1 2014-01-09 r995
 
 * Bug fixes:
 *    Fix ttfsubset for Perl 5.12 and earlier
 *    Update licensing info for test fonts to OFL
 *    Slight improvement in volt2ttf for cases of missing glyphs
 
-1.04  (r969, 2013-11-10)
+1.04  2013-11-10 r969
 
 * Bug fixes and/or new capabilities:
 *    ttfbuilder
@@ -101,19 +101,19 @@
 *    Examples/ttfcompare.pl
 *        -t option to compare checksum & length of all tables
 
-1.03  (r866, 2012-09-07)
+1.03  2012-09-07 r866
 
 * Bug fix: two tests weren't cross-platform
 
-1.02  (r863, 2012-08-28)
+1.02  2012-08-28 r863
 
 * Add Text::Unicode::Equivalents dependency
 
-1.01  (r861, 2012-08-28)
+1.01  2012-08-28 r861
 
 * Add IO::String prerequisite to keep BSD and testing environments happy
 
-1.00  (r858, 2012-08-28)
+1.00  2012-08-28 r858
 
 * New utilities:
 *    ttf2woff
@@ -148,11 +148,11 @@
 * EOL and executable SVN properties cleaned up
 * Copyright and licensing updated to CPAN requirements
 
-0.16.1  (r693, 2010-12-14)
+0.16.1  2010-12-14 r693
 
 * Release with working tests
 
-0.16  (r691, 2010-12-14)
+0.16  2010-12-14 r691
 
 * ttfname now expects/returns utf8 strings.
 * Bug fixes and/or new capabilities in
@@ -164,14 +164,14 @@
 * New Examples
 *    ttfdiff.pl
 
-0.15.1  (r672, 2009-11-27)
+0.15.1  2009-11-27 r672
 
 * New utilities:
 *    sdfmerge
 * Bug fixes and/or new capabilities in
 *    sdfmeld
 
-0.15  (r665, 2009-11-16)
+0.15  2009-11-16 r665
 
 * Support debian packaging
 * New utilities:
@@ -180,7 +180,7 @@
 *    ttfbuilder
 *    volt2ttf
 
-0.14  (r639, 2009-07-27)
+0.14  2009-07-27 r639
 
 * New utilities:
 *    sdfaddap
@@ -192,17 +192,17 @@
 *    fixmaxcontext.pl
 *    volt2ps.pl
 
-0.13  (r586, 2009-02-12)
+0.13  2009-02-12 r586
 
 * New utilities:
 *    ttfdeflang
 * New Examples
 *    ttfprintot.pl
 
-0.12  (r574, 2009-01-05)
+0.12  2009-01-05 r574
 
 
-0.11  (r.518, 2008-05-25)
+0.11  2008-05-25 r518
 
 * New utilities:
 *    dumpfont
