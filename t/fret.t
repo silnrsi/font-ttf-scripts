@@ -24,7 +24,7 @@ $res = compare("t/testfont.pdf", "t/base/testfont.pdf");
 # Rather, we'll just make sure the files are similar length:
 $lgt = ((stat('t/testfont.pdf'))[7]);
 $lgtref = ((stat('t/base/testfont.pdf'))[7]);
-$res = (abs($lgt - $lgtref) < 4);
+$res = (abs($lgt - $lgtref) < 20);
 ok($res, "PDF length should be $lgtref is $lgt");
 unlink "t/testfont.pdf" if ($res);
 
