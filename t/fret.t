@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 
-use Test::Simple tests => 2;
+use Test::More tests => 2;
 use File::Compare;
+use Text::PDF;      # We've got different tests for different versions
 
 $fret = "scripts/fret";
 
@@ -16,15 +17,23 @@ else {
 unlink 't/testfont.pdf';
 ok(!-f 't/testfont.pdf', 'pdf should not exist');
 
-system($^X, $fret, "-d", "1000000000", "t/testfont.ttf");
+system($^X, $fret, "-d", "1000000000", "-q", "t/testfont.ttf");
 
-# Unfortunately the PDFs won't ever compare exactly, so we can't really do this:
-$res = compare("t/testfont.pdf", "t/base/testfont.pdf");
+# For Text::PDF prior to 0.31, PDFs are unlikely to compare exactly.
+my $tpdf_ver = Text::PDF->VERSION;
+if ($tpdf_ver < 0.31)
+{
+    # in which case just make sure the files are similar length:
+    diag "Detected Text::PDF $tpdf_ver ... checking for reasonable length...\n";
+    $lgt = ((stat('t/testfont.pdf'))[7]);
+    $lgtref = ((stat('t/base/testfont.pdf'))[7]);
+    $res = (abs($lgt - $lgtref) < 200);
+    ok($res, "PDF length should be $lgtref is $lgt");
+}
+else
+{
+    $res = !compare("t/testfont.pdf", "t/base/testfont.pdf");
+    ok($res, "PDF files match");
+}
 
-# Rather, we'll just make sure the files are similar length:
-$lgt = ((stat('t/testfont.pdf'))[7]);
-$lgtref = ((stat('t/base/testfont.pdf'))[7]);
-$res = (abs($lgt - $lgtref) < 20);
-ok($res, "PDF length should be $lgtref is $lgt");
-unlink "t/testfont.pdf" if ($res);
-
+unlink "t/testfont.pdf" if $res; ;
