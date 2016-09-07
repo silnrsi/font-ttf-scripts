@@ -1,7 +1,8 @@
-1.06_01 Development
+1.06_02 Development
 
 * Bug fixes:
 *    Building Windows binary works again
+*    TypeTuner should now compile on Perl 5.10
 
 1.06  2016-08-24
 

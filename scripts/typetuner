@@ -1076,7 +1076,7 @@ sub cmd_line_exec(@)
 			$font = Font::TTF::Font->open($fn) or die "Can't open font";
 			
 			$flag = 1;
-			($fh, $feat_all_fn) = tempfile(); $fh->close;
+			($fh, $feat_all_fn) = tempfile(); close($fh);
 			if ($opt_d) {print "feat_all_fn: $feat_all_fn\n"}
 			#$feat_all_fn = substr($fn, 0, -4) . "_feat_all.xml";
 			Table_extract($font, $feat_all_fn, 0);
@@ -1196,7 +1196,7 @@ sub cmd_line_exec(@)
 			$font = Font::TTF::Font->open($font_fn) or die "Can't open font";
 			
 			$flag = 1;
-			($fh, $feat_all_fn) = tempfile(); $fh->close;
+			($fh, $feat_all_fn) = tempfile(); close($fh);
 			if ($opt_d) {print "feat_all_fn: $feat_all_fn\n"}
 			#$feat_all_fn = substr($font_fn, 0, -4) . "_feat_all.xml";
 			Table_extract($font, $feat_all_fn, 0);
