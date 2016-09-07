@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 ; Assumes iscc commandline parameters, e.g.:
-;  iscc.exe  /dMyVer=0.16.2 /dParlPath=C:\Perl\site\bin FontUtils.iss
+;  iscc.exe  /dMyVer=0.16.2 FontUtils.iss
 ; where 
 ;  MyVer is the version for this release in the form n.n.n, and 
 ;  ParlPath is the name of the folder containing parl.exe
@@ -11,7 +11,6 @@
 
 #define MyFileName StringChange("TTFontUtils_" + MyVer, ".", "_")
 #define MyVer StringChange(MyVer, "_", ".")
-#define Parl AddBackslash(ParlPath) + "parl.exe"
 
 [Setup]
 AppName=SIL TTF Font Utilities
@@ -37,16 +36,15 @@ DisableStartupPrompt=yes
 Name: updatepath; Description: "Add installation directory to &PATH";
 
 [Files]
-Source: "scripts\fontutils.par"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#Parl}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "fontutils.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-Filename: "{app}\parl.exe"; Parameters: """{app}\fontutils.par"" addpath ""{app}"""; Flags: runminimized; Tasks: updatepath
-Filename: "{app}\parl.exe"; Parameters: """{app}\fontutils.par"" addbats.pl ""{app}"""; Flags: runminimized
+Filename: "{app}\fontutils.exe"; Parameters: "addpath ""{app}"""; Flags: runminimized; Tasks: updatepath
+Filename: "{app}\fontutils.exe"; Parameters: "addbats.pl ""{app}"""; Flags: runminimized
 
 [UninstallRun]
-Filename: "{app}\parl.exe"; Parameters: """{app}\fontutils.par"" addpath -r ""{app}"""; Flags: runminimized; Tasks: updatepath
-Filename: "{app}\parl.exe"; Parameters: """{app}\fontutils.par"" addbats.pl -r ""{app}"""; Flags: runminimized
+Filename: "{app}\fontutils.exe"; Parameters: "addpath -r ""{app}"""; Flags: runminimized; Tasks: updatepath
+Filename: "{app}\fontutils.exe"; Parameters: "addbats.pl -r ""{app}"""; Flags: runminimized
 
 #ifdef Debug
   #expr SaveToFile(AddBackslash(SourcePath) + "Preprocessed.iss")
