@@ -78,7 +78,7 @@ sub out_fea_glyphs
 	my (@bases, @marks, @ligatures, @components, $markClasses);
     startsection ($fh, "Glyphs");
     
-    for my $gname (sort keys $dat->{'glyph_names'})
+    for my $gname (sort keys %{$dat->{'glyph_names'}})
     {
     	next if $gname =~ /^(\.|nonmarkingreturn|tab)/;	# ignore .null, .notdef, etc.
     	my $gid = $dat->{'glyph_names'}{$gname};
@@ -448,7 +448,7 @@ sub get_fea_simple_lookup
 			elsif ($rule->{'type'} eq 'ADJUST_PAIR')
 			{
 				# GPOS Type 2: pair adjust
-				...;
+				printf STDERR "GPOS Type 2 (pair adjust) not yet implemented by volt2fea -- lookup $l->{'id'} ignored\n";
 			}
 			elsif ($rule->{'type'} eq 'ATTACH_CURSIVE')
 			{
@@ -721,7 +721,7 @@ sub get_ctx_flat
 		{
 			for my $gid ($ctx->[1] .. $ctx->[0] eq 'GLYPH' ? $ctx->[1] : $ctx->[2]) 
 			{
-				push $res, $gid;
+				push @{$res}, $gid;
 			}
 		}
 		else  # ENUM and GROUP are similar:
@@ -729,7 +729,7 @@ sub get_ctx_flat
 			return undef if $ctx->[0] eq 'GROUP' && !defined($self->{'completed'}{$ctx->[1]});
 			my $res2 = $self->get_ctx_flat($ctx->[0] eq 'GROUP' ? $self->{'voltdat'}{'groups'}{$ctx->[1]} : $ctx->[1]);
 			return undef unless defined $res2;
-			push $res, @{$res2};
+			push @{$res}, @{$res2};
 		}
 	}
 	return $res;
