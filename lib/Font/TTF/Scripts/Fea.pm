@@ -150,7 +150,7 @@ sub out_classes
             { $sep = " "; }
         }
         $fh->print("];\n\n");
-        if ($name !~ /^Takes/o)
+        if ($name !~ /^Takes/o && defined $lists->{$name})
         {
             $fh->print("\@cMarkFilter_${name} = [\@c${name}Dia \@cTakes${name}Dia];\n");
         }
