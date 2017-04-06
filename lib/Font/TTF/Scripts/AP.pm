@@ -498,7 +498,7 @@ Reads the given xml classes description file and stores the info in this ap stru
 sub add_classfile
 {
     my ($self, $fname, %opts) = @_;
-    my ($text, $currclass, %cglyphs);
+    my ($text, $currclass, %cglyphs, %classes);
     my ($xml) = XML::Parser::Expat->new();
 
     $xml->setHandlers(
@@ -513,9 +513,30 @@ sub add_classfile
         },
         End => sub {
             my ($xp, $tag) = @_;
+            
+            $classes{$currclass->[0]} = [] if $tag eq 'class';
 
             foreach my $g (split(' ', $text))
             {
+                if ($tag eq 'class' and $g =~ /^@(.+)$/)
+                {
+                	# Nested class definition. Must have seen this class already:
+                	my $class = $1;
+                	if (exists $classes{$class})
+                	{
+	                	foreach my $c (@{$classes{$class}})
+	                	{
+	                    	$cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+	                    	push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
+	                	}
+	                }
+					else
+                	{
+                		$self->error("Class $currclass->[0] references undefined class $class\n");
+                	}
+                	next;
+                }
+                
                 foreach my $e (('', split(' ', $currclass->[1])))
                 {
                     my ($c) = canon("$g$e");
@@ -526,7 +547,10 @@ sub add_classfile
                     }
 
                     if ($tag eq 'class')
-                    { $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[$0]"; }
+                    { 
+                    	$cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+                    	push @{$classes{$currclass->[0]}}, $c;	# Remember classes we've seen.
+                    }
                     elsif ($tag eq 'property')
                     {
                         $cglyphs{$c}{'props'}{$currclass->[0]} = $currclass->[2];
