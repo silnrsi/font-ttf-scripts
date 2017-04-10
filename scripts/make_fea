@@ -9,11 +9,11 @@ use File::Basename;
 our(%opts);
 GetOptions(\%opts, 
     'ap|a=s', 
+    # 'autodefines',    # used in make_gdl
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
     'classwarn',
-    # 'autodefines',    # used in make_gdl
     # 'define|d=s%',    # used in make_gdl
     'empty|e=s',
     # 'forceadd|f=i',   # used in make_volt
@@ -154,15 +154,27 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
   --classwarn   issue warnings if classfile contains references to glyphs
                 that are not in the font.
   -e file       A file containing names (1 per line) of glyphs that are 
-                known to have no outline (thus shouldn't generate warnings). 
+                known to have no outline (thus should not generate warnings). 
   -h            print manpage
-  -i file       add #include statement at end of file
+  -i file       add #include statement at end of file. May be specified
+                more than once.
   -l type       type =
                     first - class name is first code, contents other codes
                     last  - class name is last code, contents other codes
                     firstcomp - treat extensions as part of elements, as first
                     lastcomp - treat extensions as part of elements, as last
   -m "list"     List of APs to ignore when deciding whether a glyph is a mark
+  --markattach "ap_list=group"
+                Use the named group as the MarkAttachmentClass when generating
+                mark-to-mark lookups for any of the APs named in the ap_list.
+                The AP names may be separated by comma, period, semicolon, 
+                slash or space. If any --markattach options are specified, 
+                the mark-to-mark lookups for any APs that are not mentioned 
+                in one of the --markattach options will use LookupFlag 0. 
+                If no --markattach options are specified, then the LookupFlag 
+                for mark-to-mark lookups will utilize MarkFilterSets with a 
+                a group calculated by make_fea. 
+                This option may be specified more than once. 
   -o "list"     List of AP names to omit
   --package file
                 Use the named file instead of Font::TTF::Scripts::GDL.pm to
