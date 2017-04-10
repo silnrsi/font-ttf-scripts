@@ -5,19 +5,22 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-our $VERSION = 0.8;     #   
+our $VERSION = 0.9;
 
 our %opts;
 
-pod2usage(-verbose => 1) unless getopts('a:d:ht:', \%opts) && ($#ARGV == 1 || $opts{'h'});
+pod2usage(-verbose => 1) unless getopts('a:c:d:ht:', \%opts) && ($#ARGV == 1 || $opts{'h'});
 
 pod2usage( -verbose => 2, -noperldoc => 1) if $opts{'h'};
 
 my $if = Font::TTF::Scripts::Volt->read_font($ARGV[0], $opts{'a'}) || die "Can't read font $ARGV[0]";
 
-my $fh = IO::File->new("> $ARGV[1]") || die "Can't open $ARGV[1] for writing";
+my $fh = IO::File->new("> $ARGV[1]") || die "Can't open '$ARGV[1]' for writing";
+
 
 Font::TTF::Scripts::Volt::VoltToFEA($if, $fh, %opts);
+$fh->close;
+
 
 die $if->{'WARNINGS'} if $if->{'cWARNINGS'};
 
@@ -64,7 +67,17 @@ sub VoltToFEA
 	$indent3 = $indent1 x 3;
 	
 	$fv->out_fea_glyphs($fh);
-	$fv->out_fea_groups($fh);
+	if ($opts{'c'})
+	{
+		my $fn = $opts{'c'};
+		my $fx = IO::File->new("> $fn") || die "Can't open '$fn' for writing";
+		$fv->out_fea_groups($fx, 1);
+		$fx->close;
+	}
+	else
+	{
+		$fv->out_fea_groups($fh, 0);
+	}
 	$fv->out_fea_langsys($fh);
 	$fv->out_fea_lookups($fh);
 	$fv->out_fea_features($fh);
@@ -129,11 +142,20 @@ sub out_fea_glyphs
 
 sub out_fea_groups
 {
-    my ($self, $fh) = @_;
+    my ($self, $fh, $asXML) = @_;
     my ($dat) = $self->{'voltdat'};
     my ($font) = $self->{'font'};
     
-    startsection ($fh, "Glyph classes");
+	if ($asXML) 
+	{
+		# We're going to output a classes.xml file
+		$fh->print("<?xml version='1.0' encoding='utf-8'?>\n<classes>\n");
+	}
+	else 
+	{
+		# Add groups to the .fea file we've already started:
+    	startsection ($fh, "Glyph classes");
+    }
     $self->{'completed'} = {};
     
     my (@grps);
@@ -150,12 +172,25 @@ sub out_fea_groups
     	{
     		my $grpName = $grps[$grp];
  			my $res = $self->get_fea_ctx($dat->{'groups'}{$grpName});
- 			next unless defined $res;			# Can't output this one yet... so try the next one.
- 			$fh->print("\n", wrap($indent0, $indent1, "\@$grpName = [ $res ] ;\n"));	# Success! output it.
+ 			next unless defined($res);			# Can't output this one yet... so try the next one.
+ 			if ($asXML)
+ 			{
+ 				$fh->print("\n$indent1<class name='$grpName'>\n", wrap($indent2, $indent2, $res), "\n$indent1</class>\n");
+ 			}
+ 			else
+ 			{
+ 				$fh->print("\n", wrap($indent0, $indent1, "\@$grpName = [ $res ] ;\n"));
+ 			}
  			$self->{'completed'}{$grpName} = 1;	# Remember that this one is done
  			splice @grps, $grp, 1;				# Remove from list of remaining work
  			last;								# Start from the start of the list again
  		}
+ 	}
+ 	
+ 	if ($asXML)
+ 	{
+ 		$fh->print("\n</classes>\n");
+ 		$fh->close;
  	}
  	
  	$self->error("Groups appear to have a circular definition. Review ", join(',', @grps), "\n") if scalar(@grps);
@@ -885,8 +920,9 @@ Opens VOLT project (a .ttf file) then writes an equivalent FEA file
 
 =head1 OPTIONS
 
-  -t file     Volt source as text file to use instead of what is in the font
-  -h          Help
+  -c file  Class (.xml) file to create rather than include groups in the FEA
+  -t file  Volt source as text file to use instead of what is in the font
+  -h       Help
 
 =head1 DESCRIPTION
 
@@ -898,6 +934,9 @@ input font, not from the VOLT names in the project (which may be different).
 This code attempts to write FEA files that are compatible with both AFDKO
 and Fontforge, but your mileage may vary since both have some bugs in the 
 way stuff is parsed.
+
+If -c is specified, group definitions are written as XML to the named file
+for use with make_gdl rather than included in the FEA.
 
 =head1 BUGS
 
@@ -917,7 +956,7 @@ Bob Hallissy <http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2016, SIL International (http://www.sil.org)
+Copyright (c) 1998-2017, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
