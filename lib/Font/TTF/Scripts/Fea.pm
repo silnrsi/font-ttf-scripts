@@ -106,6 +106,8 @@ sub out_classes
     my ($vecs) = $self->{'vecs'};
     my ($glyphs) = $self->{'glyphs'};
     my ($l, $name, $count, $sep, $psname, $cl, $i, $c);
+    $self->{'-classprefix'} = $opts{'-classprefix'};   # save for out_pos_lookups()
+    my ($cp) = "\@$opts{'-classprefix'}";
 
     $fh->print("\n# Classes\n");
 
@@ -118,7 +120,7 @@ sub out_classes
         else
         { $name =~ s/^_//o; }
 
-        $fh->print("\@c${name}Dia = [");
+        $fh->print($self->make_classname("${name}Dia") . ' = [');
         $count = 0; $sep = '';
         foreach $cl (@{$lists->{$l}})
         {
@@ -133,7 +135,7 @@ sub out_classes
 
         #next unless defined $vecs->{$l};
 
-        $fh->print("\@cn${name}Dia = [");
+        $fh->print($self->make_classname("n${name}Dia") . ' = [');
         $count = 0; $sep = '';
         for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
         {
@@ -152,11 +154,11 @@ sub out_classes
         $fh->print("];\n\n");
         if ($name !~ /^Takes/o && defined $lists->{$name})
         {
-            $fh->print("\@cMarkFilter_${name} = [\@c${name}Dia \@cTakes${name}Dia];\n");
+            $fh->printf("%s = [ %s %s ];\n\n", $self->make_classname("MarkFilter_${name}"), $self->make_classname("${name}Dia"), $self->make_classname("Takes${name}Dia"));
         }
     }
 
-    $fh->print("\@cGDEF_Bases = [");
+    $fh->print($self->make_classname('GDEF_Bases') . ' = [');
     $count = 0; $sep = '';
     for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
     {
@@ -169,7 +171,7 @@ sub out_classes
     }
     $fh->print("];\n\n");
 
-    $fh->print("\@cGDEF_Attaches = [");
+    $fh->print($self->make_classname('GDEF_Attaches') . ' = [');
     $count = 0; $sep = '';
     for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
     {
@@ -184,7 +186,7 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$classes})
     {
-        $fh->print("\@c$cl = [$glyphs->[$classes->{$cl}[0]]{'name'}");
+        $fh->print($self->make_classname($cl) . " = [$glyphs->[$classes->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$classes->{$cl}}; $i++)
         { $fh->print($i % 8 ? " $glyphs->[$classes->{$cl}[$i]]{'name'}" : "\n    $glyphs->[$classes->{$cl}[$i]]{'name'}"); }
         $fh->print("];\n\n");
@@ -192,7 +194,7 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$ligclasses})
     {
-        $fh->print("\@clig$cl = [$glyphs->[$ligclasses->{$cl}[0]]{'name'}");
+        $fh->print($self->make_classname("lig$cl") . " = [$glyphs->[$ligclasses->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$ligclasses->{$cl}}; $i++)
         { $fh->print($i % 8 ? " $glyphs->[$ligclasses->{$cl}[$i]]{'name'}" : "\n    $glyphs->[$ligclasses->{$cl}[$i]]{'name'}"); }
         $fh->print("];\n\n");
@@ -230,7 +232,8 @@ sub out_pos_lookups
     my ($glyphs) = $self->{'glyphs'};
     my ($lists) = $self->{'lists'};
     my ($l, $c, $mode);
-
+    my ($cp) = "\@$self->{'-classprefix'}";
+    
     foreach $l (sort keys %{$lists})
     {
         next if (substr($l, 0, 1) eq "_");
@@ -265,12 +268,12 @@ sub out_pos_lookups
                 if (defined $opts{'-m'}{$l})
                 {
                     if ($opts{'-m'}{$l})
-                    { $fh->print("    lookupflag MarkAttachmentType \@$opts{'-m'}{$l};\n"); }
+                    { $fh->printf("    lookupflag MarkAttachmentType %s ;\n", $self->make_classname($opts{'-m'}{$l})); }
                     else
                     { $fh->print("    lookupflag 0;\n"); }
                 }
                 else
-                { $fh->print("  lookupflag UseMarkFilteringSet \@cMarkFilter_${l};\n"); }
+                { $fh->printf("  lookupflag UseMarkFilteringSet %s;\n", $self->make_classname("MarkFilter_${l}")); }
             }
             else 
             { $fh->print("  lookupflag 0;\n"); }
@@ -278,13 +281,13 @@ sub out_pos_lookups
             {
                 my ($g) = $glyphs->[$c];
                 my ($p) = $g->{'points'}{"_$l"};
-                $fh->print("  markClass [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> \@$l;\n");
+                $fh->printf("  markClass [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> %s;\n", $self->make_classname($l));
             }
             foreach $c (@{$b})
             {
                 my ($g) = $glyphs->[$c];
                 my ($p) = $g->{'points'}{$l};
-                $fh->print("  pos $type [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> mark \@$l;\n");
+                $fh->printf("  pos $type [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> mark %s;\n", $self->make_classname($l));
             }
             $fh->print("} $name;\n\n");
         }
@@ -295,6 +298,14 @@ sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
     return $reserved{$gname} ? "\\$gname" : $gname;
+}
+
+sub make_classname
+{
+    my ($self, $name) = @_;
+    my ($cp) = $self->{'-classprefix'};
+    $name =~ s/[^A-Za-z0-9._]/_/g;  # replace disallowed chars.
+    return $cp ? "\@$cp$name" : $name =~ /^[0-9.]/ ? "\@_$name" : "\@$name";
 }
 
 sub end_out

@@ -120,7 +120,7 @@ $f->{'vecs'} = {};
 
 $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
-$f->out_classes($outfh);
+$f->out_classes($outfh, -classprefix => $opts{'z'} & 0x10 ? '' : 'c');
 $f->start_afdko($outfh, %opts);
 $f->out_pos_lookups($outfh, -m => \%markattaches);
 $f->end_out($outfh, $opts{'include'}, %opts);
@@ -189,6 +189,7 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                     1 - normalise even if presentation is only references
                     2 - use postscript names in glyph definitions
                     3 - do not output ; after include statement
+                    4 - do not prefix class names with 'c'
 
 =head1 SEE ALSO
 
