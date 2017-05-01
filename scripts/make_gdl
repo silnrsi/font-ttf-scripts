@@ -9,11 +9,12 @@ use File::Basename;
 our(%opts);
 GetOptions(\%opts, 
     'ap|a=s', 
+    'autodefines',
     # 'b',              # used in make_volt
     'classfile|c=s',
     'classprops',
     'classwarn',
-    'autodefines',
+    'cursive=s%',
     'define|d=s%',
     'empty|e=s',
     # 'forceadd|f=i',   # used in make_volt
@@ -108,7 +109,7 @@ $f->{'vecs'} = {};
 
 $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->start_gdl($outfh);
-$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'});
+$f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'}, -cursive => $opts{'cursive'});
 $f->out_gdl($outfh, -split_ligs => ($opts{'z'} & 1), -psnames => ($opts{'z'} & 4));
 $f->out_classes($outfh, -defines => $opts{'autodefines'});
 $f->endtable($outfh);
@@ -140,12 +141,15 @@ Creates font specific GDL from a font and optional attachment point database
 =head1 OPTIONS
 
   -a file       Attachment point database
+  --autodefines Output per class #defines for key classes
   -c classfile  xml file of class and property information to merge in
   --classprops  specifies whether classes are made for property values in
                 the classfile
   --classwarn   issue warnings if classfile contains references to glyphs
                 that are not in the font.
-  --autodefines Output per class #defines for key classes
+  --cursive "exitAP=entryAP" 
+                AP pair that should be cursively connected. May be specified
+                more than once.
   -d name=val   Add #defines to output gdl
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus shouldn't generate warnings). 
