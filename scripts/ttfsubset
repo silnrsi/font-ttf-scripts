@@ -1055,15 +1055,19 @@ package Font::TTF::Glat;
 sub subset
 {
     my ($self, $subsetter) = @_;
-    my ($res) = [];
+    my ($res, $resb) = ([], []);
 
     return unless ($self->SUPER::subset($subsetter));
     for (my $i = 0; $i < @{$self->{'attribs'}}; $i++)
     {
         if ($subsetter->keep_glyph($i))
-        { $res->[$subsetter->map_glyph($i)] = $self->{'attribs'}[$i]; }
+        {
+            $res->[$subsetter->map_glyph($i)] = $self->{'attribs'}[$i];
+            $resb->[$subsetter->map_glyph($i)] = $self->{'octaboxes'}[$i];
+        }
     }
     $self->{'attribs'} = $res;
+    $self->{'octaboxes'} = $resb;
 }
 
 package Font::TTF::Silf;
