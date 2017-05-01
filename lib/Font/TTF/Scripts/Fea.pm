@@ -109,7 +109,7 @@ sub out_classes
 
     $fh->print("\n# Classes\n");
 
-    foreach $l (sort keys %{$lists})
+    foreach $l (sort {apcmp($a, $b)} keys %{$lists})
     {
         my ($name) = $l;
 
@@ -199,6 +199,17 @@ sub out_classes
     }
 
     $self;
+}
+
+sub apcmp
+{
+    my ($x, $y) = @_;
+    my ($v, $w) = ($x, $y);
+    $x =~ s/^_/~/o;
+    $y =~ s/^_/~/o;
+    $v =~ s/^_//o;
+    $w =~ s/^_//o;
+    return ($v cmp $w || $x cmp $y);
 }
 
 sub classcmp
