@@ -150,8 +150,20 @@ returning an array of GIDs for glyphs that have the given attachment point.
 
 If defined, this variable will be updated by L</"make_classes">. It is a 
 hash, keyed by attachment point name (as modified by L</"make_point">) 
-returning a bit L<vec> bit array, indexed by GID, 
+returning a L<vec> bit array, indexed by GID, 
 each bit set to 1 if the corresponding glyph has the given attachment point.
+
+=item bases
+
+Created by L</"make_classes">, this is a L<vec> bit array, indexed by GID, where
+each bit set to 1 if the corresponding glyph can have another glyph attached to it 
+(in other words, has a "stationary" AP which has not been excluded by options).
+
+=item ismarks
+
+Created by L</"make_classes">, this is a L<vec> bit array, indexed by GID, where
+each bit set to 1 if the corresponding glyph can be attached to another glyph 
+(in other words, has a "moving" AP which has not been excluded by options).
 
 =item ligclasses
 
@@ -182,25 +194,25 @@ use strict;
 use vars qw($VERSION);
 
 $VERSION = "0.09";  # MH  Add classes property support
-# $VERSION = "0.08";  # BH	Generalize values for %opts so can be space- or comma-separated list in a scalar, or can be an array ref.
-# $VERSION = "0.07";  # MH    add make_names if you don't want make_classes
-# $VERSION = "0.06";  # MH    debug glyph alternates for ligature creation, add Unicode
-# $VERSION = "0.05";  # MH    add glyph alternates e.g. A/u0410 and ligature class creation
-# $VERSION = "0.04";	# BH   in progress
+# $VERSION = "0.08";  # BH  Generalize values for %opts so can be space- or comma-separated list in a scalar, or can be an array ref.
+# $VERSION = "0.07";  # MH  add make_names if you don't want make_classes
+# $VERSION = "0.06";  # MH  debug glyph alternates for ligature creation, add Unicode
+# $VERSION = "0.05";  # MH  add glyph alternates e.g. A/u0410 and ligature class creation
+# $VERSION = "0.04";  # BH   in progress
 # Merged my AP.pm with MH's version:
-#	Rename _error() to error()
-#	Added -errorfh support
-#	Removed 'gunis' and 'gnames' (similar functions available from the font)
-#	Added make_classes method
+#   Rename _error() to error()
+#   Added -errorfh support
+#   Removed 'gunis' and 'gnames' (similar functions available from the font)
+#   Added make_classes method
 
-#$VERSION = "0.03";	# BH   2004-02-02
-#	Fix to process AP data even when there is no glyph outline (e.g., on space)
+#$VERSION = "0.03"; # BH   2004-02-02
+#   Fix to process AP data even when there is no glyph outline (e.g., on space)
 
-#$VERSION = "0.02";	# BH   2003-09-22	Added 'components' array
-					#					No longer ignores blank glyphs (those with no outline)
+#$VERSION = "0.02"; # BH   2003-09-22   Added 'components' array
+                    #                   No longer ignores blank glyphs (those with no outline)
 #$VERSION = "0.01"; # BH   2003-01-06   Original extracted from GDL.PM
-					#					New functionality: support for -omittedAPs option giving a comma-separated
-					#					list of attachment points to be ignored.
+                    #                   New functionality: support for -omittedAPs option giving a comma-separated
+                    #                   list of attachment points to be ignored.
 
 
 =head2 $ap = Font::TTF::Scripts::AP->read_font ($ttf_file, $ap_file, %opts)
@@ -266,10 +278,10 @@ sub read_font
 #    my $minUID;
 #    if (exists $f->{'OS/2'})
 #    {
-#    		my $os2 = $f->{'OS/2'}->read || die "Can't read OS/2 table in font $fname";
-#    		$minUID = $os2->{'usFirstCharIndex'};
+#           my $os2 = $f->{'OS/2'}->read || die "Can't read OS/2 table in font $fname";
+#           $minUID = $os2->{'usFirstCharIndex'};
 #    }
-#	printf STDERR "FirstCharIndex = U+%04X\n", $minUID;
+#   printf STDERR "FirstCharIndex = U+%04X\n", $minUID;
 
     $xml = XML::Parser::Expat->new();
     $xml->setHandlers('Start' => sub {
@@ -303,20 +315,20 @@ sub read_font
                 $pg = $f->{'post'}{'STRINGS'}{$attrs{'PSName'}};
                 unless (defined $pg)
                 {
-                	# Failed to find glyph by the supplied PSName -- see if this is one of two special cases.
-                	# These cases exist because FontLab doesn't use the correct (Apple-specified) name for U+000D and U+00A7
-                	$pg = $f->{'post'}{'STRINGS'}{'nonmarkingreturn'} if $attrs{'PSName'} eq 'CR';
-                	$pg = $f->{'post'}{'STRINGS'}{'macron'} 			if $attrs{'PSName'} eq 'overscore';
+                    # Failed to find glyph by the supplied PSName -- see if this is one of two special cases.
+                    # These cases exist because FontLab doesn't use the correct (Apple-specified) name for U+000D and U+00A7
+                    $pg = $f->{'post'}{'STRINGS'}{'nonmarkingreturn'} if $attrs{'PSName'} eq 'CR';
+                    $pg = $f->{'post'}{'STRINGS'}{'macron'}           if $attrs{'PSName'} eq 'overscore';
                 }
-				if (defined $pg)
-				{
-                	$self->APerror($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
-	                        if (defined $ug && $pg != $ug);
-	                $cur_glyph->{'gnum'} ||= $pg;
-	            }
+                if (defined $pg)
+                {
+                    $self->APerror($xml, $cur_glyph, undef, "Postscript name: $attrs{'PSName'} resolves to different glyph to Unicode ID: $attrs{'UID'}")
+                            if (defined $ug && $pg != $ug);
+                    $cur_glyph->{'gnum'} ||= $pg;
+                }
                 else
                 {
-                	$self->APerror($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") ;
+                    $self->APerror($xml, $cur_glyph, undef, "No glyph associated with postscript name $attrs{'PSName'}") ;
                 }
                 # delete $attrs{'PSName'};  # Added in MH's version; v0.04: now believed un-needed and un-wanted.
             }
@@ -520,21 +532,21 @@ sub add_classfile
             {
                 if ($tag eq 'class' and $g =~ /^@(.+)$/)
                 {
-                	# Nested class definition. Must have seen this class already:
-                	my $class = $1;
-                	if (exists $classes{$class})
-                	{
-	                	foreach my $c (@{$classes{$class}})
-	                	{
-	                    	$cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
-	                    	push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
-	                	}
-	                }
-					else
-                	{
-                		$self->error("Class $currclass->[0] references undefined class $class\n");
-                	}
-                	next;
+                    # Nested class definition. Must have seen this class already:
+                    my $class = $1;
+                    if (exists $classes{$class})
+                    {
+                        foreach my $c (@{$classes{$class}})
+                        {
+                            $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+                            push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
+                        }
+                    }
+                    else
+                    {
+                        $self->error("Class $currclass->[0] references undefined class $class\n");
+                    }
+                    next;
                 }
                 
                 foreach my $e (('', split(' ', $currclass->[1])))
@@ -548,8 +560,8 @@ sub add_classfile
 
                     if ($tag eq 'class')
                     { 
-                    	$cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
-                    	push @{$classes{$currclass->[0]}}, $c;	# Remember classes we've seen.
+                        $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+                        push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
                     }
                     elsif ($tag eq 'property')
                     {
@@ -627,6 +639,18 @@ Ligature elements are separated by _ in the glyph name. Ligatures are only made 
 
 If set to C<'comp'>, then treat glyph name extension as part of the final element.
 
+=item -ignoredAPs
+
+A string containing a list of AP names that should be ignored
+
+=item -notmark
+
+A string containing a list of AP names that are not used for mark or cursive attachment.
+
+=item -cursive
+
+A reference to a hash keyed by exit AP names returning corresponding entry AP names to be cursively connected.
+
 =back
 
 =cut
@@ -638,6 +662,15 @@ sub make_classes
     my (%classes, %namemap, %fixedclasses);
     my ($g, $gname, $i, $j, $glyph, %used, $p, $name);
 
+	# Make sure cursive attachment points are not treated as marks
+	if (defined($opts{'-cursive'}))
+	{
+		while( my ($exit,$entry) = each %{$opts{'-cursive'}})
+		{
+			$opts{'-notmark'} .= " $exit $entry";
+		}
+	}
+	
     for ($i = 0; $i < $numg; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];
