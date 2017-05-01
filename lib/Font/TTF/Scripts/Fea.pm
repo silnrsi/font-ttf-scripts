@@ -268,7 +268,10 @@ sub out_pos_lookups
                 if (defined $opts{'-m'}{$l})
                 {
                     if ($opts{'-m'}{$l})
-                    { $fh->printf("    lookupflag MarkAttachmentType %s ;\n", $self->make_classname($opts{'-m'}{$l})); }
+                    { 
+                        # make_classname() not used. make_fea --markattach parameters are expected to be correct except for '@'
+                        $fh->print("    lookupflag MarkAttachmentType \@$opts{'-m'}{$l};\n"); 
+                    }
                     else
                     { $fh->print("    lookupflag 0;\n"); }
                 }
