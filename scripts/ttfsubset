@@ -57,7 +57,8 @@ if (defined $f->{'kern'})
 my $cmap = $f->{'cmap'}->read->find_ms;
 my $post = $f->{'post'}->read;
 my $numg = $f->{'maxp'}{'numGlyphs'};
-my $subsetter = Font::TTF::Scripts::SubSetter->new($numg, \%opts);
+my $maxpseudo = scalar @{$f->{'Gloc'}->read->{'locations'}} - 1 - $numg;
+my $subsetter = Font::TTF::Scripts::SubSetter->new($numg, $maxpseudo, \%opts);
 if ($opts{'g'})
 {
     my ($fh) = IO::File->new($opts{'g'}, "<:utf8") || die "Can't open $opts{'g'} for reading";
@@ -140,12 +141,12 @@ package Font::TTF::Scripts::SubSetter;
 
 sub new
 {
-    my ($class, $numg, $opts) = @_;
+    my ($class, $numg, $maxpseudo, $opts) = @_;
     my ($self) = {};
     $self->{'glyphs'} = '';     # bit vector in old font gid space, set if glyph to be kept
     $self->{'remaps'} = {};     # maps new unicode cmap entry to old font gid
     $self->{'numg'} = $numg;
-    $self->{'numPseudo'} = 0;
+    $self->{'numPseudo'} = $maxpseudo;
     $self->{'opts'} = $opts;
     # other attributes:
     # $self->{'gidmap'} = [];   # maps old gid to new gid
@@ -175,7 +176,7 @@ sub map_unity
 {
     my ($self) = @_;
 
-    for (my $i = 0; $i < $self->{'numg'}; $i++)
+    for (my $i = 0; $i < $self->{'numg'} + $self->{'numPseudo'}; $i++)
     { vec($self->{'glyphs'}, $i, 1) = 1; }
 }
 
@@ -294,8 +295,11 @@ sub outglyph
         my ($g) = $self->{'glyphs'}[$n]->read_dat();
         foreach my $c (@{$g->{'comps'}})
         {
-            if ($subsetter->add_glyph($c->{'glyph'}, 1))
-            { $self->outglyph($subsetter, $res, $c->{'glyph'}); }   # recurse for references of references etc.
+            if (!$subsetter->keep_glyph($c->{'glyph'}))
+            {
+                if ($subsetter->add_glyph($c->{'glyph'}, 1))
+                { $self->outglyph($subsetter, $res, $c->{'glyph'}) if ($c->{'glyph'} < $n); }   # recurse for references of references etc.
+            }
             $c->{'glyph'} = $subsetter->map_glyph($c->{'glyph'});   # update the reference to new gid
         }
         $g->{' isDirty'} = 1;
