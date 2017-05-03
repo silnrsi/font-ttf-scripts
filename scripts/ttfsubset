@@ -57,7 +57,7 @@ if (defined $f->{'kern'})
 my $cmap = $f->{'cmap'}->read->find_ms;
 my $post = $f->{'post'}->read;
 my $numg = $f->{'maxp'}{'numGlyphs'};
-my $maxpseudo = scalar @{$f->{'Gloc'}->read->{'locations'}} - 1 - $numg;
+my $maxpseudo = defined $f->{'Gloc'} ? scalar @{$f->{'Gloc'}->read->{'locations'}} - 1 - $numg : 0;
 my $subsetter = Font::TTF::Scripts::SubSetter->new($numg, $maxpseudo, \%opts);
 if ($opts{'g'})
 {
