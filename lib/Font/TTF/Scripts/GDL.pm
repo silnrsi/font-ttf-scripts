@@ -191,9 +191,10 @@ sub out_classes
 
     foreach $cl (sort {classcmp($a, $b)} keys %{$classes})
     {
-        $cl =~ s/\./_/go;	# full stop not allowed in GDL identifiers.
-        $fh->print("#define HAS_c$cl 1\n") if ($opts{'-defines'} && $cl !~ m/^no_/o);
-        $fh->print("c$cl = ($glyphs->[$classes->{$cl}[0]]{'name'}");
+        my ($new_cl) = $cl;
+        $new_cl =~ s/\./_/go;	# full stop not allowed in GDL identifiers.
+        $fh->print("#define HAS_c$new_cl 1\n") if ($opts{'-defines'} && $cl !~ m/^no_/o);
+        $fh->print("c$new_cl = ($glyphs->[$classes->{$cl}[0]]{'name'}");
         for ($i = 1; $i <= $#{$classes->{$cl}}; $i++)
         { $fh->print($i % 8 ? ", $glyphs->[$classes->{$cl}[$i]]{'name'}" : ",\n    $glyphs->[$classes->{$cl}[$i]]{'name'}"); }
         $fh->print(");\n\n");
