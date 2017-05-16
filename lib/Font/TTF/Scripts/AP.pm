@@ -702,7 +702,7 @@ sub make_classes
             else
             { $maybebase = 1; } 
         }
-        vec($self->{'bases'}, $i, 1) = 1 if ($maybebase);
+        vec($self->{'bases'}, $i, 1) = 1 if ($maybebase && !vec($self->{'ismarks'}, $i, 1));
 
         foreach (split('/', $glyph->{'post'}))
         { $namemap{$_} = $i; }
