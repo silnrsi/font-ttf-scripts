@@ -26,7 +26,7 @@ GetOptions(\%opts,
     # 'normalize|n=i',  # used in make_gdl, make_volt
     'omitaps|o=s',
     'package=s',
-    # 'positions|p=i',  # used in make_gdl
+    'positions|p=i',
     'preinclude=s',
     'renameaps|r',
     # 'substitutions|s=i',  # used in make_gdl
@@ -123,7 +123,7 @@ $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'cl
 $f->make_classes(-ligatures => $opts{'ligatures'}, -ligtype => $comp, -ignoredAPs => $options{'omitaps'}, -notmark => $opts{'mark'}, -cursive => $opts{'cursive'});
 $f->out_classes($outfh, -classprefix => $opts{'z'} & 0x10 ? '' : 'c');
 $f->start_afdko($outfh, %opts);
-$f->out_pos_lookups($outfh, -m => \%markattaches);
+$f->out_pos_lookups($outfh, -m => \%markattaches) unless exists($opts{'positions'}) and $opts{'positions'} == 0;
 $f->end_out($outfh, $opts{'include'}, %opts);
 
 if (exists $f->{'WARNINGS'})
@@ -184,6 +184,8 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                 Use the named file instead of Font::TTF::Scripts::GDL.pm to
                 open the font. Assumes the internal package name is the
                 same as the basename of file (sans any extension).
+  -p integer    whether to include positioning lookups. Default is to
+                include lookups; use -p 0 to omit the lookups.
   --preinclude file
                 add #include statement between classes and position lookups
   -r            Rename point names such that final M gets initial _ and final S
