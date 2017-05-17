@@ -109,7 +109,7 @@ sub out_classes
     $self->{'-classprefix'} = $opts{'-classprefix'};   # save for out_pos_lookups()
     my ($cp) = "\@$opts{'-classprefix'}";
 
-    $fh->print("\n# Classes\n");
+    $fh->print("\n# Classes\n\n");
 
     foreach $l (sort {apcmp($a, $b)} keys %{$lists})
     {
@@ -233,7 +233,9 @@ sub out_pos_lookups
     my ($lists) = $self->{'lists'};
     my ($l, $c, $mode);
     my ($cp) = "\@$self->{'-classprefix'}";
-    
+
+    $fh->print("\n# Position lookups\n\n");
+
     foreach $l (sort keys %{$lists})
     {
         next if (substr($l, 0, 1) eq "_");
@@ -255,6 +257,16 @@ sub out_pos_lookups
 
         next unless (@marks);      # all attachment lookups must have at least one markClass
 
+        # Write out the mark classes
+        foreach $c (@marks)
+        {
+            my ($g) = $glyphs->[$c];
+            my ($p) = $g->{'points'}{"_$l"};
+            $fh->printf("markClass [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> %s;\n", $self->make_classname($l));
+        }
+        $fh->printf("\n");
+
+        # Now mark-to-base and mark-to-mark lookups
         foreach $mode (0 .. 1)
         {
             my $b = \@bases;
@@ -280,12 +292,6 @@ sub out_pos_lookups
             }
             else 
             { $fh->print("  lookupflag 0;\n"); }
-            foreach $c (@marks)
-            {
-                my ($g) = $glyphs->[$c];
-                my ($p) = $g->{'points'}{"_$l"};
-                $fh->printf("  markClass [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> %s;\n", $self->make_classname($l));
-            }
             foreach $c (@{$b})
             {
                 my ($g) = $glyphs->[$c];
