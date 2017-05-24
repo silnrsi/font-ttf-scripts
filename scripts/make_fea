@@ -154,9 +154,10 @@ Creates font specific AFDKO fea source file from a font and optional attachment 
                 the classfile
   --classwarn   issue warnings if classfile contains references to glyphs
                 that are not in the font.
-  --cursive "exitAP=entryAP"
+  --cursive "exitAP=entryAP[,rtl]"
                 AP pair that should be cursively connected. May be specified
-                more than once.
+                more than once. Entry AP may be followed by ",rtl" to override
+                lookup direction.
   -e file       A file containing names (1 per line) of glyphs that are 
                 known to have no outline (thus should not generate warnings). 
   -h            print manpage

@@ -649,7 +649,8 @@ A string containing a list of AP names that are not used for mark or cursive att
 
 =item -cursive
 
-A reference to a hash keyed by exit AP names returning corresponding entry AP names to be cursively connected.
+A reference to a hash keyed by exit AP name returning corresponding entry AP name to be cursively connected.
+Entry AP name may optionally be followed by ",rtl" to override lookup direction.
 
 =back
 
@@ -662,15 +663,25 @@ sub make_classes
     my (%classes, %namemap, %fixedclasses);
     my ($g, $gname, $i, $j, $glyph, %used, $p, $name);
 
-	# Make sure cursive attachment points are not treated as marks
-	if (defined($opts{'-cursive'}))
-	{
-		while( my ($exit,$entry) = each %{$opts{'-cursive'}})
-		{
-			$opts{'-notmark'} .= " $exit $entry";
-		}
-	}
-	
+    # Make sure cursive attachment points are not treated as marks
+    # while we're here, save cursive AP info and direction for later.
+    if (defined($opts{'-cursive'}))
+    {
+        my %cursive;
+        while( my ($exit,$entry) = each %{$opts{'-cursive'}})
+        {
+            if ($entry =~ /^(.+),rtl$/oi)
+            {
+                $entry = $1;
+                $cursive{$exit} = [$entry, 1];
+            }
+            else
+            {   $cursive{$exit} = [$entry, 0]; }
+            $opts{'-notmark'} .= " $exit $entry";
+        }
+        $self->{'-cursive'} = \%cursive;    # Save for later
+    }
+    
     for ($i = 0; $i < $numg; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];

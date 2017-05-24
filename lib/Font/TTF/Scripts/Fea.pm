@@ -233,12 +233,20 @@ sub out_pos_lookups
     my ($lists) = $self->{'lists'};
     my ($l, $c, $mode);
     my ($cp) = "\@$self->{'-classprefix'}";
+    my (%isCursive);
+    
+    # Make a hash to easily identify all cursive APs
+    if (defined($self->{'-cursive'}))
+    {
+        while( my ($exit,$entry) = each %{$self->{'-cursive'}})
+        { $isCursive{$exit} = $isCursive{$entry->[0]} = 1;}
+    }
 
-    $fh->print("\n# Position lookups\n\n");
+    $fh->print("\n# Mark attachment lookups\n\n");
 
     foreach $l (sort keys %{$lists})
     {
-        next if (substr($l, 0, 1) eq "_");
+        next if (substr($l, 0, 1) eq "_" or $isCursive{$l});
         my @bases = ();
         my @mbases = ();
         my @marks = ();
@@ -299,6 +307,32 @@ sub out_pos_lookups
                 $fh->printf("  pos $type [$g->{'name'}] <anchor $p->{'x'} $p->{'y'}> mark %s;\n", $self->make_classname($l));
             }
             $fh->print("} $name;\n\n");
+        }
+    }
+    
+    if (defined($self->{'-cursive'}))
+    {
+        $fh->print("\n# Cursive connection lookups\n\n");
+
+        foreach my $exit (sort keys %{$self->{'-cursive'}})
+        {
+            my ($entry,$rtl) = @{$self->{'-cursive'}{$exit}};
+            next unless exists $lists->{$entry} and exists $lists->{$exit};
+            $fh->print("lookup cursive_${exit}_${entry} {\n");
+            $fh->print("  lookupflag IgnoreMarks", $rtl ? ' RightToLeft' : '', ";\n");
+            for ($c = 0; $c < $f->{'maxp'}{'numGlyphs'}; $c++)
+            {
+                if (vec($vecs->{$exit}, $c, 1) or vec($vecs->{$entry}, $c, 1))
+                {
+                    my ($g) = $glyphs->[$c]; 
+                    #print "$g->{'name'} $entry = $g->{'points'}{$entry}{'x'} $g->{'points'}{$entry}{'y'}  $exit = $g->{'points'}{$exit}{'x'} $g->{'points'}{$exit}{'y'}\n";
+                    $fh->print("  pos cursive $g->{'name'} ", 
+                        vec($vecs->{$entry}, $c, 1) ? "<anchor $g->{'points'}{$entry}{'x'} $g->{'points'}{$entry}{'y'}> " : "<anchor NULL> ",
+                        vec($vecs->{$exit}, $c, 1)  ? "<anchor $g->{'points'}{$exit}{'x'} $g->{'points'}{$exit}{'y'}>" : "<anchor NULL>" ,
+                        ";\n");
+                }
+            }
+            $fh->print("} cursive_${exit}_${entry};\n\n");
         }
     }
 }
