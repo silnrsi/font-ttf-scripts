@@ -1062,16 +1062,17 @@ sub subset
     my ($res, $resb) = ([], []);
 
     return unless ($self->SUPER::subset($subsetter));
+
     for (my $i = 0; $i < @{$self->{'attribs'}}; $i++)
     {
         if ($subsetter->keep_glyph($i))
         {
-            $res->[$subsetter->map_glyph($i)] = $self->{'attribs'}[$i];
-            $resb->[$subsetter->map_glyph($i)] = $self->{'octaboxes'}[$i];
+            $res->[$subsetter->map_glyph($i)] = {%{$self->{'attribs'}[$i]}};
+            $resb->[$subsetter->map_glyph($i)] = {%{$self->{'octaboxes'}[$i]}} if ($self->{'hasOctaboxes'});
         }
     }
     $self->{'attribs'} = $res;
-    $self->{'octaboxes'} = $resb;
+    $self->{'octaboxes'} = $resb if ($self->{'hasOctaboxes'});
 }
 
 package Font::TTF::Silf;
