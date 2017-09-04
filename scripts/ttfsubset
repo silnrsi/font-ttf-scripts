@@ -57,8 +57,19 @@ if (defined $f->{'kern'})
 my $cmap = $f->{'cmap'}->read->find_ms;
 my $post = $f->{'post'}->read;
 my $numg = $f->{'maxp'}{'numGlyphs'};
-my $maxpseudo = defined $f->{'Gloc'} ? scalar @{$f->{'Gloc'}->read->{'locations'}} - 1 - $numg : 0;
-my $subsetter = Font::TTF::Scripts::SubSetter->new($numg, $maxpseudo, \%opts);
+my ($pseudos, $lbgids) = ({}, {});
+if (defined $f->{'Silf'})
+{
+    my ($s) = $f->{'Silf'}->read;
+    foreach my $sf (@{$s->{'SILF'}})
+    {
+        foreach (values %{$sf->{'pseudos'}})
+        { $pseudos->{$_}++; }
+        $lbgids->{$sf->{'lbGID'}}++;
+    }
+}
+my $maxpseudos = defined $f->{'Gloc'} ? scalar @{$f->{'Gloc'}->read->{'locations'}} - 1 - $numg : 0;
+my $subsetter = Font::TTF::Scripts::SubSetter->new($numg, $maxpseudos, $pseudos, $lbgids, \%opts);
 if ($opts{'g'})
 {
     my ($fh) = IO::File->new($opts{'g'}, "<:utf8") || die "Can't open $opts{'g'} for reading";
@@ -141,12 +152,14 @@ package Font::TTF::Scripts::SubSetter;
 
 sub new
 {
-    my ($class, $numg, $maxpseudo, $opts) = @_;
+    my ($class, $numg, $maxaglyphs, $pseudos, $lbgids, $opts) = @_;
     my ($self) = {};
     $self->{'glyphs'} = '';     # bit vector in old font gid space, set if glyph to be kept
     $self->{'remaps'} = {};     # maps new unicode cmap entry to old font gid
     $self->{'numg'} = $numg;
-    $self->{'numPseudo'} = $maxpseudo;
+    $self->{'psuedos'} = $pseudos;
+    $self->{'maxaglyphs'} = $maxaglyphs;
+    $self->{'lbgids'} = $lbgids;
     $self->{'opts'} = $opts;
     # other attributes:
     # $self->{'gidmap'} = [];   # maps old gid to new gid
@@ -176,8 +189,10 @@ sub map_unity
 {
     my ($self) = @_;
 
-    for (my $i = 0; $i < $self->{'numg'} + $self->{'numPseudo'}; $i++)
+    for (my $i = 0; $i < $self->{'numg'} + $self->{'maxaglyphs'}; $i++)
     { vec($self->{'glyphs'}, $i, 1) = 1; }
+    foreach my $g (keys %{$self->{'pseudos'}}, keys %{$self->{'lbgids'}})
+    { vec($self->{'glyphs'}, $g, 1) = 1 if (!vec($self->{'glyphs'}, $g, 1)); }
 }
 
 # should this glyph from the old font go into the new font?
@@ -217,11 +232,11 @@ sub creategidmap
 
     $self->{'gidmap'} = [];
     $self->{'gcount'} = 0;
-    foreach my $i (0 .. $numg - 1)
+    foreach my $i (0 .. $numg + $self->{'maxaglyphs'} - 1)
     { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $self->{'gcount'}++ : 0); }
     $count = $self->{'gcount'};
-    foreach my $i ($self->{'gcount'} .. $self->{'gcount'} + $self->{'numPseudo'})
-    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0); }
+    foreach my $i (keys %{$self->{'pseudos'}}, keys %{$self->{'lbgids'}})
+    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0) if ($i >= $self->{'numg'} + $self->{'maxaglyphs'}); }
     if ($DEBUG)
     {
         my (@list);
@@ -1085,8 +1100,6 @@ sub canchangegids
 
     $self->read();
     $self->{' PARENT'}{'Gloc'}->read();
-    $maxpseudo = scalar @{$self->{' PARENT'}{'Gloc'}{'locations'}} - 1 - $subsetter->{'numg'};
-    $subsetter->{'numPseudo'} = $maxpseudo;
     foreach my $s (@{$self->{'SILF'}})
     {
         $subsetter->add_glyph($s->{'lbGID'});
@@ -1356,7 +1369,8 @@ sub markdels
     my ($self, $pass, $subsetter, $cinfo) = @_;
 
     # 1.2 mark kept columns
-    for (my $i = 0; $i < $subsetter->{'numg'} + $subsetter->{'numPseudo'}; ++$i)
+    my (@allglyphs) = (0 .. $subsetter->{'numg'} + $subsetter->{'maxaglyphs'} - 1, keys %{$subsetter->{'pseudos'}}, keys %{$subsetter->{'lbgids'}});
+    foreach my $i (@allglyphs)
     {
         if (defined $pass->{'colmap'}{$i} and $subsetter->keep_glyph($i))
         {
