@@ -1248,7 +1248,7 @@ sub subset_silf
     # also do class reduction.
     $subsetter->{'silf'}{'classes'} = [];   # for each class a hash of new gid to new class index
     $subsetter->{'silf'}{'classmap'} = [];  # size of each class, -1 for a deleted class
-    my ($numlin) = $self->{'numLinearClasses'};
+    my ($numlin) = $silf->{'numLinearClasses'};
     my (@linclasses, @nonlinclasses);
     for (my $i = 0; $i < scalar @{$silf->{'classes'}}; $i++)
     {
