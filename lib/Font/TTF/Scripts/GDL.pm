@@ -248,8 +248,8 @@ sub end_gdl
 sub make_name
 {
     my ($self, $gname, $uni, $glyph) = @_;
-    $gname =~ s/[:\(\)\{\}]//g;
-    $gname =~ s{/.*$}{}o;
+    $gname =~ s/[:\(\)\{\}]//g;   # strip :, (, ), { and }
+    $gname =~ s{/.*$}{}o;         # strip alternates
     $gname =~ s/\.(.)/'_'.lc($1)/oge;
     if ($gname =~ m/^u(?:[0-9A-Fa-f]{4,6})/oi)
     { 
@@ -268,6 +268,8 @@ sub make_name
         $gname = "g_" . $gname;
         $gname =~ s/([A-Z])/"_".lc($1)/oge;
     }
+    # Finally convert anything other than alpha-numeric to underscore:
+    $gname =~ s/[^a-zA-Z0-9]/_/og;
     $gname;
 }
 

@@ -106,6 +106,7 @@ if ($opts{'renameaps'})
 }
 
 $f->{'vecs'} = {};
+$f->{'-noCaseMunge'} = $opts{'z'} & 32; # set flag to make_name()
 
 $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->start_gdl($outfh);
@@ -175,6 +176,8 @@ Creates font specific GDL from a font and optional attachment point database
                     0 - use component properties to set ligature bounding boxes
                     1 - normalise even if presentation is only references
                     2 - use postscript names in glyph definitions
+                    3 - n/a
+                    4 - n/a
 
 =head1 DESCRIPTION
 

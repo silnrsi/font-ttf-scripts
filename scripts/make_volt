@@ -159,6 +159,8 @@ Creates a copy of the infile font file adding a VOLT table to it.
                     0 - n/a
                     1 - normalise even if presentation is only references
                     2 - n/a
+                    3 - n/a
+                    4 - n/a
 
 =head1 DESCRIPTION
 
