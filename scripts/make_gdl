@@ -106,7 +106,6 @@ if ($opts{'renameaps'})
 }
 
 $f->{'vecs'} = {};
-$f->{'-noCaseMunge'} = $opts{'z'} & 32; # set flag to make_name()
 
 $f->add_classfile($opts{'classfile'}, -p => $opts{'classprops'}, -w => $opts{'classwarn'}) if ($opts{'classfile'});
 $f->start_gdl($outfh);
