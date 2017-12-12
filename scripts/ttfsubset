@@ -508,7 +508,8 @@ sub subset_lookup
     {
         # call the subclass to process this subtable
         if (!$self->subset_subtable($subsetter, $s, $lookup, $lkvec)
-            || !defined $s->{'RULES'} || !@{$s->{'RULES'}})
+            || ((!defined $s->{'RULES'} || !@{$s->{'RULES'}})
+                && !defined $->{'ADJUST'}))
         { next; }
         
         # remove empty rules and coverage entries but keep them in sync
