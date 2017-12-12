@@ -269,7 +269,7 @@ foreach my $tag (qw(GSUB GPOS))
 	{
 		# Some lookups referenced the glyph -- find out where the lookups are used:
 		my @where;
-		for my $stag (sort {$a cmp $b}keys $t->{'SCRIPTS'})
+		for my $stag (sort {$a cmp $b}keys %{$t->{'SCRIPTS'}})
 		{
 			my $s = $t->{'SCRIPTS'}{$stag};
 			for my $ltag ('DEFAULT', @{$s->{'LANG_TAGS'}})
