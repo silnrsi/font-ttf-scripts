@@ -513,7 +513,7 @@ sub subset_lookup
         { next; }
         
         # remove empty rules and coverage entries but keep them in sync
-        if (defined $s->{'COVERAGE'}) # 'RULES' is tested for above
+        if (defined $s->{'COVERAGE'} && defined $s->{'RULES'}) # 'RULES' is tested for above
         {
 	        my $c = $s->{'COVERAGE'}{'val'};
 	        my $r = $s->{'RULES'};
