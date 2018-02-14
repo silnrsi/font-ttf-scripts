@@ -58,8 +58,11 @@ if ($opt_c)
   if ($lastnid < 255) { $lastnid = 255 }
     
 NID: foreach $nid(256 .. $lastnid){
+    next unless defined $namet->{'strings'}[$nid];
     foreach $pid (0 .. $#{$namet->{'strings'}[$nid]})  {
+       next unless defined $namet->{'strings'}[$nid][$pid];
        foreach $eid (0 .. $#{$namet->{'strings'}[$nid][$pid]}) {        
+         next unless defined $namet->{'strings'}[$nid][$pid][$eid];
          foreach $lid (keys %{$namet->{'strings'}[$nid][$pid][$eid]})
          {
            my $ltag=Font::TTF::Name->get_lang($pid,$lid); # Convert platformID/language ID to language tag
