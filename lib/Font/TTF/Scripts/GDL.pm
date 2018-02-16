@@ -35,6 +35,8 @@ sub out_gdl
     for ($i = 0; $i < $f->{'maxp'}{'numGlyphs'}; $i++)
     {
         $glyph = $self->{'glyphs'}[$i];
+        if ($opts{'-defines'})
+        { $fh->print("#define HAS_$glyph->{'name'} 1\n"); }
         $fh->print("$glyph->{'name'} = ");
         if ($opts{'-psnames'} && $glyph->{'post'} && $glyph->{'post'} ne '.notdef')
         { $fh->print("postscript(\"$glyph->{'post'}\")"); }

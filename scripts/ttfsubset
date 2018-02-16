@@ -232,9 +232,12 @@ sub creategidmap
 
     $self->{'gidmap'} = [];
     $self->{'gcount'} = 0;
-    foreach my $i (0 .. $numg + $self->{'maxaglyphs'} - 1)
+    #foreach my $i (0 .. $numg + $self->{'maxaglyphs'} - 1)
+    foreach my $i (0 .. $numg - 1)
     { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $self->{'gcount'}++ : 0); }
     $count = $self->{'gcount'};
+    foreach my $i ($numg .. $numg + $self->{'maxaglyphs'} - 1)
+    { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0); }
     foreach my $i (keys %{$self->{'pseudos'}}, keys %{$self->{'lbgids'}})
     { push (@{$self->{'gidmap'}}, vec($self->{'glyphs'}, $i, 1) ? $count++ : 0) if ($i >= $self->{'numg'} + $self->{'maxaglyphs'}); }
     if ($DEBUG)
