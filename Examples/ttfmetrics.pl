@@ -67,11 +67,16 @@ else
 
 if ($opts{'g'})
 {
-    print join($delim, qw(Glyph Unicode)), $delim;
+    print join($delim, qw(GlyphID Unicode)), $delim;
 }
 else
 {
-    print join($delim, qw(Unicode Glyph)), $delim;
+    print join($delim, qw(Unicode GlyphID)), $delim;
+}
+
+if ($opts{'p'})
+{
+    print join($delim, qw(GlyphName)), $delim;
 }
 
 if ($loca)
