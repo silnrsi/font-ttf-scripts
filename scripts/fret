@@ -209,7 +209,7 @@ sub extra_points
 
 sub outlinebox
 {
-    my ($xmin, $ymin, $xmax, $ymax, $amin, $smin, $amax, $smax, $col, $label) = @_;
+    my ($xmin, $xmax, $ymin, $ymax, $amin, $amax, $smin, $smax, $col, $label) = @_;
     my ($x1, $x2, $y1, $y2);
     my (@res);
     $col = [.92, .37, .17] unless (defined $col);
@@ -290,6 +290,20 @@ sub addminmax
     $e->[1] = $v if (!defined $e->[1] || $v > $e->[1]);
 }
 
+sub scale_octabox
+{
+    my ($bounds, $vals) = @_;
+    my (@res, $i);
+
+    foreach $i (0 .. 3)
+    {
+        my ($range) = $bounds->[$i*2 + 1] - $bounds->[$i*2];
+        push (@res, int(($vals->[$i*2] / 255.) * $range + $bounds->[$i*2]));
+        push (@res, int(($vals->[$i*2+1] / 255.) * $range + $bounds->[$i*2]));
+    }
+    return @res;
+}
+
 sub overlay
 {
     my ($class, $cid, $gid, $glyph, $uid, $font) = @_;
@@ -298,6 +312,26 @@ sub overlay
 
     if ($specialfh)
     { printf $specialfh "  <glyph gid='%d' uid='%04X' name='%s'>\n", $gid, $uid, $font->{'post'}{'VAL'}[$gid]; }
+
+    $font->{'Glat'}->read if (defined $font->{'Glat'});
+    if (defined $font->{'Glat'} and $font->{'Glat'}{'hasOctaboxes'})
+    {
+        my ($o) = $font->{'Glat'}{'octaboxes'}[$gid];
+        my (@bounds) = ($glyph->{'xMin'}, $glyph->{'xMax'}, $glyph->{'yMin'}, $glyph->{'yMax'});
+        push (@bounds, $bounds[0] + $bounds[2], $bounds[1] + $bounds[3], $bounds[0] - $bounds[3], $bounds[1] - $bounds[2]);
+        #push (@bounds, $o->{'si'}, $o->{'sa'}, $o->{'di'}, $o->{'da'});
+        my @rb = scale_octabox(\@bounds, [0, 255, 0, 255, $o->{'si'}, $o->{'sa'}, $o->{'di'}, $o->{'da'}]);
+        #my @rb = scale_octabox(\@bounds, [0, 255, 0, 255, 0, 255, 0, 255]);
+        push (@res, outlinebox(@rb, [.375, .754, .078], 'glyphbox'));
+
+        return @res if ($o->{'bitmap'} == 0);
+        foreach $i (@{$o->{'subboxes'}})
+        {
+            my @rb = scale_octabox(\@bounds, $i);
+            push (@res, outlinebox(@rb, undef, "subbox"));
+        }
+        return @res
+    }
 
     foreach $i (0 .. 3)
     {
@@ -389,8 +423,8 @@ sub overlay
         }
     }
 
-    push (@res, outlinebox($glyph->{'xMin'}, $glyph->{'yMin'}, $glyph->{'xMax'}, $glyph->{'yMax'},
-                          $glyph->{'dbox'}[0], $glyph->{'dbox'}[2], $glyph->{'dbox'}[1], $glyph->{'dbox'}[3], [.375, .754, .078], 'glyphbox'));
+    push (@res, outlinebox($glyph->{'xMin'}, $glyph->{'xMax'}, $glyph->{'yMin'}, $glyph->{'yMax'},
+                          $glyph->{'dbox'}[0], $glyph->{'dbox'}[1], $glyph->{'dbox'}[2], $glyph->{'dbox'}[3], [.375, .754, .078], 'glyphbox'));
     # add extra corner points if the corner is within a stem
     foreach $i (0 .. 3)
     {
@@ -417,8 +451,8 @@ sub overlay
 #                                    unnormalpt($glyph, $g->{'bbox'}[1], $g->{'bbox'}[3]),
 #                                    unnormald($glyph, $g->{'dbox'}[0], $g->{'dbox'}[2]),
 #                                    unnormald($glyph, $g->{'dbox'}[1], $g->{'dbox'}[3])));
-            push (@res, outlinebox( $g->{'bbox'}[0], $g->{'bbox'}[2], $g->{'bbox'}[1], $g->{'bbox'}[3],
-                                    $g->{'dbox'}[0], $g->{'dbox'}[2], $g->{'dbox'}[1], $g->{'dbox'}[3], undef, "subbox grid='$j,$i'"));
+            push (@res, outlinebox( $g->{'bbox'}[0], $g->{'bbox'}[1], $g->{'bbox'}[2], $g->{'bbox'}[3],
+                                    $g->{'dbox'}[0], $g->{'dbox'}[1], $g->{'dbox'}[2], $g->{'dbox'}[3], undef, "subbox grid='$j,$i'"));
         }
     }
     if ($specialfh)
