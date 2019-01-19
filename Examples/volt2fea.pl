@@ -473,7 +473,6 @@ sub get_fea_simple_lookup
                 {
                     $res .= "${indent1}pos " 
                         . $self->get_fea_ctx( [ $rule->{'context'}[$i] ] ) 
-                        . ' ' 
                         . $self->get_fea_valuerecord($rule->{'adj'}[$i]) 
                         . ";\n";
                 }
@@ -627,14 +626,14 @@ sub get_fea_pos
     # Basic value record 
     foreach ( @keys ) 
     {
+        $res .= ' ' unless $res eq '<';
         if (exists $p->{$_})
         {
-            $res .= ' ' unless $res eq '<';
             $res .= $p->{$_}[0];
             $hasDevice = 1 if $#{$p->{$_}[1]} >= 0;
         }
         else
-        {   $res .= ' 0'; }
+        {   $res .= '0'; }
     }
     
     if ($hasDevice)
