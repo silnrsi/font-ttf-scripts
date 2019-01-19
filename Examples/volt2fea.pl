@@ -307,14 +307,14 @@ sub out_fea_lookups
                 }
                 else
                 {
-                    if (exists $l->{'lookup'}[1][0]{'to'})
+                    if ($l->{'lookup'}[1][0]{'type'} eq 'ATTACH')
                     {
                         # Mark attach
                         # The glyph to mark as "input" is the mark, not base or base+mark
                         my @input = map {$_->[0]} (@{$l->{'lookup'}[1][0]{'to'}});
                         $res .= $self->get_fea_ctx_as_class (\@input, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
                     }
-                    elsif (exists $l->{'lookup'}[1][0]{'context'})
+                    elsif ($l->{'lookup'}[1][0]{'type'} eq 'ADJUST_SINGLE')
                     {
                         # Single adjust
                         $res .= $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
