@@ -164,13 +164,18 @@ sub out_fea_groups
     # the list of groups, and when we successfully output one we delete it from the sorted list
     # and start over from the begining.
     
-    while (scalar(@grps))
+    my $grpState = 0;
+        # 0 = initial state -- still hoping to output them in correct order
+        # 1 = searching for something that can be output
+                
+    while (scalar(@grps) && $grpState == 0)
     {
+        $grpState = 1;
         foreach my $grp (0 .. $#grps)
         {
             my $grpName = $grps[$grp];
             my $res = $self->get_fea_ctx($dat->{'groups'}{$grpName});
-            next unless defined($res);          # Can't output this one yet... so try the next one.
+            next unless defined($res);  # Can't output this one yet... so try the next one.
             if ($asXML)
             {
                 $fh->print("\n$indent1<class name='$grpName'>\n", wrap($indent2, $indent2, $res), "\n$indent1</class>\n");
@@ -181,7 +186,8 @@ sub out_fea_groups
             }
             $self->{'completed'}{$grpName} = 1; # Remember that this one is done
             splice @grps, $grp, 1;              # Remove from list of remaining work
-            last;                               # Start from the start of the list again
+            $grpState = 0;                      # Indicate we output one
+            last;                               # Start over from the start of the list again
         }
     }
     
@@ -190,8 +196,12 @@ sub out_fea_groups
         $fh->print("\n</classes>\n");
         $fh->close;
     }
-    
-    $self->error("Groups appear to have a circular definition. Review ", join(',', @grps), "\n") if scalar(@grps);
+
+    if ($grpState == 1)
+    {
+        $self->error("Groups appear to have a circular definition or undefined subgroup. Review ", 
+            join(',', @grps), "\n");
+    }
 }
 
 sub out_fea_lookups
@@ -941,7 +951,7 @@ volt2fea attempts to convert a VOLT project to an AFDKO feature (FEA) file.
 Note that the FEA file is written in terms of the glyph names found in the
 input font, not from the VOLT names in the project (which may be different).
 
-This code attempts to write FEA files that are compatible with both AFDKO
+This code attempts to write FEA files that are compatible with both fonttools
 and Fontforge, but your mileage may vary since both have some bugs in the 
 way stuff is parsed.
 
@@ -955,9 +965,9 @@ a particular anchor point that all mark glyphs of that class may be included in 
 rule. VOLT authors may have included only the marks that the rule is likely to "see"
 but limiting the feature file to such subsets requires lookup-specific markClasses.
 
-This is early code and there are bugs. It understands everything in my Arabic font but does not
-yet genereate fully operational FEA code. I would certainly appreciate any examples of
-results where you can identify why the FEA file is incorrect.
+In VOLT, some identifiers (e.g., group names) are case-insensitive, but in 
+FEA all identifiers are case sensitive. If you get errors such as "Can't use an 
+undefined value as an ARRAY" you might check your VOLT for case sensitivity.
 
 =head1 AUTHOR
 
@@ -966,7 +976,7 @@ Bob Hallissy <http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2017, SIL International (http://www.sil.org)
+Copyright (c) 1998-2019, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0. 
 For details, see the full text of the license in the file LICENSE.
