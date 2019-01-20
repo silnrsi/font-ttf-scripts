@@ -319,9 +319,15 @@ sub out_fea_lookups
                         # Single adjust
                         $res .= $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'context'}, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '');
                     }
+                    elsif ($l->{'lookup'}[1][0]{'type'} eq 'ADJUST_PAIR')
+                    {
+                        # Pair adjust
+                        $res .= $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'first'}, $context->[0] ne 'EXCEPT_CONTEXT' ? "lookup $l->{'_target'}" : '')
+                            .  $self->get_fea_ctx_as_class ($l->{'lookup'}[1][0]{'second'}, '');
+                    }
                     else
                     {
-                        $res .= "# TODO: Chaining positioning rule target goes here # ";
+                        $res .= "# TODO: Chaining positioning for $l->{'lookup'}[1][0]{'type'} goes here # ";
                     }
                 }
                 $res .= join('', @lookahead);
@@ -480,7 +486,13 @@ sub get_fea_simple_lookup
             elsif ($rule->{'type'} eq 'ADJUST_PAIR')
             {
                 # GPOS Type 2: pair adjust
-                printf STDERR "GPOS Type 2 (pair adjust) not yet implemented by volt2fea -- lookup $l->{'id'} ignored\n";
+                $res .= "${indent1}pos " 
+                    . $self->get_fea_ctx( [ $rule->{'first'}[0] ] )
+                    . $self->get_fea_valuerecord($rule->{'adj'}[0][2][0])
+                    . ' '
+                    . $self->get_fea_ctx( [ $rule->{'second'}[0] ] )
+                    . $self->get_fea_valuerecord($rule->{'adj'}[0][2][1])
+                    . ";\n";
             }
             elsif ($rule->{'type'} eq 'ATTACH_CURSIVE')
             {
@@ -653,6 +665,7 @@ sub get_fea_pos
         }
     }
     $res .= '>';
+    $res = '<NULL>' if $res eq '<0 0 0 0>';
     return $res;
 }
 
