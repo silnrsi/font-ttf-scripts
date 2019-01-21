@@ -463,7 +463,7 @@ sub get_fea_simple_lookup
                 next;
             }
             # This is what we'd like to do:
-            $res .= "${indent1}# sub " . $self->get_fea_ctx($rule->[0]) . "by " . $self->get_fea_ctx($rule->[1]) . ";\n";
+            $res .= "#FEAX\n#FEAX${indent1}sub " . $self->get_fea_ctx($rule->[0]) . "by " . $self->get_fea_ctx($rule->[1]) . ";\n#FEAX\n";
 
             # but this is what we have to do:
             my $lhsgroup = $self->get_ctx_flat($self->{'voltdat'}{'groups'}{substr($lhs[$lhsIndex], 1)});
@@ -474,7 +474,7 @@ sub get_fea_simple_lookup
                 $rhs[$rhsIndex] = $self->make_feaname($rhsgroup->[$_]);
                 $res .= "${indent2}sub " . join(' ', @lhs) . ' by ' . join(' ', @rhs) . " ;\n";
             }
-            
+            $res .= "#FEAX END\n";
         }
     }
     else
