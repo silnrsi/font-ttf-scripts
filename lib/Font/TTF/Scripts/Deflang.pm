@@ -28,10 +28,10 @@ sub ttfdeflang
 
     my ($lang) = uc($opts{'d'});
     $lang .= " " x (4 - length($lang));
+    my ($found) = 0;
 
     foreach my $tk (qw(GSUB GPOS))
     {
-        my ($found) = 0;
         next unless (defined $font->{$tk});
         if ($t = $font->{$tk}->read)
         {
@@ -51,8 +51,8 @@ sub ttfdeflang
                 }
             }
         }
-        warn ("No language '$lang' found in $tk table") unless ($found);
     }
+    warn ("No language '$lang' found") unless ($found);
 
     return $font;
 }
