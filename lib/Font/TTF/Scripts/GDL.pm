@@ -184,7 +184,7 @@ sub out_classes
         foreach $l (sort keys %{$lists})
         {
             next if ($l =~ m/^_/o);
-            next if (!scalar @{$lists->{$l}} || !scalar @{$lists->{"_$l"}});
+            next if (!defined $lists->{$l} || !scalar @{$lists->{$l}} || !defined $lists->{"_$l"} || !scalar @{$lists->{"_$l"}});
             next if (!$self->{'hasnclass'}{$l} || !$self->{'hasnclass'}{"_$l"});
             $fh->print("#define HAS_c${l}Dia 1\n");
         }

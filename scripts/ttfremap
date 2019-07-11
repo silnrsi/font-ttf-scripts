@@ -44,6 +44,15 @@ $v = $f->{'OS/2'}->read;                     # we need to update this
 $o = $f->{'cmap'}->read->find_ms->{'val'} || die "This font has no MS cmap table";
 $p = $f->{'post'}->read;
 
+foreach $c (@{$f->{'cmap'}{'Tables'}})
+{
+    if ($c->{'Format'} == 12)
+    {
+        $o = $c->{'val'};
+        last;
+    }
+}
+
 if ($opt_r) 
 { 
 	$s = {%{$o}};
