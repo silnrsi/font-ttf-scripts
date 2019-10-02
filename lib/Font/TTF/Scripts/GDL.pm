@@ -46,7 +46,7 @@ sub out_gdl
         my ($ytop) = $f->{'hhea'}->read->{'Ascender'};
         my ($adv) = $f->{'hmtx'}->read->{'advance'}[$i];
         $sep = ' {';
-        foreach $p (keys %{$glyph->{'points'}})
+        foreach $p (sort keys %{$glyph->{'points'}})
         {
             my ($pname) = $p;
             my ($pt) = $glyph->{'points'}{$p};
@@ -105,12 +105,12 @@ sub out_gdl
                 }
             }
         }
-        foreach $k (keys %{$glyph->{'compounds'}})
+        foreach $k (sort keys %{$glyph->{'compounds'}})
         {
             $fh->print("${sep}component.$k = box(" . join(", ", map {"${_}m"} @{$glyph->{'compounds'}{$k}}) . ")");
             $sep = '; ';
         }
-        foreach $k (keys %{$glyph->{'props'}})
+        foreach $k (sort keys %{$glyph->{'props'}})
         {
             my ($n) = $k;
             next unless ($n =~ s/^GDL(?:_)?//o);
@@ -347,7 +347,7 @@ sub lig_rules
     $fh->print("\ntable(substitution);\npass($pnum);\n");
     if (scalar %$ligclasses)
     {
-        foreach $c (grep {!m/^no_/o} keys %{$ligclasses})
+        foreach $c (sort grep {!m/^no_/o} keys %{$ligclasses})
         {
             my ($gnum) = $self->{'ligmap'}{$c};
             my ($gname) = $self->{'glyphs'}[$gnum]{'name'};
@@ -432,7 +432,7 @@ sub pos_rules
 #endif
 EOT
     $fh->print("\ntable(positioning);\npass($pnum);\n");
-    foreach $p (keys %{$lists})
+    foreach $p (sort keys %{$lists})
     {
         next if ($p =~ m/^_/o);
         next if (!scalar @{$lists->{$p}} || ref($lists->{"_$p"}) ne 'ARRAY' || !scalar @{$lists->{"_$p"}});
