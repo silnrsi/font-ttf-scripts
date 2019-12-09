@@ -288,6 +288,7 @@ use strict;
         @row2 = ($row2[0]);
 
         $ybase = $maxy - 153;
+        my ($bigblob) = "q 8 w 1 J s Q";
         for ($row = 0; $row < $maxg / $numperow; $row++)
         {
             $ppage->add(".5 w 36 $ybase " . ($numperow * 54) . " 64 re S ");
@@ -324,6 +325,17 @@ use strict;
                     $ppage->add(sprintf("%s %.4f %d m %.4f %d l S [] 0 d\n", $dots, $xadv, $ybase + 7, $xadv,$ybase + 57)) if ($xadv < $xcentre + 27);
                     $ppage->add(sprintf("%s %.4f %d m %.4f %d l S [] 0 d\n", $dots, $xorg, $ybase + 7, $xorg, $ybase + 57)) if ($xorg > $xcentre - 27 && $xorg < $xcentre + 27);
                     $ppage->add(sprintf("BT 1 0 0 1 %.4f %.4f Tm /T$id $tsize Tf 100 Tz $gcol <%04X> Tj %s ET\n", $xorg, $yorg, $gid, ($gcol ? "0 g " : "")));
+                    my ($points) = $package->extra_points($font, $gid, $glyph);
+
+                    foreach my $p (@{$points})
+                    {
+                        my $x = $xorg + $p->[0] * $tsize / $upem;
+                        my $y = $yorg + $p->[1] * $tsize / $upem;
+                        $ppage->add(sprintf("%.4f %.4f m q 1. 0 0 RG 2 w 1 J %.4f %.4f l b Q\n", $x - 1, $y, $x + 1, $y));
+                        #$ppage->add(sprintf("BT 1 0 0 1 %.2f %.2f Tm 80 Tz /FR 8 Tf %s Tj ET\n",
+                        #        $x + 3, $y - 3, asPDFStr($p->[2])));
+                    }
+                    
                     @instr = $package->overlay(@parms);
                     if (@instr)
                     {
