@@ -331,7 +331,7 @@ use strict;
                     {
                         my $x = $xorg + $p->[0] * $tsize / $upem;
                         my $y = $yorg + $p->[1] * $tsize / $upem;
-                        $ppage->add(sprintf("%.4f %.4f m q 1. 0 0 RG 2 w 1 J %.4f %.4f l b Q\n", $x - 1, $y, $x + 1, $y));
+                        $ppage->add(sprintf("%.4f %.4f m q 0.75 0 0 RG 2 w 1 J %.4f %.4f l b Q\n", $x - 1, $y, $x + 1, $y));
                         #$ppage->add(sprintf("BT 1 0 0 1 %.2f %.2f Tm 80 Tz /FR 8 Tf %s Tj ET\n",
                         #        $x + 3, $y - 3, asPDFStr($p->[2])));
                     }
