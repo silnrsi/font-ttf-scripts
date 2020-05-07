@@ -81,7 +81,7 @@ if ($opts{'p'})
 
 if ($loca)
 {
-	print join($delim, qw(AdvWidth LSdBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
+	print join($delim, qw(AdvWidth LSdBearing RSBearing Xmin Xmax Ymin Ymax XCentre)), "\n";
 }
 else
 {
@@ -121,19 +121,24 @@ sub DoTheRest
     }
 	my $g = $loca->{'glyphs'}[$gid];
 	my ($xMin, $xMax, $yMin, $yMax) = (0,0,0,0);
+	my ($adv, $lsb, $rsb);
 	if ($loca && defined $g)
 	{
 		$g->read;
 		($xMin, $xMax, $yMin, $yMax) = (map {$g->{$_}} (qw(xMin xMax yMin yMax)));
 	}
+	$adv = $hmtx->{'advance'}[$gid];
+	$lsb = $hmtx->{'lsb'}[$gid];
+	$rsb = $adv - $lsb - ($xMax - $xMin);
 	if ($loca && (defined($g) or $opts{'f'}))
 	{
-		print join($delim, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid], $xMin, $xMax, $yMin, $yMax,$hmtx->{'lsb'}[$gid] + ($xMax - $xMin)/2), "\n";
+		print join($delim, $adv, $lsb, $rsb, $xMin, $xMax, $yMin, $lsb + ($xMax - $xMin)/2), "\n";
 	}
 	elsif ($hmtx->{'lsb'}[$gid])
 	{
+	    # Glyph has no outline but does have lsb.
 		# This case would be unusual, but just in case it happens:
-		print join($delim, $hmtx->{'advance'}[$gid], $hmtx->{'lsb'}[$gid]), "\n";
+		print join($delim, $adv, $lsb, $rsb),"\n";
 	}
 	else
 	{
