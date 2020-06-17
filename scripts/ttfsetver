@@ -2,27 +2,24 @@
 use strict;
 use Font::TTF::Font;
 use Getopt::Std;
+use Pod::Usage;
 
-our ($opt_d, $VERSION);
+our ($opt_d, $opt_h, $opt_n, $VERSION);
 
-getopts('d:');
+getopts('d:hn');
 
-$VERSION = '0.1'; # original 
+$VERSION = '0.2'; 
+
+if ($opt_h)
+{
+    pod2usage(-verbose => 2, -noperldoc => 1);
+    exit;
+}
 
 unless ($#ARGV == 2 and $ARGV[0] =~ /^\d+(\.\d+)?$/)
 {
-    die <<"EOT";
-
-ttfsetver [-d description] version infile outfile
-
-Sets font version (in both head and name tables). 
-version parameter must be fixed-point numeric (e.g., 2.3)
-
--d, if supplied, is descriptive text to be appended to "Version n.nn " for
-the name table entry.
-
-Version $VERSION
-EOT
+    pod2usage(1);
+    exit;
 }
 
 my ($newVer, $inFont, $outFont) = @ARGV;
@@ -41,10 +38,11 @@ if (exists $f->{'name'})
     
     my $verstring = "Version $newVer";
     
-   	# The OT spec suggests including semicolon to separate version number from descriptive text
+   	# The OT spec suggests including semicolon to separate version number from 
+    #   descriptive text, so that is our default behaviour. Can be overridden with -n.
    	# Handle cases where caller provided semicolon and/or leading whitespace
    	$opt_d =~ s/^;?\s*//;
-   	$verstring .= "; $opt_d" if (length($opt_d) > 0);
+   	$verstring .= ($opt_n ? ' ' : '; ') . $opt_d if (length($opt_d) > 0);
        
 	do_name ($f, $verstring, 5);
 }
@@ -82,18 +80,20 @@ ttfsetver - sets font version in a TrueType font
 
 =head1 SYNOPSIS
 
-  ttfsetver [-d description] version infile outfile
+  ttfsetver [-d description] [-n] version infile outfile
+  ttfsetver -h
 
 =head1 OPTIONS
 
-  -d text   descriptive text to be appended to "Version n.nn " for
+  -d text   descriptive text to be appended to "Version n.nnn " for
             the name table entry.
+  -n        do not add semicolon before the description.
+  -h        print help message
 
 =head1 DESCRIPTION
 
 Sets font version (in both head and name tables). 
 version parameter must be fixed-point numeric (e.g., 2.3)
-
 
 =head1 AUTHOR
 
@@ -102,7 +102,7 @@ Martin Hosken L<http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2016, SIL International (http://www.sil.org)
+Copyright (c) 1998-2020, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.

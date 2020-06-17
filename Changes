@@ -1,5 +1,9 @@
 1.06_02 Development
 
+* ttfsetver
+*    new options: -n and -h
+*    uses pod2usage
+* 
 * Bug fixes:
 *    Building Windows binary works again
 *    TypeTuner should now compile on Perl 5.10
