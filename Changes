@@ -1,12 +1,51 @@
-1.06_02 Development
+1.06_04 Development
 
+* New / updated:
+*
+* Allow nested class definitions using '@' notation
+* Support for cursive connections
+* No longer assumes AP names start with upper cases
+* Support for Graphite octabox data
+* 
+* make_fea
+*    added -z 16 to suppress 'c' prefix to classnames
+*    added -p to omit positioning lookups
+* make_gdl
+*    new -defines option
+*    now sorts some output lists to remove randomness
 * ttfsetver
 *    new options: -n and -h
 *    uses pod2usage
-* 
+* ttfstriphints - remove TrueType hints from font or individual glyphs
+*    (promoted from Examples)
+* Examples/volt2fea
+*    optionally emit classes.xml file 
+*    support GPOS Type 2 Pair Adjustment lookups
+*    improved output format
+* Examples/ttfmetrics
+*    add rsb to output
+* Examples/ttffixweight - normalizes members of irregularly named font families
+*
 * Bug fixes:
-*    Building Windows binary works again
-*    TypeTuner should now compile on Perl 5.10
+*    make_fea
+*      fix generation of mark filter sets
+*      no longer defines markClasses twice
+*      no longer includes mark glyphs in base lists
+*    ttffeatparms 
+*      was inadvertently adding empty strings with symbol (pid=3, eid=0) encoding.
+*    ttfname
+*      no longer adds Mac postscript name unless platform already present in font.
+*    ttfsubset
+*      include pseudo glyphs
+*      no longer doubly add glyphs for composites
+*      handle OT lookups with no rules
+*
+
+1.06_02 2016-09-07
+ 
+* Bug fixes:
+*    building Windows binary works again
+*    typeTuner should now compile on Perl 5.10
 
 1.06  2016-08-24
 
@@ -23,7 +62,7 @@
 * dumpfont
 *   new option: -d
 *   now supports dumping woff metadata
-
+*
 * New/updated Examples
 *    volt2fea.pl -- convert VOLT project to FEA
 *    pstest.pl -- verify all glyphs are AGL conforming
