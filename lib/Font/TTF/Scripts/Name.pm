@@ -86,12 +86,12 @@ sub ttfname
         $unique = sprintf('%s:%04d-%02d-%02d', $name->find_name(8) . $full, $time[5]+1900, $time[4]+1, $time[3]);
         $post = $family;
         $post .= "-$subfamily" if ($subfamily);
-        $post =~ s/[\s\[\](){}<>\/%]//og;
+        $post =~ s/[^\x21-\x7E]//og;   # eliminiate all but printable ascii
+        $post =~ s/[\s\[\](){}<>\/%]//og;  # even eliminate some of them
 
 # make sure post name set
         unless ($opts{'p'})
         {
-            $name->{'strings'}[6][1][0]{0} = $post;
             $name->{'strings'}[6][3][1]{1033} = $post;
             $name->set_name(6, $post, $opts{'l'}, @cover);
         }
