@@ -132,7 +132,7 @@ sub DoTheRest
 	$rsb = $adv - $lsb - ($xMax - $xMin);
 	if ($loca && (defined($g) or $opts{'f'}))
 	{
-		print join($delim, $adv, $lsb, $rsb, $xMin, $xMax, $yMin, $lsb + ($xMax - $xMin)/2), "\n";
+		print join($delim, $adv, $lsb, $rsb, $xMin, $xMax, $yMin, $yMax, $lsb + ($xMax - $xMin)/2), "\n";
 	}
 	elsif ($hmtx->{'lsb'}[$gid])
 	{
