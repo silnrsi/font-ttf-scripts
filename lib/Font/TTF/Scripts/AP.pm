@@ -518,7 +518,7 @@ sub add_classfile
             my ($xp, $tag, %attrs) = @_;
 
             if ($tag eq 'class')
-            { $currclass = [$attrs{'name'}, $attrs{'exts'}]; }
+            { $currclass = [$attrs{'name'}, $attrs{'exts'}, $attrs{'fixed'}]; }
             elsif ($tag eq 'property')
             { $currclass = [$attrs{'name'}, $attrs{'exts'}, $attrs{'value'}]; }
             $text = '';
@@ -528,6 +528,7 @@ sub add_classfile
             
             $classes{$currclass->[0]} = [] if $tag eq 'class';
 
+            my ($g_ix) = 0;
             foreach my $g (split(' ', $text))
             {
                 if ($tag eq 'class' and $g =~ /^@(.+)$/)
@@ -538,7 +539,16 @@ sub add_classfile
                     {
                         foreach my $c (@{$classes{$class}})
                         {
-                            $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+                            if (defined $currclass->[2])
+                            {
+                                my ($i) = $currclass->[2] + $g_ix;
+                                $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]" . "[$i]";
+                                $g_ix++;
+                            }
+                            else
+                            {
+                                $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]";
+                            }
                             push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
                         }
                     }
@@ -548,7 +558,7 @@ sub add_classfile
                     }
                     next;
                 }
-                
+
                 foreach my $e (('', split(' ', $currclass->[1])))
                 {
                     my ($c) = canon("$g$e");
@@ -559,8 +569,17 @@ sub add_classfile
                     }
 
                     if ($tag eq 'class')
-                    { 
-                        $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]"; 
+                    {
+                        if (defined $currclass->[2])
+                        {
+                            my ($i) = $currclass->[2] + $g_ix;
+                            $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]" . "[$i]";
+                            $g_ix++;
+                        }
+                        else
+                        {
+                            $cglyphs{$c}{'props'}{'classes'} .= " $currclass->[0]";
+                        }
                         push @{$classes{$currclass->[0]}}, $c;  # Remember classes we've seen.
                     }
                     elsif ($tag eq 'property')
