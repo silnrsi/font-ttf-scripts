@@ -2,6 +2,7 @@
 
 * New / updated:
 *
+* Support 'fixed' xml attribute for class definitions to keep class ordered
 * Allow nested class definitions using '@' notation
 * Support for cursive connections
 * No longer assumes AP names start with upper cases
