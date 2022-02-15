@@ -471,7 +471,7 @@ sub Cmds_exec($\@\%\%)
 		}
 		else
 		{
-			print "WARNING - unrecognized cmd: $cmd\n";
+			print STDERR "WARNING - unrecognized cmd: $cmd\n";
 		}
 	}
 };
@@ -532,7 +532,7 @@ sub Font_ids_update($\%$\%)
 	
 	Name_mod($font, $family_name_ids, $family_nm_old, $family_nm_new);
 	if (length($family_nm_new) > $font_nm_len_limit)
-		{print "WARNING - the font name ($family_nm_new) is longer than allowed by the TrueType spec ($font_nm_len_limit).\n";}
+		{print STDERR "WARNING - the font name ($family_nm_new) is longer than allowed by the TrueType spec ($font_nm_len_limit).\n";}
 	
 	#handle name id 6: PS name, which shouldn't contain spaces
 	$family_nm_old =~ s/ //g;
@@ -554,7 +554,7 @@ sub Font_ids_update($\%$\%)
 		}
 		else
 		{
-			print "WARNING - the version string ($version_str_old) is invalid and won't be changed.\n";
+			print STDERR "WARNING - the version string ($version_str_old) is invalid and won't be changed.\n";
 			$version_str_new = $version_str_old;
 		}
 	}
@@ -655,7 +655,7 @@ sub Feat_add($$$$$$)
 	if ($opt_d) {print "Feat_add $feat: orig feats = @$feats\n";}
 	foreach ($feats)
 		{if ($_ eq $feat)
-			{print "Feat_add: ***feature already exists: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}}
+			{print STDERR "Feat_add: ***feature already exists: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}}
 	#push(@$feats, $feat); #add element to array
 	splice(@$feats, $pos, 0, $feat);
 	if ($opt_d) {print "Feat_add $feat: chng feats = @$feats\n";}
@@ -681,7 +681,7 @@ sub Feat_del($$$$$)
 		}
 	}
 	if (not $found)
-		{print "Feat_del: ***feature not found: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}
+		{print STDERR "Feat_del: ***feature not found: tbl_type = $tbl_type script = $script lang = $lang feat = $feat\n"; return;}
 	if ($opt_d) {print "Feat_del $feat: chng feats = @$feats\n";}
 }
 
@@ -723,7 +723,7 @@ sub Lookup_add($$$$)
 		}
 		elsif (@$lookups[$ix] == $lookup)
 		{
-			print "Lookup_add: ***lookup already exists: tbl_type = $tbl_type feat = $feat lookup = $lookup\n";
+			print STDERR "Lookup_add: ***lookup already exists: tbl_type = $tbl_type feat = $feat lookup = $lookup\n";
 			return;
 		}
 		else
@@ -759,7 +759,7 @@ sub Lookup_del($$$$)
 		}
 	}
 	if (not $found)
-		{print "Lookup_del: ***lookup not found: tbl_type = $tbl_type feat = $feat lookup = $lookup\n"; return;}
+		{print STDERR "Lookup_del: ***lookup not found: tbl_type = $tbl_type feat = $feat lookup = $lookup\n"; return;}
 	if ($opt_d) {print "Lookup_del $lookup: chng lookups = @$lookups\n";}
 }
 
@@ -1280,7 +1280,7 @@ sub cmd_line_exec(@)
 		
 		#delete our XML table $table_nm from the ttf
 		if (not defined $font->{$table_nm})
-			{print "no $table_nm table in font\n";}
+			{print STDERR "no $table_nm table in font\n";}
 		else 
 			{delete $font->{$table_nm};}
 			
@@ -1358,7 +1358,7 @@ Alan Ward L<http://scripts.sil.org/FontUtils>.
 
 =head1 LICENSING
 
-Copyright (c) 1998-2016, SIL International (http://www.sil.org)
+Copyright (c) 1998-2022, SIL International (http://www.sil.org)
 
 This script is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
