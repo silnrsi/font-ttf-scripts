@@ -30,7 +30,7 @@ my $version = "1.2"; #add old_names section to feat_all.xml
 use vars qw($opt_h $opt_d $opt_f $opt_t $opt_m $opt_n $opt_o $opt_v $opt_x); #set by &getopts
 my $opt_str = 'hdftm:n:o:v:x';
                        
-my $family_name_id = 1; #source for family name to modify 
+my $family_name_id = [16, 1]; #sources for family name to modify in priority order
 my $full_font_name_id = 4; #full font name for setmetrics command
 my $version_name_id = 5;
 my $family_name_ids = [1, 3, 4, 16, 18]; #name ids where family might occur
@@ -503,10 +503,18 @@ sub Font_ids_update($\%$\%)
 		}
 	}
 	if ($opt_d) {print "Font_ids_update: feat_set_active = \'$feat_set_active\'\n";}
-    
-    #modify font name
-	my ($family_nm_old, $family_nm_new, $version_str_old, $version_str_new);	
-	$family_nm_old = Name_get($font, $family_name_id);
+	
+	#modify font name
+	my ($family_nm_old, $family_nm_new, $version_str_old, $version_str_new);
+	$font->{'name'}->read;
+	foreach my $name_id (@$family_name_id) #handle axis-based font naming
+	{
+		if (defined($font->{'name'}{'strings'}[$name_id]))
+		{
+			$family_nm_old = Name_get($font, $name_id);
+			last;
+		}
+	}
 	
 	if (length($family_nm_old) >= $font_nm_len_limit)
 	{ #handle bizarre case where the original font family name is too long
