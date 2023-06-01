@@ -3,7 +3,7 @@ use Font::TTF::Scripts::Volt;
 use Getopt::Std;
 use Pod::Usage;
 
-getopts('ht:');
+getopts('ght:');
 
 unless (defined $ARGV[0] || defined $opt_h)
 {
@@ -34,6 +34,19 @@ $upem = $font->{'font'}{'head'}{'unitsPerEm'};
 $font->{'font'}{'post'}->read;
 $res = $font->parse_volt($volt_text);
 
+if ($opt_g)
+{
+    $groups = {};
+    while (my ($k, $g) = each %{$res->{'groups'}})
+    {
+        $groups->{$k} = $font->flatten_group($res, @{$g});
+        foreach $i (@{$groups->{$k}})
+        {
+            push (@{$res->{'glyphs'}[$i]{'groups'}}, $k);
+        }
+    }
+}
+
 print "<?xml version='1.0'?>\n<font name='$name' upem='$upem'>\n\n";
 for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
 {
@@ -62,6 +75,7 @@ for ($i = 0; $i < scalar @{$res->{'glyphs'}}; $i++)
             }
         }
         print "    <property name='VOLT_type' value='$glyph->{'type'}'/>\n" if ($glyph->{'type'});
+        print "    <property name='groups' value='". join(" ", @{$glyph->{'groups'}}) . "'/>\n" if ($glyph->{'groups'});
         print "</glyph>\n";
     }
     else
@@ -86,6 +100,7 @@ volt2ap - create attachment point database from VOLT source in a TrueType Font
 
   -t file  Volt source as text file to use instead of what is in the font
   -h       Help
+  -g       Include which groups each glyph is a member of, however indirectly
 
 =head1 DESCRIPTION
 

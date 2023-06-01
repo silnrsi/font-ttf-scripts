@@ -1504,6 +1504,31 @@ sub map_enum
     }
 }
 
+sub flatten_group
+{
+    my ($self) = shift;
+    my ($volt) = shift;
+    my (@res);
+
+    foreach my $c (@_)
+    {
+        if (ref $c->[0])
+        { push(@res, @{$self->flatten_group($volt, @{$c})}) }
+        elsif ($c->[0] eq 'GLYPH')
+        { push(@res, $c->[1]); }
+        elsif ($c->[0] eq 'RANGE')
+        {
+            foreach my $d ($c->[1]..$c->[2])
+            { push(@res, $d); }
+        }
+        elsif ($c->[0] eq 'ENUM')
+        { push(@res, @{$self->flatten_group($volt, @{$c->[1]})}); }
+        elsif ($c->[0] eq 'GROUP')
+        { push(@res, @{$self->flatten_group($volt, @{$volt->{'groups'}{$c->[1]}})}); }
+    }
+    \@res;
+}
+
 =head2 $fv->normal_rules($ndrawn, \%opts)
 
 Generate ligature lookup C<normal_rules> based on Unicode composition rules. 
@@ -1816,6 +1841,5 @@ Copyright (c) 1998-2016, SIL International (http://www.sil.org)
 
 This module is released under the terms of the Artistic License 2.0.
 For details, see the full text of the license in the file LICENSE.
-
 
 =cut
